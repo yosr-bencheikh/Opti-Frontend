@@ -20,13 +20,13 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-     home: const LoginScreen(), // Profile screen is the first screen
+      home: const LoginScreen(), // Profile screen is the first screen
       routes: {
-        
+        '/profileScreen': (context) => const ProfileScreen(),
         '/updateProfile': (context) => const UpdateProfileScreen(
-              userId: '67a09a82c575bdaa95c3421d',
+              userId: '67a0cb53c575bdaa95c3421f',
             ),
-            '/signup': (context) => const SignUpScreen(),
+        '/signup': (context) => const SignUpScreen(),
       }, // Set ProfileScreen as the first screen
       debugShowCheckedModeBanner: false, // Removes the debug banner
     );

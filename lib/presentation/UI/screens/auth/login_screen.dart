@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-import 'package:opti_app/presentation/UI/screens/auth/SignUpScreen.dart';
+import 'package:opti_app/Presentation/UI/screens/auth/SignUpScreen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -17,7 +17,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // Validation de l'email avec une expression régulière
   bool _isValidEmail(String email) {
-    final emailRegex = RegExp(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$");
+    final emailRegex =
+        RegExp(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$");
     return emailRegex.hasMatch(email);
   }
 
@@ -42,13 +43,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (!_isValidPassword(password)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Password must be at least 8 characters long and contain both letters and numbers')),
+        const SnackBar(
+            content: Text(
+                'Password must be at least 8 characters long and contain both letters and numbers')),
       );
       return;
     }
 
     // Envoyer les données au serveur
-    final url = Uri.parse('http://localhost:3000/api/login'); // Mettez à jour avec votre URL backend
+    final url = Uri.parse(
+        'http://localhost:3000/api/login'); // Mettez à jour avec votre URL backend
     final response = await http.post(
       url,
       headers: {
@@ -124,7 +128,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8.0),
-                          borderSide: const BorderSide(color: Colors.blue, width: 2.0),
+                          borderSide:
+                              const BorderSide(color: Colors.blue, width: 2.0),
                         ),
                       ),
                     ),
@@ -140,7 +145,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8.0),
-                          borderSide: const BorderSide(color: Colors.blue, width: 2.0),
+                          borderSide:
+                              const BorderSide(color: Colors.blue, width: 2.0),
                         ),
                       ),
                     ),
@@ -148,7 +154,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     ElevatedButton(
                       onPressed: loginUser,
                       style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 40, vertical: 15),
                         backgroundColor: Colors.blue,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8.0),
@@ -162,7 +169,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 20),
                     TextButton(
                       onPressed: () {
-                        // Action forgot password
+                        Navigator.pushNamed(context, '/profileScreen');
                       },
                       child: const Text(
                         'Forgot Password?',
@@ -171,14 +178,15 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 20),
                     TextButton(
-              onPressed: () {
-                // Navigation vers la page d'inscription
-                Navigator.pushNamed(context, '/signup');
-              },
-              child: const Text(
-                'Don\'t have an account? Sign up',
-                style: TextStyle(color: Color.fromARGB(255, 22, 27, 32)),
-              ),
+                      onPressed: () {
+                        // Navigation vers la page d'inscription
+                        Navigator.pushNamed(context, '/signup');
+                      },
+                      child: const Text(
+                        'Don\'t have an account? Sign up',
+                        style:
+                            TextStyle(color: Color.fromARGB(255, 22, 27, 32)),
+                      ),
                     ),
                   ],
                 ),
@@ -190,5 +198,3 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-
-
