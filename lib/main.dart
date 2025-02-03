@@ -18,10 +18,12 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      initialRoute: '/',  // Profile screen is the first screen
+      initialRoute: '/', // Profile screen is the first screen
       routes: {
         '/': (context) => const ProfileScreen(),
-        '/updateProfile': (context) => const UpdateProfileScreen(userId:'67a09a82c575bdaa95c3421d',),
+        '/updateProfile': (context) => const UpdateProfileScreen(
+              userId: '67a09a82c575bdaa95c3421d',
+            ),
       }, // Set ProfileScreen as the first screen
       debugShowCheckedModeBanner: false, // Removes the debug banner
     );
