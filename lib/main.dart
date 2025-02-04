@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:opti_app/Presentation/UI/Screens/Auth/forgot_password.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/profile_screen.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/update_profile_screen.dart';
 import 'Presentation/UI/Screens/Auth/profile_screen.dart'; // Import the Profile Screen
@@ -23,6 +24,7 @@ class MyApp extends StatelessWidget {
       home: const LoginScreen(), // Profile screen is the first screen
       routes: {
         '/profileScreen': (context) => const ProfileScreen(),
+        '/ForgotPasswordScreen': (context) => EnterEmailScreen(),
         '/updateProfile': (context) => const UpdateProfileScreen(
               userId: '67a0cb53c575bdaa95c3421f',
             ),

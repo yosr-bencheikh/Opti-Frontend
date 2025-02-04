@@ -98,7 +98,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
 
     if (response.statusCode == 200 || response.statusCode == 201) {
-      Navigator.pushNamed(context, '/login');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('successfully created')),
+      );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: ${response.body}')),
