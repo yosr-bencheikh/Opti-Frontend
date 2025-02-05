@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-import 'package:opti_app/presentation/UI/screens/auth/SignUpScreen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -12,8 +12,29 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+
+  void showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Error'),
+          content: Text(message),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  } 
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  bool _isLoading = false; // To handle loading state
 
   // Validation de l'email avec une expression régulière
   bool _isValidEmail(String email) {
@@ -27,28 +48,40 @@ class _LoginScreenState extends State<LoginScreen> {
     return passwordRegex.hasMatch(password);
   }
 
-  // Méthode pour envoyer les données de connexion au serveur
-  Future<void> loginUser() async {
-    final email = emailController.text;
-    final password = passwordController.text;
+Future<void> loginUser() async {
+  final email = emailController.text.trim();
+  final password = passwordController.text.trim();
 
-    // Vérification de la validité de l'email et du mot de passe
-    if (!_isValidEmail(email)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid email')),
-      );
-      return;
-    }
+  // Validate input
+  if (email.isEmpty || password.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Please fill in all fields')),
+    );
+    return;
+  }
 
-    if (!_isValidPassword(password)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Password must be at least 8 characters long and contain both letters and numbers')),
-      );
-      return;
-    }
+  if (!_isValidEmail(email)) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Please enter a valid email')),
+    );
+    return;
+  }
 
-    // Envoyer les données au serveur
-    final url = Uri.parse('http://localhost:3000/api/login'); // Mettez à jour avec votre URL backend
+  if (!_isValidPassword(password)) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Password must be at least 8 characters long and contain both letters and numbers')),
+    );
+    return;
+  }
+
+  // Show loading indicator
+  setState(() {
+    _isLoading = true;
+  });
+
+  try {
+final url = Uri.parse('http://127.0.0.1:3000/api/login');
+ // Replace with your backend URL
     final response = await http.post(
       url,
       headers: {
@@ -60,18 +93,48 @@ class _LoginScreenState extends State<LoginScreen> {
       }),
     );
 
+    print('Response status code: ${response.statusCode}');
+    print('Response body: ${response.body}');
+
     if (response.statusCode == 200) {
-      // Si la connexion réussit
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Login Successful')),
-      );
+      final responseData = json.decode(response.body);
+      if (responseData.containsKey('token')) {
+        await _storeToken(responseData['token']);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Login Successful')),
+        );
+        Navigator.pushReplacementNamed(context, '/home');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(responseData['message'] ?? 'Login Failed')),
+        );
+      }
     } else {
-      // Si la connexion échoue
+      final responseData = json.decode(response.body);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Login Failed')),
+        SnackBar(content: Text(responseData['message'] ?? 'Login Failed')),
       );
     }
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Network error. Please try again later.')),
+    );
+    print('Error: $e'); // Log the full error
+  } finally {
+    setState(() {
+      _isLoading = false;
+    });
   }
+}
+
+Future<void> _storeToken(String token) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString('auth_token', token);
+  print("Token saved: $token"); // Log to verify token storage
+}
+
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -146,7 +209,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 30),
                     ElevatedButton(
-                      onPressed: loginUser,
+                      onPressed: _isLoading ? null : loginUser, // Disable button when loading
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                         backgroundColor: Colors.blue,
@@ -154,15 +217,17 @@ class _LoginScreenState extends State<LoginScreen> {
                           borderRadius: BorderRadius.circular(8.0),
                         ),
                       ),
-                      child: const Text(
-                        'Login',
-                        style: TextStyle(fontSize: 18, color: Colors.white),
-                      ),
+                      child: _isLoading
+                          ? const CircularProgressIndicator(color: Colors.white) // Show loading indicator
+                          : const Text(
+                              'Login',
+                              style: TextStyle(fontSize: 18, color: Colors.white),
+                            ),
                     ),
                     const SizedBox(height: 20),
                     TextButton(
                       onPressed: () {
-                        // Action forgot password
+                        Navigator.pushNamed(context, '/home');
                       },
                       child: const Text(
                         'Forgot Password?',
@@ -171,14 +236,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 20),
                     TextButton(
-              onPressed: () {
-                // Navigation vers la page d'inscription
-                Navigator.pushNamed(context, '/signup');
-              },
-              child: const Text(
-                'Don\'t have an account? Sign up',
-                style: TextStyle(color: Color.fromARGB(255, 22, 27, 32)),
-              ),
+                      onPressed: () {
+                        // Navigation vers la page d'inscription
+                        Navigator.pushNamed(context, '/signup');
+                      },
+                      child: const Text(
+                        'Don\'t have an account? Sign up',
+                        style: TextStyle(color: Color.fromARGB(255, 22, 27, 32)),
+                      ),
                     ),
                   ],
                 ),
@@ -190,5 +255,3 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-
-

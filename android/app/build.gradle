@@ -4,8 +4,19 @@ plugins {
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id "dev.flutter.flutter-gradle-plugin"
 }
+dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.8.22"
+    implementation 'com.google.android.gms:play-services-auth:20.7.0'  
+}
+//apply plugin: 'com.google.gms.google-services'
 
 android {
+  compileSdkVersion 33
+
+    defaultConfig {
+        minSdkVersion 21
+        targetSdkVersion 33
+    }
     namespace = "com.example.opti_app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
