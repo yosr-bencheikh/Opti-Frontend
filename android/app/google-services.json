@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1053989004416",
+    "project_id": "optiapp-f319d",
+    "storage_bucket": "optiapp-f319d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1053989004416:android:972a9bf382aebd867bf265",
+        "android_client_info": {
+          "package_name": "com.example.opti_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCxKwxOOk1l8qkXdrUmSxyGs_E5e97vr2c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
