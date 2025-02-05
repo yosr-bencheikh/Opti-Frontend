@@ -19,6 +19,33 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _formKey = GlobalKey<FormState>();
 
   @override
+  void dispose() {
+    nameController.dispose();
+    prenomController.dispose();
+    emailController.dispose();
+    dateController.dispose();
+    passwordController.dispose();
+    confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _selectDate() async {
+    DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+    );
+
+    if (pickedDate != null) {
+      setState(() {
+        dateController.text =
+            "${pickedDate.day}/${pickedDate.month}/${pickedDate.year}";
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -95,24 +122,30 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Veuillez entrer votre email';
-                    } else if (!RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$').hasMatch(value)) {
+                    } else if (!RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
+                        .hasMatch(value)) {
                       return 'Veuillez entrer un email valide';
                     }
                     return null;
                   },
                 ),
                 const SizedBox(height: 10),
-                _buildTextField(
-                  controller: dateController,
-                  label: "Date de naissance",
-                  hint: "JJ/MM/AAAA",
-                  icon: Icons.calendar_today,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Veuillez entrer votre date de naissance';
-                    }
-                    return null;
-                  },
+                GestureDetector(
+                  onTap: _selectDate,
+                  child: AbsorbPointer(
+                    child: _buildTextField(
+                      controller: dateController,
+                      label: "Date de naissance",
+                      hint: "JJ/MM/AAAA",
+                      icon: Icons.calendar_today,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Veuillez entrer votre date de naissance';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 10),
                 _buildTextField(
@@ -209,7 +242,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
         ),
         filled: true,
         fillColor: Colors.grey[100],
-        contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
       ),
       validator: validator,
     );

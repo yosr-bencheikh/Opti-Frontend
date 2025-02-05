@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:opti_app/Presentation/UI/screens/auth/SignUpScreen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -38,7 +39,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // Validation de l'email avec une expression régulière
   bool _isValidEmail(String email) {
-    final emailRegex = RegExp(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$");
+    final emailRegex =
+        RegExp(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$");
     return emailRegex.hasMatch(email);
   }
 
@@ -187,7 +189,8 @@ Future<void> _storeToken(String token) async {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8.0),
-                          borderSide: const BorderSide(color: Colors.blue, width: 2.0),
+                          borderSide:
+                              const BorderSide(color: Colors.blue, width: 2.0),
                         ),
                       ),
                     ),
@@ -203,7 +206,8 @@ Future<void> _storeToken(String token) async {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8.0),
-                          borderSide: const BorderSide(color: Colors.blue, width: 2.0),
+                          borderSide:
+                              const BorderSide(color: Colors.blue, width: 2.0),
                         ),
                       ),
                     ),
@@ -211,7 +215,8 @@ Future<void> _storeToken(String token) async {
                     ElevatedButton(
                       onPressed: _isLoading ? null : loginUser, // Disable button when loading
                       style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 40, vertical: 15),
                         backgroundColor: Colors.blue,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8.0),
@@ -227,7 +232,7 @@ Future<void> _storeToken(String token) async {
                     const SizedBox(height: 20),
                     TextButton(
                       onPressed: () {
-                        Navigator.pushNamed(context, '/home');
+                        Navigator.pushNamed(context, '/ForgotPasswordScreen');
                       },
                       child: const Text(
                         'Forgot Password?',
