@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:opti_app/Presentation/UI/Screens/Auth/admin_panel.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/forgot_password.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/profile_screen.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/update_profile_screen.dart';
@@ -21,9 +22,11 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const LoginScreen(), // Profile screen is the first screen
+      home: 
+       LoginScreen(), // Profile screen is the first screen
       routes: {
         '/profileScreen': (context) => const ProfileScreen(),
+        '/dashboard': (context) => AdminPanelApp (),
         '/ForgotPasswordScreen': (context) => EnterEmailScreen(),
         '/updateProfile': (context) => const UpdateProfileScreen(
               userId: '67a0cb53c575bdaa95c3421f',
