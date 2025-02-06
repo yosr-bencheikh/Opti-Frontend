@@ -7,8 +7,9 @@ abstract class AuthRemoteDataSource {
   Future<String> loginWithEmail(String email, String password);
   Future<String> loginWithGoogle(String token);
   Future<void> signUp(User user);
-
-   Future<void> sendCodeToEmail(String email);
+  Future<Map<String, dynamic>> getUser(String userId);
+  Future<void> updateUser(String userId, Map<String, dynamic> userData);
+  Future<void> sendCodeToEmail(String email);
   Future<void> verifyCode(String email, String code);
   Future<void> resetPassword(String email, String password);
 }
@@ -22,7 +23,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<String> loginWithEmail(String email, String password) async {
     final url = Uri.parse('$baseUrl/login');
-    
+
     try {
       final response = await client.post(
         url,
@@ -34,7 +35,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       );
 
       final responseData = json.decode(response.body);
-      
+
       if (response.statusCode == 200 && responseData['token'] != null) {
         return responseData['token'];
       }
@@ -47,7 +48,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<String> loginWithGoogle(String token) async {
     final url = Uri.parse('$baseUrl/google-login');
-    
+
     try {
       final response = await client.post(
         url,
@@ -56,7 +57,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       );
 
       final responseData = json.decode(response.body);
-      
+
       if (response.statusCode == 200 && responseData['token'] != null) {
         return responseData['token'];
       }
@@ -69,20 +70,20 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<void> signUp(User user) async {
     final url = Uri.parse('$baseUrl/users');
-    
+
     try {
       final response = await client.post(
         url,
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
-          'nom': user.nom,
+          'nom': user.name,
           'prenom': user.prenom,
           'email': user.email,
           'date': user.date,
           'password': user.password,
           'phone': user.phone,
           'region': user.region,
-          'gender': user.gender,
+          'gender': user.genre,
         }),
       );
 
@@ -95,7 +96,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     }
   }
 
-   @override
+  @override
   Future<void> sendCodeToEmail(String email) async {
     final url = Uri.parse('http://localhost:3000/api/forgot-password');
     final response = await client.post(
@@ -106,6 +107,25 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
     if (response.statusCode != 200) {
       throw ServerFailure('Failed to send code');
+    }
+  }
+
+  Future<Map<String, dynamic>> getUser(String userId) async {
+    final response = await http.get(Uri.parse('$baseUrl/users/$userId'));
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    }
+    throw Exception('Failed to load user');
+  }
+
+  Future<void> updateUser(String userId, Map<String, dynamic> userData) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/users/$userId'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode(userData),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to update user');
     }
   }
 
@@ -136,5 +156,4 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       throw ServerFailure('Failed to reset password');
     }
   }
-
 }

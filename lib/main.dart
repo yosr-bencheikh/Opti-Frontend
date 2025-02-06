@@ -1,4 +1,3 @@
-// lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:opti_app/Presentation/UI/screens/auth/SignUpScreen.dart';
@@ -42,15 +41,11 @@ class MyApp extends StatelessWidget {
       initialRoute: '/',
       routes: {
         '/': (context) => const LoginScreen(),
-        '/profileScreen': (context) => const ProfileScreen(),
+        '/profileScreen': (context) =>  ProfileScreen(),
         '/dashboard': (context) => AdminPanelApp(),
         '/ForgotPasswordScreen': (context) => EnterEmailScreen(sendCodeToEmail: sendCodeToEmail),
-        '/updateProfile': (context) => const UpdateProfileScreen(
-              userId: '67a0cb53c575bdaa95c3421f',
-            ),
         '/signup': (context) => const SignUpScreen(),
       },
-      debugShowCheckedModeBanner: false,
     );
   }
 }

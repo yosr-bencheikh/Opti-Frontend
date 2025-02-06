@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:opti_app/data/data_sources/auth_remote_datasource.dart';
 import 'package:opti_app/domain/entities/user.dart';
-import 'SignUpScreen2.dart';
+import 'package:opti_app/domain/repositories/auth_repository_impl.dart';
+import 'package:http/http.dart' as http;
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({Key? key}) : super(key: key);
@@ -17,7 +19,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
 
+  // New controllers
+  final regionController = TextEditingController();
+  final genreController = TextEditingController();
+  final phoneController = TextEditingController();
+
   final _formKey = GlobalKey<FormState>();
+  var _authRepository = AuthRepositoryImpl(
+    AuthRemoteDataSourceImpl(
+        client: http.Client()), // Pass as a positional argument
+  );
 
   @override
   void dispose() {
@@ -27,6 +38,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
     dateController.dispose();
     passwordController.dispose();
     confirmPasswordController.dispose();
+
+    // Dispose of new controllers
+    regionController.dispose();
+    genreController.dispose();
+    phoneController.dispose();
+
     super.dispose();
   }
 
@@ -136,7 +153,8 @@ _buildTextField(
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Veuillez entrer votre email';
-                    } else if (!RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
+                    } else if (!RegExp(
+                            r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
                         .hasMatch(value)) {
                       return 'Veuillez entrer un email valide';
                     }
@@ -221,30 +239,87 @@ _buildTextField(
                     return null;
                   },
                 ),
+                const SizedBox(height: 10),
+                _buildTextField(
+                  controller: regionController,
+                  label: "Région",
+                  hint: "Entrez votre région",
+                  icon: Icons.location_on,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Veuillez entrer votre région';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 10),
+                _buildTextField(
+                  controller: genreController,
+                  label: "Genre",
+                  hint: "Entrez votre genre",
+                  icon: Icons.transgender,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Veuillez entrer votre genre';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 10),
+                _buildTextField(
+                  controller: phoneController,
+                  label: "Numéro de téléphone",
+                  hint: "Entrez votre numéro de téléphone",
+                  icon: Icons.phone,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Veuillez entrer votre numéro de téléphone';
+                    }
+                    return null;
+                  },
+                ),
                 const SizedBox(height: 20),
                 ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
                     if (_formKey.currentState!.validate()) {
-                      User newUser = User(
-                        nom: nameController.text,
-                        prenom: prenomController.text,
-                        email: emailController.text,
-                        date: dateController.text,
-                        password: passwordController.text,
-                      );
+                      try {
+                        // Convert "DD/MM/YYYY" to "YYYY-MM-DD"
+                        List<String> dateParts = dateController.text.split('/');
+                        if (dateParts.length == 3) {
+                          String formattedDate =
+                              "${dateParts[2]}-${dateParts[1]}-${dateParts[0]}";
 
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => SignUpScreen2(user: newUser),
-                        ),
-                      );
+                          // Create User object with correctly formatted string date
+                          User newUser = User(
+                            name: nameController.text,
+                            prenom: prenomController.text,
+                            email: emailController.text,
+                            date:
+                                formattedDate, // Keep as string in "YYYY-MM-DD" format
+                            password: passwordController.text,
+                            region: regionController.text,
+                            genre: genreController.text,
+                            phone: phoneController.text,
+                          );
+
+                          await _authRepository.signUp(newUser);
+                        
+                        } else {
+                          throw FormatException("Invalid date format");
+                        }
+                      } catch (e) {
+                        // Handle invalid date errors
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content: Text("Format de date invalide")),
+                        );
+                      }
                     }
                   },
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 15),
                   ),
-                  child: const Text("Continuer"),
+                  child: const Text("Sign Up"),
                 ),
               ],
             ),
