@@ -29,7 +29,8 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    final authRepository = AuthRepositoryImpl(AuthRemoteDataSource());
+    final authRepository =
+        AuthRepositoryImpl(AuthRemoteDataSourceImpl(client: http.Client()));
     _loginWithEmailUseCase = LoginWithEmailUseCase(authRepository);
     _loginWithGoogleUseCase = LoginWithGoogleUseCase(authRepository);
   }
@@ -70,11 +71,11 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Login Successful')),
       );
-       Navigator.pushReplacementNamed(
-      context,
-      '/profileScreen',
-      arguments: userId, // Pass user ID to home screen
-    );
+      Navigator.pushReplacementNamed(
+        context,
+        '/profileScreen',
+        arguments: userId, // Pass user ID to home screen
+      );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString())),

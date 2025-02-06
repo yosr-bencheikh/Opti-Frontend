@@ -1,13 +1,14 @@
+// lib/presentation/screens/reset_password_screen.dart
 import 'package:flutter/material.dart';
+import 'package:opti_app/domain/usecases/reset_password.dart';
 
-class ResetPasswordScreen extends StatefulWidget {
-  @override
-  _ResetPasswordScreenState createState() => _ResetPasswordScreenState();
-}
-
-class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
+class ResetPasswordScreen extends StatelessWidget {
+  final String email;
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController confirmPasswordController = TextEditingController();
+  final ResetPassword resetPassword;
+
+  ResetPasswordScreen({required this.email, required this.resetPassword});
 
   @override
   Widget build(BuildContext context) {
@@ -30,12 +31,20 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
             ),
             SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 if (passwordController.text == confirmPasswordController.text) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text("Password Reset Successfully!")),
+                  final result = await resetPassword(email, passwordController.text);
+                  result.fold(
+                    (failure) => ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(failure.toString())),
+                    ),
+                    (_) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text("Password Reset Successfully!")),
+                      );
+                      Navigator.popUntil(context, (route) => route.isFirst);
+                    },
                   );
-                  Navigator.popUntil(context, (route) => route.isFirst);
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text("Passwords do not match!")),

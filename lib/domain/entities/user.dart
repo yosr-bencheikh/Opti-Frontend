@@ -1,44 +1,34 @@
 class User {
+  final String name;
+  final String prenom;
   final String email;
-  final String? name;
-  final String? prenom;
-  final DateTime date;
+  final String date;
+  final String password;
+  final String phone;
   final String region;
   final String genre;
-  final String? photoUrl;
-  final String? id;
 
   User({
+    required this.name,
+    required this.prenom,
     required this.email,
-    this.name,
-    this.prenom,
     required this.date,
+    required this.password,
+    required this.phone,
     required this.region,
     required this.genre,
-    this.photoUrl,
-    this.id,
   });
 
-  // Optional: Add a factory constructor to create from a DateTime string
-  factory User.fromDateString({
-    required String email,
-    String? name,
-    String? prenom,
-    required String dateString,
-    required String region,
-    required String genre,
-    String? photoUrl,
-    String? id,
-  }) {
-    return User(
-      email: email,
-      name: name,
-      prenom: prenom,
-      date: DateTime.parse(dateString),
-      region: region,
-      genre: genre,
-      photoUrl: photoUrl,
-      id: id,
-    );
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'prenom': prenom,
+      'email': email,
+      'date': date,
+      'password': password,
+      'phone': phone,
+      'region': region,
+      'genre': genre,
+    };
   }
 }

@@ -5,20 +5,24 @@ class UserModel extends User {
     required String email,
     String? name,
     String? prenom,
-    required DateTime date,
+    required String date,
+    required phone,
+    required String password,  // Ensure this is required if needed
     required String region,
     required String genre,
     String? photoUrl,
     String? id,
   }) : super(
           email: email,
-          name: name,
-          prenom: prenom,
+          name: name ??"",
+          prenom: prenom??"",
           date: date,
           region: region,
           genre: genre,
-          photoUrl: photoUrl,
-          id: id,
+          
+        
+          phone: phone,
+          password: password, // Pass password to super
         );
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -27,25 +31,24 @@ class UserModel extends User {
       email: json['email'] ?? '',
       name: json['name'],
       prenom: json['prenom'],
-      date: json['date'] != null 
-          ? DateTime.parse(json['date'])
-          : DateTime.now(),
+      date: json['date'],
       region: json['region'] ?? '',
       genre: json['genre'] ?? '',
-      photoUrl: json['photoUrl'],
+      photoUrl: json['photoUrl'], 
+      password: json['password'], phone:json['phone'],  // Assign default empty string for password
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      
       'email': email,
       'name': name,
       'prenom': prenom,
-      'date': date.toIso8601String(),
+      'date': date,
       'region': region,
       'genre': genre,
-      'photoUrl': photoUrl,
+     
     }..removeWhere((key, value) => value == null); // Remove null values
   }
 
@@ -54,11 +57,12 @@ class UserModel extends User {
     String? email,
     String? name,
     String? prenom,
-    DateTime? date,
+    String? date,
     String? region,
     String? genre,
     String? photoUrl,
     String? id,
+    String? password,  // Optional password parameter
   }) {
     return UserModel(
       email: email ?? this.email,
@@ -67,8 +71,8 @@ class UserModel extends User {
       date: date ?? this.date,
       region: region ?? this.region,
       genre: genre ?? this.genre,
-      photoUrl: photoUrl ?? this.photoUrl,
-      id: id ?? this.id,
+   
+      password: password ?? this.password, phone: phone,  // Use the existing password if not provided
     );
   }
 }

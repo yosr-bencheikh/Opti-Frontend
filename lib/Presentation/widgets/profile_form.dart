@@ -22,6 +22,7 @@ class ProfileForm extends StatelessWidget {
         TextEditingController(text: user.date.toString().split(' ')[0]);
     String _selectedRegion = user.region;
     String _selectedGenre = user.genre;
+    DateTime userDate = DateTime.parse(user.date);
 
     return Form(
       key: _formKey,
@@ -59,7 +60,7 @@ class ProfileForm extends StatelessWidget {
             onTap: () async {
               DateTime? pickedDate = await showDatePicker(
                 context: context,
-                initialDate: user.date,
+                initialDate: userDate,
                 firstDate: DateTime(1900),
                 lastDate: DateTime.now(),
               );
@@ -115,16 +116,27 @@ class ProfileForm extends StatelessWidget {
           ElevatedButton(
             onPressed: () {
               if (_formKey.currentState!.validate()) {
-                onSave(User(
-                  email: _emailController.text,
-                  name: _nomController.text,
-                  prenom: _prenomController.text,
-                  date: DateTime.parse(_dateNaissanceController.text),
-                  region: _selectedRegion,
-                  genre: _selectedGenre,
-                  id: user.id,
-                  photoUrl: user.photoUrl,
-                ));
+                try {
+                  // Convert the date string into a DateTime object
+                  String selectedDate = _dateNaissanceController.text;
+
+                  // Create a new User with the updated data
+                  onSave(User(
+                    email: _emailController.text,
+                    name: _nomController.text,
+                    prenom: _prenomController.text,
+                    date: selectedDate, // Pass the DateTime object
+                    region: _selectedRegion,
+                    genre: _selectedGenre,
+                    password: '',
+                    phone: '',
+                  ));
+                } catch (e) {
+                  // Handle error if the date format is incorrect
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Format de date invalide")),
+                  );
+                }
               }
             },
             child: const Text("Enregistrer"),
