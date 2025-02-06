@@ -7,6 +7,10 @@ abstract class AuthRemoteDataSource {
   Future<String> loginWithEmail(String email, String password);
   Future<String> loginWithGoogle(String token);
   Future<void> signUp(User user);
+
+   Future<void> sendCodeToEmail(String email);
+  Future<void> verifyCode(String email, String code);
+  Future<void> resetPassword(String email, String password);
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -90,4 +94,47 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       throw ServerFailure(e.toString());
     }
   }
+
+   @override
+  Future<void> sendCodeToEmail(String email) async {
+    final url = Uri.parse('http://localhost:3000/api/forgot-password');
+    final response = await client.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({'email': email}),
+    );
+
+    if (response.statusCode != 200) {
+      throw ServerFailure('Failed to send code');
+    }
+  }
+
+  @override
+  Future<void> verifyCode(String email, String code) async {
+    final url = Uri.parse('http://localhost:3000/api/verify-code');
+    final response = await client.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({'email': email, 'code': code}),
+    );
+
+    if (response.statusCode != 200) {
+      throw ServerFailure('Invalid or expired code');
+    }
+  }
+
+  @override
+  Future<void> resetPassword(String email, String password) async {
+    final url = Uri.parse('http://localhost:3000/api/reset-password');
+    final response = await client.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({'email': email, 'password': password}),
+    );
+
+    if (response.statusCode != 200) {
+      throw ServerFailure('Failed to reset password');
+    }
+  }
+
 }

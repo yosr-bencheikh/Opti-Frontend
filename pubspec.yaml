@@ -34,6 +34,7 @@ dependencies:
   shared_preferences: ^2.0.15
   flutter_facebook_auth: ^5.0.0  # Vérifiez si une version plus récente est disponible
   google_sign_in: ^6.1.6
+  dartz: ^0.10.1
 
 
   # The following adds the Cupertino Icons font to your application.
