@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:opti_app/Presentation/utils/jwt_utils.dart';
-import 'package:opti_app/Presentation/utils/validators.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:opti_app/Presentation/utils/jwt_utils.dart'; // Ensure this exists
+import 'package:opti_app/Presentation/utils/validators.dart'; // Ensure this exists
 import 'package:opti_app/data/data_sources/auth_remote_datasource.dart';
 import 'package:opti_app/domain/repositories/auth_repository_impl.dart';
 import 'package:opti_app/domain/usecases/login_with_email.dart';
 import 'package:opti_app/domain/usecases/login_with_google.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -66,7 +65,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final token = await _loginWithEmailUseCase.execute(email, password);
-      final userId = JwtUtils.getUserId(token);
+      final userId = JwtUtils.getUserId(token); // Ensure JwtUtils is defined
       await _storeToken(token);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Login Successful')),
@@ -74,7 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
       Navigator.pushReplacementNamed(
         context,
         '/profileScreen',
-        arguments: userId, // Pass user ID to home screen
+        arguments: userId, // Pass user ID to the next screen
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(

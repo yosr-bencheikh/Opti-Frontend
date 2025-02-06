@@ -50,7 +50,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   Future<void> _selectDate() async {
     DateTime? pickedDate = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
+      initialDate: DateTime(2000),
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
     );
@@ -106,31 +106,44 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 20),
-                _buildTextField(
-                  controller: nameController,
-                  label: "Nom",
-                  hint: "Entrez votre nom",
-                  icon: Icons.person,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Veuillez entrer votre nom';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 10),
-                _buildTextField(
-                  controller: prenomController,
-                  label: "Prénom",
-                  hint: "Entrez votre prénom",
-                  icon: Icons.person_outline,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Veuillez entrer votre prénom';
-                    }
-                    return null;
-                  },
-                ),
+              _buildTextField(
+  controller: nameController,
+  label: "Nom",
+  hint: "Entrez votre nom",
+  icon: Icons.person,
+  validator: (value) {
+    if (value == null || value.isEmpty) {
+      return 'Veuillez entrer votre nom';
+    } else if (!RegExp(r'^[A-Za-zÀ-ÖØ-öø-ÿ\s-]+$').hasMatch(value)) {
+      return 'Le nom ne doit contenir que des lettres';
+    } else if (value.length < 2) {
+      return 'Le nom doit contenir au moins 2 caractères';
+    } else if (value.startsWith(' ') || value.endsWith(' ')) {
+      return 'Le nom ne doit pas commencer ou finir par un espace';
+    }
+    return null;
+  },
+),
+const SizedBox(height: 10),
+_buildTextField(
+  controller: prenomController,
+  label: "Prénom",
+  hint: "Entrez votre prénom",
+  icon: Icons.person_outline,
+  validator: (value) {
+    if (value == null || value.isEmpty) {
+      return 'Veuillez entrer votre prénom';
+    } else if (!RegExp(r'^[A-Za-zÀ-ÖØ-öø-ÿ\s-]+$').hasMatch(value)) {
+      return 'Le prénom ne doit contenir que des lettres';
+    } else if (value.length < 2) {
+      return 'Le prénom doit contenir au moins 2 caractères';
+    } else if (value.startsWith(' ') || value.endsWith(' ')) {
+      return 'Le prénom ne doit pas commencer ou finir par un espace';
+    }
+    return null;
+  },
+),
+
                 const SizedBox(height: 10),
                 _buildTextField(
                   controller: emailController,
@@ -161,6 +174,31 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         if (value == null || value.isEmpty) {
                           return 'Veuillez entrer votre date de naissance';
                         }
+                        List<String> dateParts = value.split('/');
+                        if (dateParts.length != 3) {
+                          return 'Format invalide (JJ/MM/AAAA)';
+                        }
+
+                        int? day = int.tryParse(dateParts[0]);
+                        int? month = int.tryParse(dateParts[1]);
+                        int? year = int.tryParse(dateParts[2]);
+
+                        if (day == null || month == null || year == null) {
+                          return 'Date invalide';
+                        }
+
+                        DateTime birthDate;
+                        try {
+                          birthDate = DateTime(year, month, day);
+                        } catch (e) {
+                          return 'Date invalide';
+                        }
+
+                        DateTime now = DateTime.now();
+                        if (birthDate.isAfter(now) || birthDate.year < 1900) {
+                          return 'Veuillez entrer une date réaliste';
+                        }
+
                         return null;
                       },
                     ),
@@ -178,6 +216,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       return 'Veuillez entrer un mot de passe';
                     } else if (value.length < 6) {
                       return 'Le mot de passe doit comporter au moins 6 caractères';
+                    } else if (!RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_])')
+                        .hasMatch(value)) {
+                      return 'Doit contenir une majuscule, une minuscule, un chiffre et un caractère spécial';
                     }
                     return null;
                   },
@@ -308,8 +349,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
         ),
         filled: true,
         fillColor: Colors.grey[100],
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
       ),
       validator: validator,
     );
