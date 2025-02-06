@@ -36,47 +36,50 @@ void initState() {
 
 
  Future<void> loginUser() async {
-   final email = emailController.text.trim();
-   final password = passwordController.text.trim();
+  final email = emailController.text.trim();
+  final password = passwordController.text.trim();
 
-   if (email.isEmpty || password.isEmpty) {
-     ScaffoldMessenger.of(context).showSnackBar(
-       const SnackBar(content: Text('Please fill in all fields')),
-     );
-     return;
-   }
+  print("Email: $email");
+  print("Password: $password");  // Debugging the password
 
-   if (!Validators.isValidEmail(email)) {
-     ScaffoldMessenger.of(context).showSnackBar(
-       const SnackBar(content: Text('Please enter a valid email')),
-     );
-     return;
-   }
+  if (email.isEmpty || password.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Please fill in all fields')),
+    );
+    return;
+  }
 
-   if (!Validators.isValidPassword(password)) {
-     ScaffoldMessenger.of(context).showSnackBar(
-       const SnackBar(content: Text('Password must be at least 8 characters long and contain both letters and numbers')),
-     );
-     return;
-   }
+  if (!Validators.isValidEmail(email)) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Please enter a valid email')),
+    );
+    return;
+  }
 
-   setState(() => _isLoading = true);
+  if (!Validators.isValidPassword(password)) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Password must be at least 8 characters long and contain both letters and numbers')),
+    );
+    return;
+  }
 
-   try {
-     final token = await _loginWithEmailUseCase.execute(email, password);
-     await _storeToken(token);
-     ScaffoldMessenger.of(context).showSnackBar(
-       const SnackBar(content: Text('Login Successful')),
-     );
-     Navigator.pushReplacementNamed(context, '/home');
-   } catch (e) {
-     ScaffoldMessenger.of(context).showSnackBar(
-       SnackBar(content: Text(e.toString())),
-     );
-   } finally {
-     setState(() => _isLoading = false);
-   }
- }
+  setState(() => _isLoading = true);
+
+  try {
+    final token = await _loginWithEmailUseCase.execute(email, password);
+    await _storeToken(token);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Login Successful')),
+    );
+    Navigator.pushReplacementNamed(context, '/home');
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(e.toString())),
+    );
+  } finally {
+    setState(() => _isLoading = false);
+  }
+}
 
  Future<void> googleLogin() async {
    try {
