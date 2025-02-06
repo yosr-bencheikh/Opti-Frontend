@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:opti_app/data/data_sources/auth_remote_datasource.dart';
 import 'package:opti_app/domain/entities/user.dart';
 import 'package:opti_app/domain/repositories/auth_repository_impl.dart';
-import 'SignUpScreen2.dart';
 import 'package:http/http.dart' as http;
 
 class SignUpScreen extends StatefulWidget {

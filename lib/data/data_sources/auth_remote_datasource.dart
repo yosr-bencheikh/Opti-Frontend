@@ -17,7 +17,8 @@ abstract class AuthRemoteDataSource {
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   final http.Client client;
   final String baseUrl = 'http://127.0.0.1:3000/api';
-
+  static String? verifiedEmail; // Made static
+  static String? verificationCode;
   AuthRemoteDataSourceImpl({required this.client});
 
   @override
@@ -131,29 +132,68 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   @override
   Future<void> verifyCode(String email, String code) async {
-    final url = Uri.parse('http://localhost:3000/api/verify-code');
-    final response = await client.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode({'email': email, 'code': code}),
-    );
+    final url = Uri.parse('$baseUrl/verify-code');
+    try {
+      final response = await client.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'email': email, 'code': code}),
+      );
 
-    if (response.statusCode != 200) {
-      throw ServerFailure('Invalid or expired code');
+      print('Verify Code Response: ${response.body}');
+      print('Status Code: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        verifiedEmail = email;
+        verificationCode = code;
+        print(
+            'Verification State Set - Email: $verifiedEmail, Code: $verificationCode');
+      } else {
+        throw ServerFailure('Invalid or expired code');
+      }
+    } catch (e) {
+      print('Verification Error: $e');
+      throw ServerFailure(e.toString());
     }
   }
 
   @override
   Future<void> resetPassword(String email, String password) async {
-    final url = Uri.parse('http://localhost:3000/api/reset-password');
-    final response = await client.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode({'email': email, 'password': password}),
-    );
+    print('Reset Password - Current State:');
+    print('Verified Email: $verifiedEmail');
+    print('Verification Code: $verificationCode');
+    print('Requested Email: $email');
 
-    if (response.statusCode != 200) {
-      throw ServerFailure('Failed to reset password');
+    if (verifiedEmail != email) {
+      throw ServerFailure('Please verify your code first');
+    }
+
+    final url = Uri.parse('$baseUrl/reset-password');
+    try {
+      final response = await client.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'email': email,
+          'newPassword': password,
+          'code': verificationCode,
+        }),
+      );
+
+      print('Reset Password Response: ${response.body}');
+      print('Status Code: ${response.statusCode}');
+
+      if (response.statusCode != 200) {
+        final responseData = json.decode(response.body);
+        throw ServerFailure(
+            responseData['message'] ?? 'Failed to reset password');
+      }
+
+      verifiedEmail = null;
+      verificationCode = null;
+    } catch (e) {
+      print('Reset Password Error: $e');
+      throw ServerFailure(e.toString());
     }
   }
 }
