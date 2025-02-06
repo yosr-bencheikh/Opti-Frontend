@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'SignUpScreen2.dart'; // Assurez-vous d'importer le deuxième écran
+import 'package:opti_app/domain/entities/user.dart';
+import 'SignUpScreen2.dart'; 
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({Key? key}) : super(key: key);
@@ -181,39 +182,30 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
                 const SizedBox(height: 20),
                 ElevatedButton(
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => SignUpScreen2(
-                            nom: nameController.text,
-                            prenom: prenomController.text,
-                            email: emailController.text,
-                            date: dateController.text,
-                            password: passwordController.text,
-                          ),
-                        ),
-                      );
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    backgroundColor: Colors.blueAccent,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    elevation: 5,
-                  ),
-                  child: const Text(
-                    "Continuer",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
+  onPressed: () {
+    if (_formKey.currentState!.validate()) {
+      User newUser = User(
+        nom: nameController.text,
+        prenom: prenomController.text,
+        email: emailController.text,
+        date: dateController.text,
+        password: passwordController.text,
+      );
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => SignUpScreen2(user: newUser),
+        ),
+      );
+    }
+  },
+  style: ElevatedButton.styleFrom(
+    padding: const EdgeInsets.symmetric(vertical: 15),
+  ),
+  child: const Text("continuer"),
+),
+
               ],
             ),
           ),

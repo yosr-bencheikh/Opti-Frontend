@@ -1,22 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:opti_app/data/data_sources/auth_remote_datasource.dart';
+
+import 'package:opti_app/domain/entities/user.dart';
+import 'package:opti_app/domain/repositories/auth_repository.dart';
+import 'package:opti_app/domain/repositories/auth_repository_impl.dart';
 
 class SignUpScreen2 extends StatefulWidget {
-  final String nom;
-  final String prenom;
-  final String email;
-  final String date;
-  final String password;
+  final User user;
 
-  const SignUpScreen2({
-    Key? key,
-    required this.nom,
-    required this.prenom,
-    required this.email,
-    required this.date,
-    required this.password,
-  }) : super(key: key);
+ const SignUpScreen2({Key? key, required this.user}) : super(key: key);
+  
 
   @override
   _SignUpScreen2State createState() => _SignUpScreen2State();
@@ -26,50 +20,43 @@ class _SignUpScreen2State extends State<SignUpScreen2> {
   final phoneController = TextEditingController();
   final regionController = TextEditingController();
   final genderController = TextEditingController();
+  late final AuthRepository _authRepository;
+
+@override
+void initState() {
+  super.initState();
+  _authRepository = AuthRepositoryImpl(
+    AuthRemoteDataSourceImpl(client: http.Client()), // Pass as a positional argument
+  );
+}
+
+
 
   Future<void> signUpUser() async {
-    final phone = phoneController.text;
-    final region = regionController.text;
-    final gender = genderController.text;
-
-    // Validation des champs
-    if (phone.isEmpty || region.isEmpty || gender.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tous les champs doivent être remplis')),
+    try {
+      final updatedUser = User(
+        nom: widget.user.nom,
+        prenom: widget.user.prenom,
+        email: widget.user.email,
+        date: widget.user.date,
+        password: widget.user.password,
+        phone: phoneController.text,
+        region: regionController.text,
+        gender: genderController.text,
       );
-      return;
-    }
 
-    // Envoi des données au serveur
-    final url = Uri.parse('http://localhost:3000/api/users'); // Remplacez l'URL par celle de votre backend
-    final response = await http.post(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: json.encode({
-        'nom': widget.nom,
-        'prenom': widget.prenom,
-        'email': widget.email,
-        'date': widget.date,
-        'password': widget.password,
-        'phone': phone,
-        'region': region,
-        'gender': gender,
-      }),
-    );
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
+      await _authRepository.signUp(updatedUser);
+      
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Inscription réussie')),
       );
-      // Naviguer vers une autre page si nécessaire
-    } else {
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Erreur d\'inscription')),
+        SnackBar(content: Text('Erreur d\'inscription: ${e.toString()}')),
       );
     }
   }
+
 
   @override
   Widget build(BuildContext context) {

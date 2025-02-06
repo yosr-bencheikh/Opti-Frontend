@@ -1,7 +1,21 @@
 class User {
+  final String nom;
+  final String prenom;
   final String email;
-  final String? name;
-  final String? photoUrl;
+  final String date;
+  final String password;
+  final String? phone;
+  final String? region;
+  final String? gender;
 
-  User({required this.email, this.name, this.photoUrl});
+  User({
+    required this.nom,
+    required this.prenom,
+    required this.email,
+    required this.date,
+    required this.password,
+    this.phone,
+    this.region,
+    this.gender,
+  });
 }

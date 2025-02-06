@@ -1,4 +1,5 @@
 import 'package:opti_app/data/data_sources/auth_remote_datasource.dart';
+import 'package:opti_app/domain/entities/user.dart';
 
 import '../../domain/repositories/auth_repository.dart';
 
@@ -15,5 +16,10 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<String> loginWithGoogle(String token) {
     return dataSource.loginWithGoogle(token);
+  }
+
+  @override
+  Future<void> signUp(User user) async {
+    await dataSource.signUp(user);
   }
 }

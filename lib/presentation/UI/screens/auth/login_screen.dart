@@ -26,13 +26,14 @@ class _LoginScreenState extends State<LoginScreen> {
  late final LoginWithEmailUseCase _loginWithEmailUseCase;
  late final LoginWithGoogleUseCase _loginWithGoogleUseCase;
 
- @override
- void initState() {
-   super.initState();
-   final authRepository = AuthRepositoryImpl(AuthRemoteDataSource());
-   _loginWithEmailUseCase = LoginWithEmailUseCase(authRepository);
-   _loginWithGoogleUseCase = LoginWithGoogleUseCase(authRepository);
- }
+@override
+void initState() {
+  super.initState();
+  final authRepository = AuthRepositoryImpl(AuthRemoteDataSourceImpl(client: http.Client()));
+  _loginWithEmailUseCase = LoginWithEmailUseCase(authRepository);
+  _loginWithGoogleUseCase = LoginWithGoogleUseCase(authRepository);
+}
+
 
  Future<void> loginUser() async {
    final email = emailController.text.trim();
