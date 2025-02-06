@@ -32,14 +32,15 @@ dependencies:
     sdk: flutter
   http: ^0.13.0
   shared_preferences: ^2.0.15
-  flutter_facebook_auth: ^5.0.0  # Vérifiez si une version plus récente est disponible
+  flutter_facebook_auth: ^5.0.0 # Vérifiez si une version plus récente est disponible
   google_sign_in: ^6.1.6
-
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   equatable: ^2.0.7
+  provider: ^6.0.5
+  jwt_decoder: ^2.0.1
 
 dev_dependencies:
   flutter_test:
