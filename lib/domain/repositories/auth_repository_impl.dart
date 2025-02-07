@@ -31,7 +31,7 @@ class AuthRepositoryImpl implements AuthRepository, UserRepository {
   @override
   Future<void> updateUser(String userId, User user) async {
     if (user is UserModel) {
-      await dataSource.updateUser(userId, user.toJson());
+      await dataSource.updateUser(userId, user);
     } else {
       throw Exception('User must be a UserModel instance');
     }

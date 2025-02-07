@@ -8,7 +8,7 @@ abstract class AuthRemoteDataSource {
   Future<String> loginWithGoogle(String token);
   Future<void> signUp(User user);
   Future<Map<String, dynamic>> getUser(String userId);
-  Future<void> updateUser(String userId, Map<String, dynamic> userData);
+  Future<void> updateUser(String userId, User userData);
   Future<void> sendCodeToEmail(String email);
   Future<void> verifyCode(String email, String code);
   Future<void> resetPassword(String email, String password);
@@ -119,11 +119,12 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     throw Exception('Failed to load user');
   }
 
-  Future<void> updateUser(String userId, Map<String, dynamic> userData) async {
+ 
+    Future<void> updateUser(String userId, User user)  async {
     final response = await http.put(
       Uri.parse('$baseUrl/users/$userId'),
       headers: {'Content-Type': 'application/json'},
-      body: json.encode(userData),
+      body: json.encode(user),
     );
     if (response.statusCode != 200) {
       throw Exception('Failed to update user');

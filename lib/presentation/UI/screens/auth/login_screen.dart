@@ -45,22 +45,6 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    if (!Validators.isValidEmail(email)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid email')),
-      );
-      return;
-    }
-
-    if (!Validators.isValidPassword(password)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text(
-                'Password must be at least 8 characters long and contain both letters and numbers')),
-      );
-      return;
-    }
-
     setState(() => _isLoading = true);
 
     try {
