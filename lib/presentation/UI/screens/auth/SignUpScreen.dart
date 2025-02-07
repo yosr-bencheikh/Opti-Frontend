@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:opti_app/Presentation/UI/Screens/Auth/profile_screen.dart';
 import 'package:opti_app/data/data_sources/auth_remote_datasource.dart';
 import 'package:opti_app/domain/entities/user.dart';
 import 'package:opti_app/domain/repositories/auth_repository_impl.dart';
 import 'package:http/http.dart' as http;
+// Make sure to import your ProfileScreen (adjust the path as needed)
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({Key? key}) : super(key: key);
@@ -25,9 +27,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final phoneController = TextEditingController();
 
   final _formKey = GlobalKey<FormState>();
-  var _authRepository = AuthRepositoryImpl(
-    AuthRemoteDataSourceImpl(
-        client: http.Client()), // Pass as a positional argument
+  final AuthRepositoryImpl _authRepository = AuthRepositoryImpl(
+    AuthRemoteDataSourceImpl(client: http.Client()),
   );
 
   @override
@@ -39,7 +40,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
     passwordController.dispose();
     confirmPasswordController.dispose();
 
-    // Dispose of new controllers
     regionController.dispose();
     genreController.dispose();
     phoneController.dispose();
@@ -47,6 +47,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     super.dispose();
   }
 
+  /// This method shows a date picker and formats the selected date as "YYYY-MM-DD"
   Future<void> _selectDate() async {
     DateTime? pickedDate = await showDatePicker(
       context: context,
@@ -57,8 +58,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
     if (pickedDate != null) {
       setState(() {
+        // Format the date as "YYYY-MM-DD"
         dateController.text =
-            "${pickedDate.year}/${pickedDate.day}/${pickedDate.month}";
+            "${pickedDate.year}-${pickedDate.month.toString().padLeft(2, '0')}-${pickedDate.day.toString().padLeft(2, '0')}";
       });
     }
   }
@@ -169,37 +171,32 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     child: _buildTextField(
                       controller: dateController,
                       label: "Date de naissance",
-                      hint: "JJ/MM/AAAA",
+                      hint: "YYYY-MM-DD",
                       icon: Icons.calendar_today,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Veuillez entrer votre date de naissance';
                         }
-                        List<String> dateParts = value.split('/');
+                        List<String> dateParts = value.split('-');
                         if (dateParts.length != 3) {
-                          return 'Format invalide (JJ/MM/AAAA)';
+                          return 'Format invalide (YYYY-MM-DD)';
                         }
-
-                        int? day = int.tryParse(dateParts[2]);
-                        int? month = int.tryParse(dateParts[1]);
                         int? year = int.tryParse(dateParts[0]);
-
-                        if (day == null || month == null || year == null) {
+                        int? month = int.tryParse(dateParts[1]);
+                        int? day = int.tryParse(dateParts[2]);
+                        if (year == null || month == null || day == null) {
                           return 'Date invalide';
                         }
-
                         DateTime birthDate;
                         try {
                           birthDate = DateTime(year, month, day);
                         } catch (e) {
                           return 'Date invalide';
                         }
-
                         DateTime now = DateTime.now();
                         if (birthDate.isAfter(now) || birthDate.year < 1900) {
                           return 'Veuillez entrer une date réaliste';
                         }
-
                         return null;
                       },
                     ),
@@ -285,19 +282,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   onPressed: () async {
                     if (_formKey.currentState!.validate()) {
                       try {
-                        // Convert "DD/MM/YYYY" to "YYYY-MM-DD"
-                        List<String> dateParts = dateController.text.split('/');
+                        // The date is already in the "YYYY-MM-DD" format
+                        List<String> dateParts = dateController.text.split('-');
                         if (dateParts.length == 3) {
                           String formattedDate =
-                              "${dateParts[2]}-${dateParts[1]}-${dateParts[0]}";
+                              "${dateParts[0]}-${dateParts[1]}-${dateParts[2]}";
 
-                          // Create User object with correctly formatted string date
+                          // Create User object with the correctly formatted date
                           User newUser = User(
                             name: nameController.text,
                             prenom: prenomController.text,
                             email: emailController.text,
-                            date:
-                                formattedDate, // Keep as string in "YYYY-MM-DD" format
+                            date: formattedDate,
                             password: passwordController.text,
                             region: regionController.text,
                             genre: genreController.text,
@@ -305,11 +301,22 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           );
 
                           await _authRepository.signUp(newUser);
+
+                          // Show a success message
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text("Inscription réussie!")),
+                          );
+
+                          // Navigate to ProfileScreen (replace the current page)
+                          Navigator.pushReplacementNamed(
+                            context,
+                            '/profileScreen',
+                          );
                         } else {
                           throw FormatException("Invalid date format");
                         }
                       } catch (e) {
-                        // Handle invalid date errors
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                               content: Text("Format de date invalide")),
