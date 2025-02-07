@@ -58,7 +58,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     if (pickedDate != null) {
       setState(() {
         dateController.text =
-            "${pickedDate.year}/${pickedDate.day}/${pickedDate.month}";
+            "${pickedDate.day}/${pickedDate.month}/${pickedDate.year}";
       });
     }
   }
@@ -106,45 +106,44 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 20),
-                _buildTextField(
-                  controller: nameController,
-                  label: "Nom",
-                  hint: "Entrez votre nom",
-                  icon: Icons.person,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Veuillez entrer votre nom';
-                    } else if (!RegExp(r'^[A-Za-zÀ-ÖØ-öø-ÿ\s-]+$')
-                        .hasMatch(value)) {
-                      return 'Le nom ne doit contenir que des lettres';
-                    } else if (value.length < 2) {
-                      return 'Le nom doit contenir au moins 2 caractères';
-                    } else if (value.startsWith(' ') || value.endsWith(' ')) {
-                      return 'Le nom ne doit pas commencer ou finir par un espace';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 10),
-                _buildTextField(
-                  controller: prenomController,
-                  label: "Prénom",
-                  hint: "Entrez votre prénom",
-                  icon: Icons.person_outline,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Veuillez entrer votre prénom';
-                    } else if (!RegExp(r'^[A-Za-zÀ-ÖØ-öø-ÿ\s-]+$')
-                        .hasMatch(value)) {
-                      return 'Le prénom ne doit contenir que des lettres';
-                    } else if (value.length < 2) {
-                      return 'Le prénom doit contenir au moins 2 caractères';
-                    } else if (value.startsWith(' ') || value.endsWith(' ')) {
-                      return 'Le prénom ne doit pas commencer ou finir par un espace';
-                    }
-                    return null;
-                  },
-                ),
+              _buildTextField(
+  controller: nameController,
+  label: "Nom",
+  hint: "Entrez votre nom",
+  icon: Icons.person,
+  validator: (value) {
+    if (value == null || value.isEmpty) {
+      return 'Veuillez entrer votre nom';
+    } else if (!RegExp(r'^[A-Za-zÀ-ÖØ-öø-ÿ\s-]+$').hasMatch(value)) {
+      return 'Le nom ne doit contenir que des lettres';
+    } else if (value.length < 2) {
+      return 'Le nom doit contenir au moins 2 caractères';
+    } else if (value.startsWith(' ') || value.endsWith(' ')) {
+      return 'Le nom ne doit pas commencer ou finir par un espace';
+    }
+    return null;
+  },
+),
+const SizedBox(height: 10),
+_buildTextField(
+  controller: prenomController,
+  label: "Prénom",
+  hint: "Entrez votre prénom",
+  icon: Icons.person_outline,
+  validator: (value) {
+    if (value == null || value.isEmpty) {
+      return 'Veuillez entrer votre prénom';
+    } else if (!RegExp(r'^[A-Za-zÀ-ÖØ-öø-ÿ\s-]+$').hasMatch(value)) {
+      return 'Le prénom ne doit contenir que des lettres';
+    } else if (value.length < 2) {
+      return 'Le prénom doit contenir au moins 2 caractères';
+    } else if (value.startsWith(' ') || value.endsWith(' ')) {
+      return 'Le prénom ne doit pas commencer ou finir par un espace';
+    }
+    return null;
+  },
+),
+
                 const SizedBox(height: 10),
                 _buildTextField(
                   controller: emailController,
@@ -180,9 +179,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           return 'Format invalide (JJ/MM/AAAA)';
                         }
 
-                        int? day = int.tryParse(dateParts[2]);
+                        int? day = int.tryParse(dateParts[0]);
                         int? month = int.tryParse(dateParts[1]);
-                        int? year = int.tryParse(dateParts[0]);
+                        int? year = int.tryParse(dateParts[2]);
 
                         if (day == null || month == null || year == null) {
                           return 'Date invalide';
@@ -217,8 +216,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       return 'Veuillez entrer un mot de passe';
                     } else if (value.length < 6) {
                       return 'Le mot de passe doit comporter au moins 6 caractères';
-                    } else if (!RegExp(
-                            r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_])')
+                    } else if (!RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_])')
                         .hasMatch(value)) {
                       return 'Doit contenir une majuscule, une minuscule, un chiffre et un caractère spécial';
                     }
@@ -305,6 +303,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           );
 
                           await _authRepository.signUp(newUser);
+                        
                         } else {
                           throw FormatException("Invalid date format");
                         }
