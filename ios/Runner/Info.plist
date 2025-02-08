@@ -2,12 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <key>GoogleSignIn</key>
-<dict>
-    <key>ClientID</key>
-    <string>YOUR_CLIENT_ID</string>
-</dict>
 
 <dict>
+<key>ClientID</key>
+    <string>95644263598-f0kl6h2bh00hcng322rn4a57dj5ubgje.apps.googleusercontent.com</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
