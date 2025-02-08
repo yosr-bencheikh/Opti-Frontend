@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:opti_app/Presentation/utils/jwt_utils.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/profile_screen.dart';
 import 'package:opti_app/data/data_sources/auth_remote_datasource.dart';
 import 'package:opti_app/domain/entities/user.dart';
 import 'package:opti_app/domain/repositories/auth_repository_impl.dart';
 import 'package:http/http.dart' as http;
-// Make sure to import your ProfileScreen (adjust the path as needed)
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({Key? key}) : super(key: key);
-
+  
   @override
   _SignUpScreenState createState() => _SignUpScreenState();
 }
@@ -39,15 +40,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
     dateController.dispose();
     passwordController.dispose();
     confirmPasswordController.dispose();
-
     regionController.dispose();
     genreController.dispose();
     phoneController.dispose();
-
     super.dispose();
   }
 
-  /// This method shows a date picker and formats the selected date as "YYYY-MM-DD"
+  /// Shows a date picker and formats the selected date as "YYYY-MM-DD"
   Future<void> _selectDate() async {
     DateTime? pickedDate = await showDatePicker(
       context: context,
@@ -55,14 +54,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
     );
-
     if (pickedDate != null) {
       setState(() {
-        // Format the date as "YYYY-MM-DD"
         dateController.text =
             "${pickedDate.year}-${pickedDate.month.toString().padLeft(2, '0')}-${pickedDate.day.toString().padLeft(2, '0')}";
       });
     }
+  }
+
+  /// Store the token in shared preferences
+  Future<void> _storeToken(String token) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('auth_token', token);
   }
 
   @override
@@ -77,7 +80,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
           ),
         ),
         backgroundColor: Colors.blueAccent,
-        elevation: 0,
         centerTitle: true,
       ),
       body: SingleChildScrollView(
@@ -116,8 +118,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Veuillez entrer votre nom';
-                    } else if (!RegExp(r'^[A-Za-zÀ-ÖØ-öø-ÿ\s-]+$')
-                        .hasMatch(value)) {
+                    } else if (!RegExp(r'^[A-Za-zÀ-ÖØ-öø-ÿ\s-]+$').hasMatch(value)) {
                       return 'Le nom ne doit contenir que des lettres';
                     } else if (value.length < 2) {
                       return 'Le nom doit contenir au moins 2 caractères';
@@ -136,8 +137,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Veuillez entrer votre prénom';
-                    } else if (!RegExp(r'^[A-Za-zÀ-ÖØ-öø-ÿ\s-]+$')
-                        .hasMatch(value)) {
+                    } else if (!RegExp(r'^[A-Za-zÀ-ÖØ-öø-ÿ\s-]+$').hasMatch(value)) {
                       return 'Le prénom ne doit contenir que des lettres';
                     } else if (value.length < 2) {
                       return 'Le prénom doit contenir au moins 2 caractères';
@@ -282,13 +282,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   onPressed: () async {
                     if (_formKey.currentState!.validate()) {
                       try {
-                        // The date is already in the "YYYY-MM-DD" format
                         List<String> dateParts = dateController.text.split('-');
                         if (dateParts.length == 3) {
                           String formattedDate =
                               "${dateParts[0]}-${dateParts[1]}-${dateParts[2]}";
 
-                          // Create User object with the correctly formatted date
+                          // Create the User object
                           User newUser = User(
                             name: nameController.text,
                             prenom: prenomController.text,
@@ -300,26 +299,34 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             phone: phoneController.text,
                           );
 
-                          await _authRepository.signUp(newUser);
+                          // Call signUp and get the returned data containing userId and token
+                          final signupData = await _authRepository.signUp(newUser);
+                     
+                          final token = signupData["token"] as String;
+
+                      
+                           final userId = JwtUtils.getUserId(token); 
+
+                          // Store the token using the same logic as the login screen
+                          await _storeToken(token);
 
                           // Show a success message
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text("Inscription réussie!")),
+                            const SnackBar(content: Text("Inscription réussie!")),
                           );
 
-                          // Navigate to ProfileScreen (replace the current page)
+                          // Navigate to ProfileScreen, passing the userId
                           Navigator.pushReplacementNamed(
                             context,
                             '/profileScreen',
+                            arguments: userId,
                           );
                         } else {
                           throw FormatException("Invalid date format");
                         }
                       } catch (e) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text("Format de date invalide")),
+                          SnackBar(content: Text("Erreur: $e")),
                         );
                       }
                     }

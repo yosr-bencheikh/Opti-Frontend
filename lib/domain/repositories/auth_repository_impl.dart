@@ -37,8 +37,13 @@ class AuthRepositoryImpl implements AuthRepository, UserRepository {
     }
   }
 
-  Future<void> signUp(User user) async {
-    await dataSource.signUp(user);
+  @override
+  Future<Map<String, dynamic>> signUp(User user) async {
+    try {
+      return await dataSource.signUp(user);
+    } catch (e) {
+      throw Exception('signup failed: $e');
+    }
   }
 
   @override
@@ -71,4 +76,14 @@ class AuthRepositoryImpl implements AuthRepository, UserRepository {
       return Left(ServerFailure(e.toString()));
     }
   }
+   @override
+  Future<String> loginWithFacebook(String accessToken) async {
+    try {
+      final token = await dataSource.loginWithFacebook(accessToken);
+      return token;
+    } catch (e) {
+      throw Exception('Repository: Facebook login failed - ${e.toString()}');
+    }
+  }
 }
+

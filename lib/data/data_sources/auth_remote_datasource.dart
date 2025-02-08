@@ -6,7 +6,8 @@ import 'package:opti_app/domain/entities/user.dart';
 abstract class AuthRemoteDataSource {
   Future<String> loginWithEmail(String email, String password);
   Future<String> loginWithGoogle(String token);
-  Future<void> signUp(User user);
+  Future<String> loginWithFacebook(String accessToken);
+  Future<Map<String, dynamic>> signUp(User user);
   Future<Map<String, dynamic>> getUser(String userId);
   Future<void> updateUser(String userId, User userData);
   Future<void> sendCodeToEmail(String email);
@@ -69,9 +70,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   }
 
   @override
-  Future<void> signUp(User user) async {
+  Future<Map<String, dynamic>> signUp(User user) async {
     final url = Uri.parse('$baseUrl/users');
-
     try {
       final response = await client.post(
         url,
@@ -87,13 +87,18 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
           'gender': user.genre,
         }),
       );
-
-      if (response.statusCode != 200 && response.statusCode != 201) {
-        final responseData = json.decode(response.body);
-        throw ServerFailure(responseData['message'] ?? 'Erreur d\'inscription');
+      if (response.statusCode == 201) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        print("SignUp response data: $data");
+        if ( data.containsKey('token')) {
+          return data;
+        } else {
+          throw Exception('Missing  token in response');
+        }
       }
+      throw Exception('Failed to sign up: ${response.body}');
     } catch (e) {
-      throw ServerFailure(e.toString());
+      throw Exception('Error in signUp: $e');
     }
   }
 
@@ -119,8 +124,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     throw Exception('Failed to load user');
   }
 
- 
-    Future<void> updateUser(String userId, User user)  async {
+  Future<void> updateUser(String userId, User user) async {
     final response = await http.put(
       Uri.parse('$baseUrl/users/$userId'),
       headers: {'Content-Type': 'application/json'},
@@ -195,6 +199,23 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     } catch (e) {
       print('Reset Password Error: $e');
       throw ServerFailure(e.toString());
+    }
+  }
+   Future<String> loginWithFacebook(String accessToken) async {
+    try {
+      final response = await client.post(
+        Uri.parse('$baseUrl/facebook-login'),
+        body: {'accessToken': accessToken},
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        return data['token'];
+      } else {
+        throw Exception('Server error: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Network error: ${e.toString()}');
     }
   }
 }

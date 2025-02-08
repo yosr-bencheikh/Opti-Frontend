@@ -7,6 +7,7 @@ import 'package:opti_app/domain/repositories/auth_repository_impl.dart';
 
 class UpdateProfileScreen extends StatefulWidget {
   final String userId;
+  
 
   const UpdateProfileScreen({super.key, required this.userId});
 

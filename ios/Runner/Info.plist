@@ -8,6 +8,7 @@
 </dict>
 
 <dict>
+
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
@@ -50,6 +51,19 @@
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
+	
 	<true/>
+	<key>FacebookAppID</key>
+<string>1304521740805476</string>
+<key>FacebookClientToken</key>
+<string>0f14d7edea3140df0913c5c7ce734710</string>
+<key>FacebookDisplayName</key>
+<string>Your App Name</string>
+<key>LSApplicationQueriesSchemes</key>
+<array>
+    <string>fbapi</string>
+    <string>fb-messenger-share-api</string>
+</array>
+</true>
 </dict>
 </plist>
