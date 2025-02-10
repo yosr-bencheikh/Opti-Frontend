@@ -34,21 +34,18 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
   final AuthRepository _authRepository =
       AuthRepositoryImpl(AuthRemoteDataSourceImpl(client: http.Client()));
 
-  // List of regions for dropdown
-
   // List of genres for dropdown
   final List<String> _genres = ['Homme', 'Femme'];
 
   @override
   void initState() {
     super.initState();
-    // Initialize empty controllers
     _nomController = TextEditingController();
     _prenomController = TextEditingController();
     _emailController = TextEditingController();
     _dateNaissanceController = TextEditingController();
 
-    // Fetch user data
+    // Fetch user data on init
     _loadUserData();
   }
 
@@ -69,24 +66,27 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
         throw Exception('Invalid user ID');
       }
       debugPrint('Fetching user with ID: ${widget.userId}');
-      final user = await _authRepository.getUser("yosrbencheikh28@gmail.com");
+      
+      // Get the user data (JSON map) from the repository
+      final userMap = await _authRepository.getUser(widget.userId);
+      
+      // Convert the map to a User object
+      final user = User.fromJson(userMap);
 
       if (!mounted) return;
 
       setState(() {
         _currentUser = user;
-        // Update controllers with user data
+        // Populate controllers with user data
         _nomController.text = user.nom;
         _prenomController.text = user.prenom;
         _emailController.text = user.email;
         _dateNaissanceController.text = user.date;
         _selectedRegion = user.region;
-        _selectedGenre =
-            user.genre ?? 'Homme'; // Default to 'Homme' if genre is null
+        _selectedGenre = user.genre ?? 'Homme'; // Default to 'Homme' if null
       });
     } catch (e, stackTrace) {
       debugPrint('Error loading user: $e\n$stackTrace');
-
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -113,18 +113,20 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
     });
 
     try {
-      final user = UserModel(
+      // Create a new UserModel with updated information.
+      final updatedUser = UserModel(
         nom: _nomController.text,
         prenom: _prenomController.text,
         email: _emailController.text,
         date: _dateNaissanceController.text,
         region: _selectedRegion ?? '',
         genre: _selectedGenre ?? 'Homme',
-        password: _currentUser!.password,
+        password: _currentUser!.password, // Preserving password
         phone: _currentUser!.phone,
       );
 
-      await _authRepository.updateUser(widget.userId, user);
+      // Call repository to update the user
+      await _authRepository.updateUser(widget.userId, updatedUser);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -133,8 +135,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
             backgroundColor: Colors.green,
           ),
         );
-        Navigator.pop(
-            context, true); // Return true to indicate successful update
+        Navigator.pop(context, true); // Return true to indicate successful update
       }
     } catch (e) {
       if (mounted) {

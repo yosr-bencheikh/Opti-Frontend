@@ -1,14 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:get/get.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
-import 'package:opti_app/domain/usecases/login_with_facebook.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:opti_app/Presentation/utils/jwt_utils.dart';
-import 'package:opti_app/data/data_sources/auth_remote_datasource.dart';
-import 'package:opti_app/domain/repositories/auth_repository_impl.dart';
-import 'package:opti_app/domain/usecases/login_with_email.dart';
-import 'package:opti_app/domain/usecases/login_with_google.dart';
+import 'package:opti_app/Presentation/controllers/auth_controller.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -21,20 +14,10 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final GoogleSignIn _googleSignIn = GoogleSignIn();
-  bool _isLoading = false;
   bool _obscurePassword = true;
 
-  late final LoginWithEmailUseCase _loginWithEmailUseCase;
-  late final LoginWithGoogleUseCase _loginWithGoogleUseCase;
-
-  @override
-  void initState() {
-    super.initState();
-    final authRepository =
-        AuthRepositoryImpl(AuthRemoteDataSourceImpl(client: http.Client()));
-    _loginWithEmailUseCase = LoginWithEmailUseCase(authRepository);
-    _loginWithGoogleUseCase = LoginWithGoogleUseCase(authRepository);
-  }
+  // Get the AuthController instance
+  final AuthController authController = Get.find<AuthController>();
 
   @override
   void dispose() {
@@ -43,87 +26,56 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  Future<void> _storeToken(String token) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('auth_token', token);
+  bool _validateInputs() {
+    if (emailController.text.trim().isEmpty ||
+        passwordController.text.trim().isEmpty) {
+      Get.snackbar(
+        'Error',
+        'Please fill in all fields',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return false;
+    }
+    return true;
   }
 
   Future<void> loginUser() async {
-    if (!_validateInputs()) return;
+    String email = emailController.text.trim();
+    String password = passwordController.text.trim();
 
-    setState(() => _isLoading = true);
-
-    try {
-      final token = await _loginWithEmailUseCase.execute(
-          emailController.text.trim(), passwordController.text.trim());
-
-      final userId = JwtUtils.getUserId(token);
-      await _storeToken(token);
-
-      _showSuccessMessage('Login Successful');
-      Navigator.pushReplacementNamed(context, '/profileScreen',
-          arguments: userId);
-    } catch (e) {
-      // Check specific error types and show an appropriate message
-      String errorMessage;
-      if (e.toString().contains('Email')) {
-        errorMessage = 'Email not found. Please check your email address.';
-      } else if (e.toString().contains('password')) {
-        errorMessage = 'Incorrect password. Please try again.';
-      } else {
-        errorMessage = 'Login Failed: ${e.toString()}';
-      }
-
-      _showErrorMessage(errorMessage);
-    } finally {
-      setState(() => _isLoading = false);
+    if (email.isEmpty || password.isEmpty) {
+      Get.snackbar(
+        'Error',
+        'Please fill in all fields',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
     }
+
+    await authController.loginWithEmail(email, password);
   }
 
-  void _showSuccessMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(message),
-      backgroundColor: Colors.green,
-    ));
-  }
-
-  void _showErrorMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(message),
-      backgroundColor: Colors.red,
-    ));
-  }
-
-  Future<void> googleLogin() async {
-    setState(() => _isLoading = true);
-
+  /*Future<void> googleLogin() async {
     try {
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) return;
 
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
-      final token = await _loginWithGoogleUseCase.execute(googleAuth.idToken!);
-
-      await _storeToken(token);
-      _showSuccessMessage('Google Login Successful');
-      Navigator.pushReplacementNamed(context, '/home');
+      
+      // Use your Google login implementation from AuthController
+      await authController.loginWithGoogle(googleAuth.idToken!);
     } catch (e) {
-      _showErrorMessage(e.toString());
-    } finally {
-      setState(() => _isLoading = false);
+      Get.snackbar(
+        'Error',
+        e.toString(),
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
     }
   }
-
-  bool _validateInputs() {
-    if (emailController.text.trim().isEmpty ||
-        passwordController.text.trim().isEmpty) {
-      _showErrorMessage('Please fill in all fields');
-      return false;
-    }
-    return true;
-  }
-
+*/
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -214,31 +166,34 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       const SizedBox(height: 30),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : loginUser,
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 15),
-                            backgroundColor: Colors.blue,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8.0),
-                            ),
-                          ),
-                          child: _isLoading
-                              ? const CircularProgressIndicator(
-                                  color: Colors.white)
-                              : const Text(
-                                  'Login',
-                                  style: TextStyle(
-                                      fontSize: 18, color: Colors.white),
+                      Obx(() => SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: authController.isLoading.value
+                                  ? null
+                                  : loginUser,
+                              style: ElevatedButton.styleFrom(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 15),
+                                backgroundColor: Colors.blue,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8.0),
                                 ),
-                        ),
-                      ),
+                              ),
+                              child: authController.isLoading.value
+                                  ? const CircularProgressIndicator(
+                                      color: Colors.white)
+                                  : const Text(
+                                      'Login',
+                                      style: TextStyle(
+                                          fontSize: 18, color: Colors.white),
+                                    ),
+                            ),
+                          )),
                       const SizedBox(height: 20),
                       TextButton(
                         onPressed: () {
-                          Navigator.pushNamed(context, '/ForgotPasswordScreen');
+                          Get.toNamed('/ForgotPasswordScreen');
                         },
                         child: const Text(
                           'Forgot Password?',
@@ -256,7 +211,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         children: [
                           Expanded(
                             child: ElevatedButton.icon(
-                              onPressed: googleLogin,
+                              onPressed: () {},
                               icon: const Icon(Icons.login),
                               label: const Text('Google'),
                               style: ElevatedButton.styleFrom(
@@ -290,7 +245,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 20),
                       TextButton(
                         onPressed: () {
-                          Navigator.pushNamed(context, '/signup');
+                          Get.toNamed('/signup');
                         },
                         child: const Text(
                           'Don\'t have an account? Sign up',

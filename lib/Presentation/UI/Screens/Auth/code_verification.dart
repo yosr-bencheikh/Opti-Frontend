@@ -1,27 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http; // Import the http package
-import 'package:opti_app/Presentation/UI/screens/auth/reset_password.dart';
-import 'package:opti_app/domain/repositories/auth_repository.dart';
-import 'package:opti_app/domain/usecases/reset_password.dart';
-import 'package:opti_app/domain/usecases/verify_code.dart';
-import 'package:opti_app/data/data_sources/auth_remote_datasource.dart';
-import 'package:opti_app/domain/repositories/auth_repository_impl.dart';
+import 'package:get/get.dart';
+import 'package:opti_app/Presentation/UI/Screens/Auth/reset_password.dart';
+import 'package:opti_app/Presentation/controllers/auth_controller.dart';
 
 class EnterCodeScreen extends StatelessWidget {
   final String email;
   final TextEditingController codeController = TextEditingController();
-  final VerifyCode verifyCode;
 
-  final AuthRepository authRepository;
-
-  // Constructor now initializes the authRepository
-  EnterCodeScreen({required this.email, required this.verifyCode})
-      : authRepository = AuthRepositoryImpl(
-          AuthRemoteDataSourceImpl(client: http.Client()), // Initialize here
-        );
+  EnterCodeScreen({required this.email, Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final AuthController authController = Get.find<AuthController>();
+
     return Scaffold(
       appBar: AppBar(title: Text("Enter Verification Code")),
       body: Padding(
@@ -37,22 +28,11 @@ class EnterCodeScreen extends StatelessWidget {
             SizedBox(height: 20),
             ElevatedButton(
               onPressed: () async {
-                final code = codeController.text;
-                final result = await verifyCode(email, code);
-                result.fold(
-                  (failure) => ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(failure.toString())),
-                  ),
-                  (_) => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ResetPasswordScreen(
-                        email: email,
-                        resetPassword: ResetPassword(authRepository),
-                      ),
-                    ),
-                  ),
-                );
+                final code = codeController.text.trim();
+                // Call the verify method and wait for it to complete.
+                await authController.verifyCode(email, code);
+                // If no error occurs, navigate to the reset password screen.
+                Get.to(() => ResetPasswordScreen(email: email));
               },
               child: Text("Verify Code"),
             ),

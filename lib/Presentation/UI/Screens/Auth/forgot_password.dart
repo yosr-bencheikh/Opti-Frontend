@@ -1,28 +1,16 @@
-// lib/presentation/screens/enter_email_screen.dart
 import 'package:flutter/material.dart';
-import 'package:opti_app/Presentation/UI/screens/auth/code_verification.dart';
-import 'package:opti_app/data/data_sources/auth_remote_datasource.dart';
-import 'package:opti_app/domain/repositories/auth_repository.dart';
-import 'package:opti_app/domain/repositories/auth_repository_impl.dart';
-import 'package:opti_app/domain/usecases/send_code_to_email.dart';
-import 'package:opti_app/domain/usecases/verify_code.dart';
-import 'package:http/http.dart' as http;
-
+import 'package:get/get.dart';
+import 'package:opti_app/Presentation/UI/Screens/Auth/code_verification.dart';
+import 'package:opti_app/Presentation/controllers/auth_controller.dart';
 
 class EnterEmailScreen extends StatelessWidget {
   final TextEditingController emailController = TextEditingController();
-  final SendCodeToEmail sendCodeToEmail;
 
-EnterEmailScreen({
-    Key? key,  
-    required this.sendCodeToEmail,
-  }) : super(key: key);
+  EnterEmailScreen({Key? key}) : super(key: key);
 
-  
   @override
   Widget build(BuildContext context) {
-    final authRemoteDataSource = AuthRemoteDataSourceImpl(client: http.Client()); // Move here
-    final authRepository = AuthRepositoryImpl(authRemoteDataSource);
+    final AuthController authController = Get.find<AuthController>();
 
     return Scaffold(
       appBar: AppBar(title: Text("Forgot Password")),
@@ -39,22 +27,11 @@ EnterEmailScreen({
             SizedBox(height: 20),
             ElevatedButton(
               onPressed: () async {
-                final email = emailController.text;
-                final result = await sendCodeToEmail(email);
-                result.fold(
-                  (failure) => ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(failure.toString())),
-                  ),
-                  (_) => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => EnterCodeScreen(
-                        email: email,
-                        verifyCode: VerifyCode(authRepository),
-                      ),
-                    ),
-                  ),
-                );
+                final email = emailController.text.trim();
+                // Call the method (which returns void) and wait for completion.
+                await authController.sendCodeToEmail(email);
+                // If no error occurs, navigate to the code entry screen.
+                Get.to(() => EnterCodeScreen(email: email));
               },
               child: Text("Send Code"),
             ),

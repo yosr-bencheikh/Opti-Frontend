@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:opti_app/domain/usecases/reset_password.dart';
+import 'package:get/get.dart';
+import 'package:opti_app/Presentation/controllers/auth_controller.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
   final String email;
-  final ResetPassword resetPassword;
 
-  ResetPasswordScreen({required this.email, required this.resetPassword});
+  ResetPasswordScreen({required this.email, Key? key}) : super(key: key);
 
   @override
   _ResetPasswordScreenState createState() => _ResetPasswordScreenState();
@@ -91,22 +91,17 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     }
 
     setState(() => isLoading = true);
+    final AuthController authController = Get.find<AuthController>();
 
-    try {
-      final result = await widget.resetPassword(widget.email, password);
-      
-      result.fold(
-        (failure) => _showError(failure.toString()),
-        (_) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Password reset successfully")),
-          );
-          Navigator.of(context).popUntil((route) => route.isFirst);
-        },
-      );
-    } finally {
-      setState(() => isLoading = false);
-    }
+    // Call the resetPassword method and wait for it to complete.
+    await authController.resetPassword(widget.email, password);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Password reset successfully")),
+    );
+    // Navigate to the login or home screen as appropriate.
+    Get.offAllNamed('/');
+    setState(() => isLoading = false);
   }
 
   void _showError(String message) {

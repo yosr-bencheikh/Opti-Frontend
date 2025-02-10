@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:opti_app/core/error/failures.dart';
 import 'package:opti_app/domain/entities/user.dart';
@@ -83,7 +84,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       throw ServerFailure(e.toString());
     }
   }
-  
 
   @override
   Future<Map<String, dynamic>> signUp(User user) async {
@@ -133,6 +133,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   }
 
   Future<Map<String, dynamic>> getUser(String userId) async {
+    final url = '$baseUrl/users/$userId';
+    debugPrint('Calling URL: $url');
     final response = await http.get(Uri.parse('$baseUrl/users/$userId'));
 
     if (response.statusCode == 200) {
