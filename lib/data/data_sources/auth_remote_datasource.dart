@@ -39,11 +39,26 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       final responseData = json.decode(response.body);
 
       if (response.statusCode == 200 && responseData['token'] != null) {
+        // Login successful, return the token
         return responseData['token'];
+      } else if (response.statusCode == 404) {
+        // Handle specific error messages returned by the backend
+        String errorMessage = responseData['message'] ?? 'Login Failed';
+        if (errorMessage == 'Email not found') {
+          throw Exception('Email not found. Please check your email address.');
+        } else if (errorMessage == 'Incorrect password') {
+          throw Exception('Incorrect password. Please try again.');
+        } else {
+          throw Exception(errorMessage);
+        }
+      } else {
+        // For other status codes, throw a general server failure
+        throw Exception(
+            'Server failure: ${responseData['message'] ?? 'Unknown error'}');
       }
-      throw ServerFailure(responseData['message'] ?? 'Login Failed');
     } catch (e) {
-      throw ServerFailure(e.toString());
+      // Catch any error (network or other)
+      throw Exception('An error occurred: ${e.toString()}');
     }
   }
 
@@ -68,6 +83,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       throw ServerFailure(e.toString());
     }
   }
+  
 
   @override
   Future<Map<String, dynamic>> signUp(User user) async {
@@ -77,20 +93,20 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         url,
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
-          'nom': user.name,
+          'nom': user.nom,
           'prenom': user.prenom,
           'email': user.email,
           'date': user.date,
           'password': user.password,
           'phone': user.phone,
           'region': user.region,
-          'gender': user.genre,
+          'genre': user.genre,
         }),
       );
       if (response.statusCode == 201) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         print("SignUp response data: $data");
-        if ( data.containsKey('token')) {
+        if (data.containsKey('token')) {
           return data;
         } else {
           throw Exception('Missing  token in response');
@@ -118,10 +134,14 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   Future<Map<String, dynamic>> getUser(String userId) async {
     final response = await http.get(Uri.parse('$baseUrl/users/$userId'));
+
     if (response.statusCode == 200) {
       return json.decode(response.body);
+    } else {
+      final errorData = json.decode(response.body);
+      final errorMessage = errorData['message'] ?? 'Failed to load user';
+      throw Exception('HTTP ${response.statusCode}: $errorMessage');
     }
-    throw Exception('Failed to load user');
   }
 
   Future<void> updateUser(String userId, User user) async {
@@ -130,8 +150,12 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       headers: {'Content-Type': 'application/json'},
       body: json.encode(user),
     );
-    if (response.statusCode != 200) {
-      throw Exception('Failed to update user');
+    if (response.statusCode == 200) {
+      print('Profile updated successfully');
+    } else {
+      // Log the error response
+      final errorResponse = json.decode(response.body);
+      throw Exception('Failed to update user: ${errorResponse['message']}');
     }
   }
 
@@ -201,7 +225,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       throw ServerFailure(e.toString());
     }
   }
-   Future<String> loginWithFacebook(String accessToken) async {
+
+  Future<String> loginWithFacebook(String accessToken) async {
     try {
       final response = await client.post(
         Uri.parse('$baseUrl/facebook-login'),

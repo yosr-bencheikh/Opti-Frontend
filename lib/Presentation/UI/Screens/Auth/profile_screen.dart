@@ -5,10 +5,19 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Retrieve the user ID passed from the LoginScreen
-     final userId = ModalRoute.of(context)?.settings.arguments as String??' ';
+    final userId = ModalRoute.of(context)?.settings.arguments as String ?? ' ';
 
     return Scaffold(
-      appBar: AppBar(title: Text('Profile')),
+      appBar: AppBar(
+        title: Text('Profile'),
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back), // Back arrow icon
+          onPressed: () {
+            // Replace current screen with the LoginScreen
+            Navigator.pushReplacementNamed(context, '/');
+          },
+        ),
+      ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

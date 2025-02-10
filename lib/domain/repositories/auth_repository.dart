@@ -10,4 +10,6 @@ abstract class AuthRepository {
   Future<Either<Failure, void>> sendCodeToEmail(String email);
   Future<Either<Failure, void>> verifyCode(String email, String code);
   Future<Either<Failure, void>> resetPassword(String email, String password);
+  updateUser(String userId, User user);
+  getUser(String userId);
 }

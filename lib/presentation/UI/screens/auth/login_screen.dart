@@ -10,7 +10,6 @@ import 'package:opti_app/domain/repositories/auth_repository_impl.dart';
 import 'package:opti_app/domain/usecases/login_with_email.dart';
 import 'package:opti_app/domain/usecases/login_with_google.dart';
 
-
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
 
@@ -27,15 +26,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
   late final LoginWithEmailUseCase _loginWithEmailUseCase;
   late final LoginWithGoogleUseCase _loginWithGoogleUseCase;
-  late final LoginWithFacebookUseCase _loginWithFacebookUseCase;
 
   @override
   void initState() {
     super.initState();
-    final authRepository = AuthRepositoryImpl(AuthRemoteDataSourceImpl(client: http.Client()));
+    final authRepository =
+        AuthRepositoryImpl(AuthRemoteDataSourceImpl(client: http.Client()));
     _loginWithEmailUseCase = LoginWithEmailUseCase(authRepository);
     _loginWithGoogleUseCase = LoginWithGoogleUseCase(authRepository);
-    _loginWithFacebookUseCase = LoginWithFacebookUseCase(authRepository);
   }
 
   @override
@@ -57,32 +55,56 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final token = await _loginWithEmailUseCase.execute(
-        emailController.text.trim(), 
-        passwordController.text.trim()
-      );
-      
+          emailController.text.trim(), passwordController.text.trim());
+
       final userId = JwtUtils.getUserId(token);
       await _storeToken(token);
-      
+
       _showSuccessMessage('Login Successful');
-      Navigator.pushReplacementNamed(context, '/profileScreen', arguments: userId);
+      Navigator.pushReplacementNamed(context, '/profileScreen',
+          arguments: userId);
     } catch (e) {
-      _showErrorMessage(e.toString());
+      // Check specific error types and show an appropriate message
+      String errorMessage;
+      if (e.toString().contains('Email')) {
+        errorMessage = 'Email not found. Please check your email address.';
+      } else if (e.toString().contains('password')) {
+        errorMessage = 'Incorrect password. Please try again.';
+      } else {
+        errorMessage = 'Login Failed: ${e.toString()}';
+      }
+
+      _showErrorMessage(errorMessage);
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
+  void _showSuccessMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(message),
+      backgroundColor: Colors.green,
+    ));
+  }
+
+  void _showErrorMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(message),
+      backgroundColor: Colors.red,
+    ));
+  }
+
   Future<void> googleLogin() async {
     setState(() => _isLoading = true);
-    
+
     try {
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) return;
 
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
       final token = await _loginWithGoogleUseCase.execute(googleAuth.idToken!);
-      
+
       await _storeToken(token);
       _showSuccessMessage('Google Login Successful');
       Navigator.pushReplacementNamed(context, '/home');
@@ -93,42 +115,13 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  Future<void> facebookLogin() async {
-    setState(() => _isLoading = true);
-    
-    try {
-      final LoginResult result = await FacebookAuth.instance.login();
-      
-      if (result.status == LoginStatus.success) {
-        final token = await _loginWithFacebookUseCase.execute(result.accessToken!.token);
-        await _storeToken(token);
-        
-        _showSuccessMessage('Facebook Login Successful');
-        Navigator.pushReplacementNamed(context, '/home');
-      }
-    } catch (e) {
-      _showErrorMessage(e.toString());
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
   bool _validateInputs() {
-    if (emailController.text.trim().isEmpty || passwordController.text.trim().isEmpty) {
+    if (emailController.text.trim().isEmpty ||
+        passwordController.text.trim().isEmpty) {
       _showErrorMessage('Please fill in all fields');
       return false;
     }
     return true;
-  }
-
-  void _showSuccessMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  void _showErrorMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.red)
-    );
   }
 
   @override
@@ -139,7 +132,7 @@ class _LoginScreenState extends State<LoginScreen> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Colors.blueAccent, Colors.purpleAccent],
+            colors: [Colors.blueAccent, Color.fromARGB(255, 236, 225, 237)],
           ),
         ),
         child: SafeArea(
@@ -178,13 +171,15 @@ class _LoginScreenState extends State<LoginScreen> {
                         keyboardType: TextInputType.emailAddress,
                         decoration: InputDecoration(
                           labelText: 'Email',
-                          prefixIcon: const Icon(Icons.email, color: Colors.blue),
+                          prefixIcon:
+                              const Icon(Icons.email, color: Colors.blue),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8.0),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8.0),
-                            borderSide: const BorderSide(color: Colors.blue, width: 2.0),
+                            borderSide: const BorderSide(
+                                color: Colors.blue, width: 2.0),
                           ),
                         ),
                       ),
@@ -194,14 +189,18 @@ class _LoginScreenState extends State<LoginScreen> {
                         obscureText: _obscurePassword,
                         decoration: InputDecoration(
                           labelText: 'Password',
-                          prefixIcon: const Icon(Icons.lock, color: Colors.blue),
+                          prefixIcon:
+                              const Icon(Icons.lock, color: Colors.blue),
                           suffixIcon: IconButton(
                             icon: Icon(
-                              _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                              _obscurePassword
+                                  ? Icons.visibility
+                                  : Icons.visibility_off,
                               color: Colors.grey,
                             ),
                             onPressed: () {
-                              setState(() => _obscurePassword = !_obscurePassword);
+                              setState(
+                                  () => _obscurePassword = !_obscurePassword);
                             },
                           ),
                           border: OutlineInputBorder(
@@ -209,7 +208,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8.0),
-                            borderSide: const BorderSide(color: Colors.blue, width: 2.0),
+                            borderSide: const BorderSide(
+                                color: Colors.blue, width: 2.0),
                           ),
                         ),
                       ),
@@ -226,10 +226,12 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                           child: _isLoading
-                              ? const CircularProgressIndicator(color: Colors.white)
+                              ? const CircularProgressIndicator(
+                                  color: Colors.white)
                               : const Text(
                                   'Login',
-                                  style: TextStyle(fontSize: 18, color: Colors.white),
+                                  style: TextStyle(
+                                      fontSize: 18, color: Colors.white),
                                 ),
                         ),
                       ),
@@ -259,7 +261,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               label: const Text('Google'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.red,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8.0),
                                 ),
@@ -269,12 +272,13 @@ class _LoginScreenState extends State<LoginScreen> {
                           const SizedBox(width: 16),
                           Expanded(
                             child: ElevatedButton.icon(
-                              onPressed: facebookLogin,
+                              onPressed: () {},
                               icon: const Icon(Icons.facebook),
                               label: const Text('Facebook'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.blue[900],
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8.0),
                                 ),
@@ -290,7 +294,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         },
                         child: const Text(
                           'Don\'t have an account? Sign up',
-                          style: TextStyle(color: Color.fromARGB(255, 22, 27, 32)),
+                          style:
+                              TextStyle(color: Color.fromARGB(255, 22, 27, 32)),
                         ),
                       ),
                     ],

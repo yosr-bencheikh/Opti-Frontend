@@ -15,7 +15,7 @@ class ProfileForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final _formKey = GlobalKey<FormState>();
-    final _nomController = TextEditingController(text: user.name);
+    final _nomController = TextEditingController(text: user.nom);
     final _prenomController = TextEditingController(text: user.prenom);
     final _emailController = TextEditingController(text: user.email);
     final _dateNaissanceController =
@@ -123,7 +123,7 @@ class ProfileForm extends StatelessWidget {
                   // Create a new User with the updated data
                   onSave(User(
                     email: _emailController.text,
-                    name: _nomController.text,
+                    nom: _nomController.text,
                     prenom: _prenomController.text,
                     date: selectedDate, // Pass the DateTime object
                     region: _selectedRegion,
