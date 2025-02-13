@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:opti_app/core/error/failures.dart';
 import 'package:opti_app/domain/entities/user.dart';
 
 /// The abstract class defining all authentication-related API calls.
@@ -18,8 +19,14 @@ abstract class AuthRemoteDataSource {
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   final http.Client client;
+
   // Use your server's IP and port (make sure this is accessible from your phone)
   final String baseUrl = 'http://192.168.1.18:3000/api';
+
+
+  
+  static String? verifiedEmail; // Made static
+  static String? verificationCode;
 
   AuthRemoteDataSourceImpl({required this.client});
 
@@ -56,6 +63,30 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   }
 
   @override
+
+  Future<String> loginWithGoogle(String token) async {
+    final url = Uri.parse('https://abc123.ngrok.io/auth/google/callback');
+
+    try {
+      final response = await client.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'token': token}),
+      );
+
+      final responseData = json.decode(response.body);
+
+      if (response.statusCode == 200 && responseData['token'] != null) {
+        return responseData['token'];
+      }
+      throw ServerFailure(responseData['message'] ?? 'Google Login Failed');
+    } catch (e) {
+      throw ServerFailure(e.toString());
+    }
+  }
+
+  @override
+
   Future<Map<String, dynamic>> signUp(User user) async {
     final url = Uri.parse('$baseUrl/users');
     try {

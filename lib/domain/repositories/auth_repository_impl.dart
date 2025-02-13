@@ -1,16 +1,38 @@
 // lib/data/repositories/auth_repository_impl.dart
 import 'package:dartz/dartz.dart';
+import 'package:opti_app/core/constants/api_constants.dart';
 import 'package:opti_app/core/error/failures.dart';
 import 'package:opti_app/data/data_sources/auth_remote_datasource.dart';
 import 'package:opti_app/data/models/user_model.dart';
 import 'package:opti_app/domain/entities/user.dart';
 import 'package:opti_app/domain/repositories/user_repository.dart';
 import 'package:opti_app/domain/repositories/auth_repository.dart';
+import 'package:http/http.dart' as http;
 
 class AuthRepositoryImpl implements AuthRepository {
   final AuthRemoteDataSource dataSource;
 
   AuthRepositoryImpl(this.dataSource);
+
+  Future<bool> verifyToken(String token) async {
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConstants.baseUrl}/verify-token'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return true;
+      }
+      return false;
+    } catch (e) {
+      print('Error verifying token: $e');
+      return false;
+    }
+  }
 
   @override
   Future<String> loginWithEmail(String email, String password) {
