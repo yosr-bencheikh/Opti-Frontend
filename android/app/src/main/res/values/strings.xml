@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="facebook_app_id">1304521740805476</string>
-    <string name="facebook_client_token">0f14d7edea3140df0913c5c7ce734710</string>
+    <string name="app_name">opti_app</string>
+      <string name="default_web_client_id">95644263598-p1ko0g4ds7ko6v6obqkdc38j76ndjmt2.apps.googleusercontent.com</string>
+
+  <string name="fb_login_protocol_scheme">fb4021778701431702</string>
+<string name="facebook_app_id">4021778701431702</string>
+<string name="facebook_client_token">0e7b113e21c62611457a81cdb7edd68f</string>
+
+
 </resources>

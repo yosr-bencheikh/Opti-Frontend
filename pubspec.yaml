@@ -32,8 +32,8 @@ dependencies:
     sdk: flutter
   http: ^1.3.0
   shared_preferences: ^2.0.15
-  flutter_facebook_auth: ^7.1.1 # Vérifiez si une version plus récente est disponible
-  google_sign_in: ^6.1.6
+  flutter_facebook_auth: ^7.1.1 
+  google_sign_in: ^6.2.2
   dartz: ^0.10.1
   get: ^4.6.6
 

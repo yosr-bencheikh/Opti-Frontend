@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:get/get.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:opti_app/data/data_sources/auth_remote_datasource.dart';
+import 'package:opti_app/domain/repositories/auth_repository_impl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:opti_app/domain/entities/user.dart';
 import 'package:opti_app/domain/repositories/auth_repository.dart';
 import 'package:opti_app/Presentation/utils/jwt_utils.dart';
+import 'package:http/http.dart' as http;
 
 class AuthController extends GetxController {
   final AuthRepository authRepository;
@@ -26,19 +29,60 @@ class AuthController extends GetxController {
   void onInit() {
     super.onInit();
     checkLoginStatus();
+    ever(isLoggedIn, handleAuthenticationChanged);
+    checkLoginStatus();
   }
-
-  void checkLoginStatus() {
-    final String? userId = prefs.getString('userId');
-    final String? token = prefs.getString('token');
-
-    if (userId != null && token != null) {
-      currentUserId.value = userId;
-      authToken.value = token;
-      isLoggedIn.value = true;
-      loadUserData(userId);
+    void handleAuthenticationChanged(bool isLoggedIn) {
+    if (isLoggedIn) {
+      Get.offAllNamed('/profileScreen', arguments: currentUserId.value);
+    } else {
+      Get.offAllNamed('/login');
     }
   }
+
+
+Future checkLoginStatus() async {
+  try {
+    final String? token = prefs.getString('token');
+    final String? userId = prefs.getString('userId');
+    
+    if (token == null || userId == null) {
+      await logout();
+      return;
+    }
+    
+    // Vérifier si le token est expiré localement
+    if (JwtDecoder.isExpired(token)) {
+      print('Token expiré');
+      await logout();
+      return;
+    }
+    
+    // Create an HTTP client
+    final client = http.Client();
+    
+    // Create AuthRemoteDataSource with the required client
+    final authDataSource = AuthRemoteDataSourceImpl(client: client);
+    
+    // Create AuthRepositoryImpl with the correct data source
+    final authRepositoryImpl = AuthRepositoryImpl(authDataSource);
+    
+    // Vérifier le token avec le serveur
+    final bool isValid = await authRepositoryImpl.verifyToken(token);
+    if (!isValid) {
+      print('Token invalide selon le serveur');
+      await logout();
+      return;
+    }
+    
+    // Don't forget to close the client when done
+    client.close();
+    
+  } catch (e) {
+    await logout();
+    print('Error in checkLoginStatus: $e');
+  }
+}
 
  Future<void> loadUserData(String userId) async {
   try {
@@ -168,19 +212,19 @@ class AuthController extends GetxController {
     }
   }
 
-  Future<void> logout() async {
+    Future<void> logout() async {
     try {
       await prefs.clear();
       currentUserId.value = '';
       authToken.value = '';
-      isLoggedIn.value = false;
       currentUser.value = null;
-      Get.offAllNamed('/');
+      isLoggedIn.value = false;
     } catch (e) {
       print('Logout error: $e');
       Get.snackbar('Error', 'Failed to logout');
     }
   }
+
 
   // === Reset Password Flow Methods ===
 

@@ -18,7 +18,7 @@ abstract class AuthRemoteDataSource {
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   final http.Client client;
-  final String baseUrl = 'http://127.0.0.1:3000/api';
+  final String baseUrl = 'http://localhost:3000/api';
   static String? verifiedEmail; // Made static
   static String? verificationCode;
   AuthRemoteDataSourceImpl({required this.client});
@@ -65,7 +65,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   @override
   Future<String> loginWithGoogle(String token) async {
-    final url = Uri.parse('$baseUrl/google-login');
+    final url = Uri.parse('https://abc123.ngrok.io/auth/google/callback');
 
     try {
       final response = await client.post(

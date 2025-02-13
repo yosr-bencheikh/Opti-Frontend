@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:get/get.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:opti_app/Presentation/UI/screens/auth/login_api.dart';
 import 'package:opti_app/Presentation/controllers/auth_controller.dart';
+import 'package:http/http.dart' as http;
+import 'package:opti_app/domain/entities/user.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -56,26 +60,36 @@ class _LoginScreenState extends State<LoginScreen> {
     await authController.loginWithEmail(email, password);
   }
 
-  /*Future<void> googleLogin() async {
-    try {
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) return;
+Future<void> signInWithGoogle() async {
+  try {
+    final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+    if (googleUser != null) {
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final String? idToken = googleAuth.idToken;
+      final String? accessToken = googleAuth.accessToken;
 
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-      
-      // Use your Google login implementation from AuthController
-      await authController.loginWithGoogle(googleAuth.idToken!);
-    } catch (e) {
-      Get.snackbar(
-        'Error',
-        e.toString(),
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+      // Envoyez le jeton ID et le jeton d'accès à votre backend pour vérification
+      final response = await http.post(
+        Uri.parse('https://abc123.ngrok.io/auth/google/callback'),
+        body: {
+          'idToken': idToken,
+          'accessToken': accessToken,
+        },
       );
+
+      if (response.statusCode == 200) {
+        print('Connexion réussie');
+      } else {
+        print('Échec de la connexion');
+      }
     }
+  } catch (error) {
+    print('Erreur lors de la connexion Google: $error');
   }
-*/
+}
+
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -207,41 +221,33 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 20),
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: () {},
-                              icon: const Icon(Icons.login),
-                              label: const Text('Google'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red,
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 12),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8.0),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: () {},
-                              icon: const Icon(Icons.facebook),
-                              label: const Text('Facebook'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blue[900],
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 12),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8.0),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+  children: [
+    ElevatedButton(
+      onPressed: () async {
+        var user = await LoginApi.login();
+        if (user != null) {
+          print("Connexion Google réussie !");
+        } else {
+          print("Échec de la connexion Google.");
+        }
+      },
+      child: const Text('Login avec Google'),
+    ),
+    ElevatedButton(
+      onPressed: () async {
+        var user = await LoginApi.loginWithFacebook();
+        if (user != null) {
+          print("Connexion Facebook réussie !");
+        } else {
+          print("Échec de la connexion Facebook.");
+        }
+      },
+      child: const Text('Login avec Facebook'),
+    ),
+  ],
+),
+
                       const SizedBox(height: 20),
                       TextButton(
                         onPressed: () {
