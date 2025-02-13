@@ -1,5 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="facebook_app_id">1304521740805476</string>
-    <string name="facebook_client_token">0f14d7edea3140df0913c5c7ce734710</string>
+    <string name="app_name">Opti App</string>
 </resources>

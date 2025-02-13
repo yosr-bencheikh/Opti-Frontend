@@ -39,12 +39,7 @@ Future<void> main() async {
   final sendCodeToEmail = SendCodeToEmail(Get.find());
   Get.put(sendCodeToEmail);
 
-  // Initialize AuthController with both repository and SharedPreferences
-   final authController = AuthController(
-    authRepository: Get.find<AuthRepository>(),
-    prefs: Get.find<SharedPreferences>(),
-  );
-  Get.put<AuthController>(authController);
+  
  
   runApp(const MyApp());
 }

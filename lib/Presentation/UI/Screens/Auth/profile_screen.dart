@@ -8,8 +8,6 @@ class ProfileScreen extends GetView<AuthController> {
 
   @override
   Widget build(BuildContext context) {
-    // Récupérer l'instance existante du contrôleur
-
     final String userId = Get.arguments ?? 'Unknown User';
 
     return Scaffold(
@@ -22,22 +20,56 @@ class ProfileScreen extends GetView<AuthController> {
       ),
       body: Obx(() {
         if (controller.isLoading.value) {
-          return Center(child: CircularProgressIndicator());
+          return const Center(child: CircularProgressIndicator());
         }
 
-        if (controller.currentUser.value == null) {
-          return Center(child: Text('No user data found.'));
-        }
+        final user = controller.currentUser;
+
         return Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text('Welcome ${controller.currentUser.value?.prenom}'),
+              CircleAvatar(
+                radius: 50,
+                backgroundColor: Colors.grey[300],
+                // Fixed null safety for imageUrl access
+                backgroundImage: (user?.imageUrl?.isNotEmpty == true)
+                    ? NetworkImage(user!.imageUrl)
+                    : null,
+                child: (user?.imageUrl?.isNotEmpty != true)
+                    ? const Icon(
+                        Icons.person,
+                        size: 50,
+                        color: Colors.white,
+                      )
+                    : null,
+              ),
+              const SizedBox(height: 20),
+              Text('Welcome ${user?.prenom ?? 'User'}'),
+              const SizedBox(height: 20),
               ElevatedButton(
-                onPressed: () =>
-                    Get.to(() => UpdateProfileScreen(userId: userId)),
+                onPressed: () async {
+                  try {
+                    await controller.pickImage();
+                    if (controller.selectedImage != null) {
+                      await controller.uploadImage(userId);
+                    }
+                  } catch (e) {
+                    Get.snackbar(
+                      'Error',
+                      'Failed to upload image: ${e.toString()}',
+                      snackPosition: SnackPosition.BOTTOM,
+                    );
+                  }
+                },
+                child: const Text('Upload Image'),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () => Get.to(() => UpdateProfileScreen(userId: userId)),
                 child: const Text('Update Profile'),
               ),
+              const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: controller.isLoading.value
                     ? null

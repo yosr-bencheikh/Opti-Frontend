@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:get/get.dart';
+import 'package:get/get_state_manager/src/simple/get_controllers.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:opti_app/Presentation/utils/jwt_utils.dart';
 import 'package:opti_app/domain/entities/user.dart';
 import 'package:opti_app/domain/repositories/auth_repository.dart';
-import 'package:opti_app/Presentation/utils/jwt_utils.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthController extends GetxController {
   final AuthRepository authRepository;
@@ -14,13 +15,17 @@ class AuthController extends GetxController {
   var isLoading = false.obs;
   var isLoggedIn = false.obs;
   var currentUserId = ''.obs;
-  var currentUser = Rx<User?>(null);
+  final Rx<User?> _currentUser = Rx<User?>(null); // Private variable
   var authToken = ''.obs;
 
   AuthController({
     required this.authRepository,
     required this.prefs,
   });
+
+  // Getter and setter for currentUser
+  User? get currentUser => _currentUser.value;
+  set currentUser(User? value) => _currentUser.value = value;
 
   @override
   void onInit() {
@@ -43,25 +48,25 @@ class AuthController extends GetxController {
  Future<void> loadUserData(String userId) async {
   try {
     print('Loading user data for ID: $userId');
+    print('User ID format check: ${userId.length} characters: $userId');
+     // Add this
     final userData = await authRepository.getUser(userId);
-    
+
     if (userData == null) {
       print('Null response from server');
       throw Exception('Server returned null');
     }
 
     print('Received user data: ${userData.toString()}');
-    currentUser.value = User.fromJson(userData);
-    
+    currentUser = User.fromJson(userData);
   } catch (e) {
     print('loadUserData ERROR: ${e.toString()}');
-    Get.snackbar(
-      'Error',
-      'Failed to load profile: ${e.toString()}',
-      duration: Duration(seconds: 5),
-    );
+    // Check if we're getting a response at all
+  
+  
   }
 }
+
   Future<void> loginWithEmail(String email, String password) async {
     if (email.isEmpty || password.isEmpty) {
       Get.snackbar('Error', 'Please enter email and password');
@@ -97,11 +102,12 @@ class AuthController extends GetxController {
         isLoggedIn.value = true;
 
         // Load user data
-        await loadUserData(userId);
+        
 
         // Navigate to profile screen and pass the userId as argument
         Get.offAllNamed('/profileScreen', arguments: userId);
-        
+         await loadUserData(userId);
+
         Get.snackbar('Success', 'Login successful');
       } catch (e) {
         print('Error decoding token: $e');
@@ -174,7 +180,7 @@ class AuthController extends GetxController {
       currentUserId.value = '';
       authToken.value = '';
       isLoggedIn.value = false;
-      currentUser.value = null;
+      currentUser = null; // Use the setter
       Get.offAllNamed('/');
     } catch (e) {
       print('Logout error: $e');
@@ -243,39 +249,50 @@ class AuthController extends GetxController {
       isLoading.value = false;
     }
   }
-  // Add to AuthController class
-/*Future<void> loginWithFacebook() async {
-  isLoading.value = true;
-  try {
-    final LoginResult result = await FacebookAuth.instance.login();
-    
-    if (result.status == LoginStatus.success) {
-      final accessToken = result.accessToken!.token;
-      final response = await authRepository.loginWithFacebook(accessToken);
-      
-      final token = response['token'] as String;
-      final userId = JwtUtils.getUserId(token);
-      
-      await prefs.setString('token', token);
-      await prefs.setString('userId', userId);
-      
-      authToken.value = token;
-      currentUserId.value = userId;
-      isLoggedIn.value = true;
-      
-      await loadUserData(userId);
-      Get.offAllNamed('/profileScreen', arguments: userId);
+
+  final Rx<XFile?> _selectedImage = Rx<XFile?>(null);
+  XFile? get selectedImage => _selectedImage.value;
+
+  // Observable to store the uploaded image URL
+  final RxString _imageUrl = ''.obs;
+  String get imageUrl => _imageUrl.value;
+
+  // Method to pick an image from the gallery
+  Future<void> pickImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      _selectedImage.value = image;
     }
-  } catch (e) {
-    print('Facebook login error: $e');
-    Get.snackbar(
-      'Error',
-      'Facebook login failed',
-      backgroundColor: Colors.red,
-      colorText: Colors.white,
-    );
-  } finally {
-    isLoading.value = false;
   }
-}*/
+
+  Future<void> uploadImage(String userId) async {
+    try {
+      final filePath = _selectedImage.value!.path;
+      final imageUrl = await authRepository.uploadImage(filePath, userId);
+
+      // Update the user's imageUrl in the backend
+      final updatedUser = User(
+        nom: currentUser!.nom,
+        prenom: currentUser!.prenom,
+        email: currentUser!.email,
+        date: currentUser!.date,
+        password: currentUser!.password,
+        phone: currentUser!.phone,
+        region: currentUser!.region,
+        genre: currentUser!.genre,
+        imageUrl: imageUrl, // Update the imageUrl
+      );
+
+      // Save the updated user to the backend
+      await authRepository.updateUser(userId, updatedUser);
+
+      // Refresh the current user data
+      await loadUserData(userId);
+
+      Get.snackbar('Success', 'Image uploaded successfully!');
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to upload image: $e');
+    }
+  }
 }

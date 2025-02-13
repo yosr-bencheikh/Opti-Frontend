@@ -10,6 +10,7 @@ class User extends Equatable {
   final String genre;
   final String password;
   final String phone;
+   final String imageUrl;
 
   const User({
    
@@ -21,6 +22,7 @@ class User extends Equatable {
     required this.genre,
     required this.password,
     required this.phone,
+     this.imageUrl = '',
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -34,6 +36,7 @@ class User extends Equatable {
       genre: json['genre'],
       password: json['password'] ?? '', // Adjust based on your needs
       phone: json['phone'],
+       imageUrl: json['imageUrl'] ?? '',
     );
   }
   

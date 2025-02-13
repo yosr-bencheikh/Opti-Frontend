@@ -7,7 +7,7 @@ import 'package:opti_app/domain/entities/user.dart';
 import 'package:opti_app/domain/repositories/user_repository.dart';
 import 'package:opti_app/domain/repositories/auth_repository.dart';
 
-class AuthRepositoryImpl implements AuthRepository, UserRepository {
+class AuthRepositoryImpl implements AuthRepository {
   final AuthRemoteDataSource dataSource;
 
   AuthRepositoryImpl(this.dataSource);
@@ -17,10 +17,10 @@ class AuthRepositoryImpl implements AuthRepository, UserRepository {
     return dataSource.loginWithEmail(email, password);
   }
 
-  @override
+  /*@override
   Future<String> loginWithGoogle(String token) {
     return dataSource.loginWithGoogle(token);
-  }
+  }*/
 
   @override
   Future<User> getUser(String userId) async {
@@ -76,7 +76,7 @@ class AuthRepositoryImpl implements AuthRepository, UserRepository {
       return Left(ServerFailure(e.toString()));
     }
   }
-   @override
+ /*  @override
   Future<String> loginWithFacebook(String accessToken) async {
     try {
       final token = await dataSource.loginWithFacebook(accessToken);
@@ -84,6 +84,22 @@ class AuthRepositoryImpl implements AuthRepository, UserRepository {
     } catch (e) {
       throw Exception('Repository: Facebook login failed - ${e.toString()}');
     }
+  }*/
+@override
+Future<String> uploadImage(String filePath, String userId) async {
+  try {
+    return await dataSource.uploadImage(filePath, userId);
+  } catch (e) {
+    throw Exception('Failed to upload image: $e');
   }
 }
+
+@override
+Future<void> updateUserImage(String userId, String imageUrl) async {
+  try {
+    return await dataSource.updateUserImage(userId, imageUrl);
+  } catch (e) {
+    throw Exception('Failed to update user image: $e');
+  }
+}}
 
