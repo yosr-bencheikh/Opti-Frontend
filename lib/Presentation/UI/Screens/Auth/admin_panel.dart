@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 class AdminPanelApp extends StatelessWidget {
+  const AdminPanelApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -16,6 +18,8 @@ class AdminPanelApp extends StatelessWidget {
 }
 
 class AdminDashboard extends StatefulWidget {
+  const AdminDashboard({super.key});
+
   @override
   _AdminDashboardState createState() => _AdminDashboardState();
 }
@@ -83,6 +87,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
 }
 
 class DashboardScreen extends StatelessWidget {
+  const DashboardScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -312,7 +318,7 @@ class NavigationDrawer extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onItemSelected;
 
-  const NavigationDrawer({
+  const NavigationDrawer({super.key, 
     required this.selectedIndex,
     required this.onItemSelected,
   });
@@ -389,6 +395,8 @@ class UsersScreen extends StatelessWidget {
       'status': index % 3 == 0 ? 'Active' : 'Inactive',
     },
   );
+
+  UsersScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -468,6 +476,8 @@ class ProductsScreen extends StatelessWidget {
     },
   );
 
+  ProductsScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -530,6 +540,8 @@ class ProductsScreen extends StatelessWidget {
 }
 
 class SettingsScreen extends StatefulWidget {
+  const SettingsScreen({super.key});
+
   @override
   _SettingsScreenState createState() => _SettingsScreenState();
 }
@@ -636,12 +648,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   SizedBox(height: 20),
                   ElevatedButton(
                     onPressed: () {},
-                    child: Text('Save Changes'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Color(0xFF1E88E5),
                       padding:
                           EdgeInsets.symmetric(horizontal: 30, vertical: 15),
                     ),
+                    child: Text('Save Changes'),
                   ),
                 ],
               ),
@@ -655,7 +667,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
 class EditUserDialog extends StatefulWidget {
   final Map<String, dynamic> user;
-  EditUserDialog({required this.user});
+  const EditUserDialog({super.key, required this.user});
 
   @override
   _EditUserDialogState createState() => _EditUserDialogState();
@@ -716,8 +728,8 @@ class _EditUserDialogState extends State<EditUserDialog> {
             // Implement save logic here
             Navigator.pop(context);
           },
-          child: Text('Save'),
           style: ElevatedButton.styleFrom(backgroundColor: Color(0xFF1E88E5)),
+          child: Text('Save'),
         ),
       ],
     );
@@ -726,7 +738,7 @@ class _EditUserDialogState extends State<EditUserDialog> {
 
 class EditProductDialog extends StatefulWidget {
   final Map<String, dynamic> product;
-  EditProductDialog({required this.product});
+  const EditProductDialog({super.key, required this.product});
 
   @override
   _EditProductDialogState createState() => _EditProductDialogState();
@@ -792,8 +804,8 @@ class _EditProductDialogState extends State<EditProductDialog> {
             // Implement save logic here
             Navigator.pop(context);
           },
-          child: Text('Save'),
           style: ElevatedButton.styleFrom(backgroundColor: Color(0xFF1E88E5)),
+          child: Text('Save'),
         ),
       ],
     );

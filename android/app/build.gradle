@@ -1,19 +1,29 @@
 plugins {
-    id "com.android.application"
-    id "kotlin-android"
-    // Move this here
-    id "dev.flutter.flutter-gradle-plugin"
+    id 'com.android.application'
+    id 'kotlin-android'
 }
 
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader('UTF-8') { reader ->
+        localProperties.load(reader)
+    }
+}
 
+def flutterRoot = localProperties.getProperty('flutter.sdk')
+if (flutterRoot == null) {
+    throw new GradleException("Flutter SDK not found. Define location with flutter.sdk in the local.properties file.")
+}
 
+def flutterVersionCode = '1'
+def flutterVersionName = '1.0'
 
-
+apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 
 android {
     namespace = "com.example.opti_app"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    compileSdk 34
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -26,8 +36,14 @@ android {
 
     defaultConfig {
         applicationId "com.example.opti_app"
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        minSdkVersion flutter.minSdkVersion
+        targetSdkVersion flutter.targetSdkVersion
+        versionCode Integer.parseInt(flutterVersionCode)
+        versionName flutterVersionName
+    }
+
+    signingConfigs {
+        release {
             keyAlias 'upload'
             keyPassword 'google'
             storeFile file('C:/Users/LENOVO/upload-keystore.jks')
@@ -37,16 +53,15 @@ android {
 
     buildTypes {
         release {
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
         }
     }
+}
 
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.8.22"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     implementation 'com.google.android.gms:play-services-auth:20.7.0'
     implementation 'com.facebook.android:facebook-login:latest.release'
-
-
 }
 
 flutter {

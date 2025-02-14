@@ -33,6 +33,7 @@ class LoginApi {
   } catch (error) {
     print('Erreur lors de la connexion Google: $error');
   }
+  return null;
 }
   static Future<void> signOut() => _googleSignIn.signOut();
 

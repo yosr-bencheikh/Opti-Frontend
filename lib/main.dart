@@ -7,13 +7,11 @@ import 'package:opti_app/Presentation/UI/screens/auth/SignUpScreen.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/admin_panel.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/login_screen.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/profile_screen.dart';
-import 'package:opti_app/Presentation/UI/screens/auth/update_profile_screen.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/forgot_password.dart';
 import 'package:opti_app/data/data_sources/auth_remote_datasource.dart';
 import 'package:opti_app/domain/repositories/auth_repository_impl.dart';
 import 'package:opti_app/domain/repositories/auth_repository.dart';
 import 'package:opti_app/domain/usecases/send_code_to_email.dart';
-import 'package:opti_app/Presentation/controllers/auth_controller.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

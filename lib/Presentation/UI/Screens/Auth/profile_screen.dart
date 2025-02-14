@@ -33,10 +33,10 @@ class ProfileScreen extends GetView<AuthController> {
                 radius: 50,
                 backgroundColor: Colors.grey[300],
                 // Fixed null safety for imageUrl access
-                backgroundImage: (user?.imageUrl?.isNotEmpty == true)
+                backgroundImage: (user?.imageUrl.isNotEmpty == true)
                     ? NetworkImage(user!.imageUrl)
                     : null,
-                child: (user?.imageUrl?.isNotEmpty != true)
+                child: (user?.imageUrl.isNotEmpty != true)
                     ? const Icon(
                         Icons.person,
                         size: 50,

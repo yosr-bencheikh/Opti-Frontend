@@ -6,7 +6,7 @@ import 'package:opti_app/Presentation/controllers/auth_controller.dart';
 class EnterEmailScreen extends StatelessWidget {
   final TextEditingController emailController = TextEditingController();
 
-  EnterEmailScreen({Key? key}) : super(key: key);
+  EnterEmailScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

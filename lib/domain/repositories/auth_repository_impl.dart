@@ -5,7 +5,6 @@ import 'package:opti_app/core/error/failures.dart';
 import 'package:opti_app/data/data_sources/auth_remote_datasource.dart';
 import 'package:opti_app/data/models/user_model.dart';
 import 'package:opti_app/domain/entities/user.dart';
-import 'package:opti_app/domain/repositories/user_repository.dart';
 import 'package:opti_app/domain/repositories/auth_repository.dart';
 import 'package:http/http.dart' as http;
 

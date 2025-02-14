@@ -1,25 +1,19 @@
 import '../../domain/entities/user.dart';
 
 class UserModel extends User {
-  UserModel({
-    required String email,
+  const UserModel({
+    required super.email,
     String? nom,
     String? prenom,
-    required String date,
-    required String phone,
-    required String password,
-    required String region,
-    required String genre,
+    required super.date,
+    required super.phone,
+    required super.password,
+    required super.region,
+    required super.genre,
     String? id,
   }) : super(
-          email: email,
           nom: nom ?? "", // Provide a default value for nullable fields
           prenom: prenom ?? "",
-          date: date,
-          region: region,
-          genre: genre,
-          phone: phone,
-          password: password,
         );
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -36,6 +30,7 @@ class UserModel extends User {
     );
   }
 
+  @override
   Map<String, dynamic> toJson() {
     return {
       'email': email,

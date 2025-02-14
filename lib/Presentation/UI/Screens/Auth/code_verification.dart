@@ -7,7 +7,7 @@ class EnterCodeScreen extends StatelessWidget {
   final String email;
   final TextEditingController codeController = TextEditingController();
 
-  EnterCodeScreen({required this.email, Key? key}) : super(key: key);
+  EnterCodeScreen({required this.email, super.key});
 
   @override
   Widget build(BuildContext context) {

@@ -7,29 +7,29 @@ class ProfileForm extends StatelessWidget {
   final Function(User) onSave;
 
   const ProfileForm({
-    Key? key,
+    super.key,
     required this.user,
     required this.onSave,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
-    final _formKey = GlobalKey<FormState>();
-    final _nomController = TextEditingController(text: user.nom);
-    final _prenomController = TextEditingController(text: user.prenom);
-    final _emailController = TextEditingController(text: user.email);
-    final _dateNaissanceController =
+    final formKey = GlobalKey<FormState>();
+    final nomController = TextEditingController(text: user.nom);
+    final prenomController = TextEditingController(text: user.prenom);
+    final emailController = TextEditingController(text: user.email);
+    final dateNaissanceController =
         TextEditingController(text: user.date.toString().split(' ')[0]);
-    String _selectedRegion = user.region;
-    String _selectedGenre = user.genre;
+    String selectedRegion = user.region;
+    String selectedGenre = user.genre;
     DateTime userDate = DateTime.parse(user.date);
 
     return Form(
-      key: _formKey,
+      key: formKey,
       child: ListView(
         children: [
           TextFormField(
-            controller: _nomController,
+            controller: nomController,
             decoration: const InputDecoration(labelText: "Nom"),
             validator: (value) => value == null || value.isEmpty
                 ? "Veuillez entrer votre nom"
@@ -37,7 +37,7 @@ class ProfileForm extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           TextFormField(
-            controller: _prenomController,
+            controller: prenomController,
             decoration: const InputDecoration(labelText: "Prénom"),
             validator: (value) => value == null || value.isEmpty
                 ? "Veuillez entrer votre prénom"
@@ -45,7 +45,7 @@ class ProfileForm extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           TextFormField(
-            controller: _emailController,
+            controller: emailController,
             decoration: const InputDecoration(labelText: "Email"),
             validator: (value) =>
                 value == null || value.isEmpty || !value.contains("@")
@@ -54,7 +54,7 @@ class ProfileForm extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           TextFormField(
-            controller: _dateNaissanceController,
+            controller: dateNaissanceController,
             decoration: const InputDecoration(labelText: "Date de Naissance"),
             readOnly: true,
             onTap: () async {
@@ -65,14 +65,14 @@ class ProfileForm extends StatelessWidget {
                 lastDate: DateTime.now(),
               );
               if (pickedDate != null) {
-                _dateNaissanceController.text =
+                dateNaissanceController.text =
                     pickedDate.toString().split(" ")[0];
               }
             },
           ),
           const SizedBox(height: 10),
           DropdownButtonFormField<String>(
-            value: _selectedRegion,
+            value: selectedRegion,
             decoration: const InputDecoration(labelText: "Région"),
             items: Regions.list.map((region) {
               return DropdownMenuItem(
@@ -81,7 +81,7 @@ class ProfileForm extends StatelessWidget {
               );
             }).toList(),
             onChanged: (value) {
-              _selectedRegion = value ?? _selectedRegion;
+              selectedRegion = value ?? selectedRegion;
             },
             validator: (value) =>
                 value == null ? "Sélectionnez une région" : null,
@@ -94,9 +94,9 @@ class ProfileForm extends StatelessWidget {
                 child: RadioListTile<String>(
                   title: const Text("Homme"),
                   value: "Homme",
-                  groupValue: _selectedGenre,
+                  groupValue: selectedGenre,
                   onChanged: (value) {
-                    _selectedGenre = value ?? _selectedGenre;
+                    selectedGenre = value ?? selectedGenre;
                   },
                 ),
               ),
@@ -104,9 +104,9 @@ class ProfileForm extends StatelessWidget {
                 child: RadioListTile<String>(
                   title: const Text("Femme"),
                   value: "Femme",
-                  groupValue: _selectedGenre,
+                  groupValue: selectedGenre,
                   onChanged: (value) {
-                    _selectedGenre = value ?? _selectedGenre;
+                    selectedGenre = value ?? selectedGenre;
                   },
                 ),
               ),
@@ -115,19 +115,19 @@ class ProfileForm extends StatelessWidget {
           const SizedBox(height: 20),
           ElevatedButton(
             onPressed: () {
-              if (_formKey.currentState!.validate()) {
+              if (formKey.currentState!.validate()) {
                 try {
                   // Convert the date string into a DateTime object
-                  String selectedDate = _dateNaissanceController.text;
+                  String selectedDate = dateNaissanceController.text;
 
                   // Create a new User with the updated data
                   onSave(User(
-                    email: _emailController.text,
-                    nom: _nomController.text,
-                    prenom: _prenomController.text,
+                    email: emailController.text,
+                    nom: nomController.text,
+                    prenom: prenomController.text,
                     date: selectedDate, // Pass the DateTime object
-                    region: _selectedRegion,
-                    genre: _selectedGenre,
+                    region: selectedRegion,
+                    genre: selectedGenre,
                     password: '',
                     phone: '',
                   ));

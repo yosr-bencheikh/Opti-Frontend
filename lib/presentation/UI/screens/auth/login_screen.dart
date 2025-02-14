@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:get/get.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/login_api.dart';
 import 'package:opti_app/Presentation/controllers/auth_controller.dart';
 import 'package:http/http.dart' as http;
-import 'package:opti_app/domain/entities/user.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({Key? key}) : super(key: key);
+  const LoginScreen({super.key});
 
   @override
   _LoginScreenState createState() => _LoginScreenState();
@@ -221,7 +219,8 @@ Future<void> signInWithGoogle() async {
                       ),
                       const SizedBox(height: 20),
                       Row(
-  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+
+
   children: [
     ElevatedButton(
       onPressed: () async {
@@ -232,7 +231,16 @@ Future<void> signInWithGoogle() async {
           print("Échec de la connexion Google.");
         }
       },
-      child: const Text('Login avec Google'),
+      style: ElevatedButton.styleFrom(
+        padding:
+        const EdgeInsets.symmetric(vertical:2),
+        backgroundColor: Colors.blue,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8.0),
+        ),
+
+      ),
+      child: const Text('Google'),
     ),
     ElevatedButton(
       onPressed: () async {

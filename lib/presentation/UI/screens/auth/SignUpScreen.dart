@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:opti_app/Presentation/utils/jwt_utils.dart';
 import 'package:opti_app/core/constants/regions.dart';
 import 'package:opti_app/Presentation/utils/validators.dart';
 import 'package:opti_app/domain/entities/user.dart';
 import 'package:opti_app/Presentation/controllers/auth_controller.dart';
 
 class SignUpScreen extends StatefulWidget {
-  const SignUpScreen({Key? key}) : super(key: key);
+  const SignUpScreen({super.key});
 
   @override
   _SignUpScreenState createState() => _SignUpScreenState();

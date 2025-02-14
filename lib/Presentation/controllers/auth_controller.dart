@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/get_state_manager/src/simple/get_controllers.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:opti_app/Presentation/utils/jwt_utils.dart';
@@ -9,10 +8,6 @@ import 'package:opti_app/domain/repositories/auth_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:opti_app/data/data_sources/auth_remote_datasource.dart';
 import 'package:opti_app/domain/repositories/auth_repository_impl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:opti_app/domain/entities/user.dart';
-import 'package:opti_app/domain/repositories/auth_repository.dart';
-import 'package:opti_app/Presentation/utils/jwt_utils.dart';
 import 'package:http/http.dart' as http;
 
 class AuthController extends GetxController {
@@ -34,64 +29,61 @@ class AuthController extends GetxController {
   User? get currentUser => _currentUser.value;
   set currentUser(User? value) => _currentUser.value = value;
 
-  @override
+ /* @override
   void onInit() {
     super.onInit();
-    checkLoginStatus();
     ever(isLoggedIn, handleAuthenticationChanged);
     checkLoginStatus();
-  }
-    void handleAuthenticationChanged(bool isLoggedIn) {
+  }*/
+
+  void handleAuthenticationChanged(bool isLoggedIn) {
     if (isLoggedIn) {
-      Get.offAllNamed('/profileScreen', arguments: currentUserId.value);
+      Future.microtask(() => Get.offAllNamed('/profileScreen', arguments: currentUserId.value));
     } else {
-      Get.offAllNamed('/login');
+      Future.microtask(() => Get.offAllNamed('/login'));
     }
   }
 
 
-Future checkLoginStatus() async {
-  try {
-    final String? token = prefs.getString('token');
-    final String? userId = prefs.getString('userId');
-    
-    if (token == null || userId == null) {
-      await logout();
-      return;
+
+  Future checkLoginStatus() async {
+    try {
+      final String? token = prefs.getString('token');
+      final String? userId = prefs.getString('userId');
+
+      if (token == null || userId == null) {
+        isLoggedIn.value = false;
+        return;
+      }
+
+      if (JwtDecoder.isExpired(token)) {
+        print('Token expiré');
+        isLoggedIn.value = false;
+        return;
+      }
+
+      final client = http.Client();
+      final authDataSource = AuthRemoteDataSourceImpl(client: client);
+      final authRepositoryImpl = AuthRepositoryImpl(authDataSource);
+      final bool isValid = await authRepositoryImpl.verifyToken(token);
+      client.close();
+
+      if (!isValid) {
+        print('Token invalide selon le serveur');
+        isLoggedIn.value = false;
+        return;
+      }
+
+      // Si tout est OK, mettez à jour l'état
+      currentUserId.value = userId;
+      isLoggedIn.value = true;
+
+    } catch (e) {
+      isLoggedIn.value = false;
+      print('Error in checkLoginStatus: $e');
     }
-    
-    // Vérifier si le token est expiré localement
-    if (JwtDecoder.isExpired(token)) {
-      print('Token expiré');
-      await logout();
-      return;
-    }
-    
-    // Create an HTTP client
-    final client = http.Client();
-    
-    // Create AuthRemoteDataSource with the required client
-    final authDataSource = AuthRemoteDataSourceImpl(client: client);
-    
-    // Create AuthRepositoryImpl with the correct data source
-    final authRepositoryImpl = AuthRepositoryImpl(authDataSource);
-    
-    // Vérifier le token avec le serveur
-    final bool isValid = await authRepositoryImpl.verifyToken(token);
-    if (!isValid) {
-      print('Token invalide selon le serveur');
-      await logout();
-      return;
-    }
-    
-    // Don't forget to close the client when done
-    client.close();
-    
-  } catch (e) {
-    await logout();
-    print('Error in checkLoginStatus: $e');
   }
-}
+
 
  Future<void> loadUserData(String userId) async {
   try {
@@ -125,7 +117,7 @@ Future checkLoginStatus() async {
     try {
       final response = await authRepository.loginWithEmail(email, password);
 
-      if (response == null || response.isEmpty) {
+      if (response.isEmpty) {
         throw Exception('Invalid response from server');
       }
 
@@ -222,19 +214,19 @@ Future checkLoginStatus() async {
     }
   }
 
-    Future<void> logout() async {
+  Future<void> logout() async {
     try {
       await prefs.clear();
       currentUserId.value = '';
       authToken.value = '';
-      isLoggedIn.value = false;
-      currentUser = null; // Use the setter
-      Get.offAllNamed('/');
+      isLoggedIn.value = false;  // Le listener déclenchera la navigation
+      currentUser = null;
     } catch (e) {
       print('Logout error: $e');
       Get.snackbar('Error', 'Failed to logout');
     }
   }
+
 
 
   // === Reset Password Flow Methods ===

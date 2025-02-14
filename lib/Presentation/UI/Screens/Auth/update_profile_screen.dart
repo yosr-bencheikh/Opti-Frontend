@@ -11,9 +11,9 @@ class UpdateProfileScreen extends StatefulWidget {
   final String userId;
 
   const UpdateProfileScreen({
-    Key? key,
+    super.key,
     required this.userId,
-  }) : super(key: key);
+  });
 
   @override
   State<UpdateProfileScreen> createState() => _UpdateProfileScreenState();

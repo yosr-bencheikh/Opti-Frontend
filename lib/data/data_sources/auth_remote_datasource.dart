@@ -120,7 +120,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     }
   }
 
- Future<Map<String, dynamic>> getUser(String userId) async {
+ @override
+  Future<Map<String, dynamic>> getUser(String userId) async {
   final url = Uri.parse('$baseUrl/users/$userId');
   print('Full URL being called: $url'); // Add this
   

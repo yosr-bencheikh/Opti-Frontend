@@ -5,7 +5,7 @@ import 'package:opti_app/Presentation/controllers/auth_controller.dart';
 class ResetPasswordScreen extends StatefulWidget {
   final String email;
 
-  ResetPasswordScreen({required this.email, Key? key}) : super(key: key);
+  const ResetPasswordScreen({required this.email, super.key});
 
   @override
   _ResetPasswordScreenState createState() => _ResetPasswordScreenState();
