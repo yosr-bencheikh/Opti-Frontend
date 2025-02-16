@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:opti_app/Presentation/utils/jwt_utils.dart';
@@ -214,19 +215,37 @@ class AuthController extends GetxController {
     }
   }
 
-  Future<void> logout() async {
-    try {
-      await prefs.clear();
-      currentUserId.value = '';
-      authToken.value = '';
-      isLoggedIn.value = false;  // Le listener déclenchera la navigation
-      currentUser = null;
-    } catch (e) {
-      print('Logout error: $e');
-      Get.snackbar('Error', 'Failed to logout');
-    }
-  }
+ Future<void> logout() async {
+  try {
+    // Clear local storage
+    await prefs.clear();
 
+    // Clear any Google sessions
+    final GoogleSignIn googleSignIn = GoogleSignIn();
+    try {
+      await googleSignIn.signOut(); // Terminate Google session
+    } catch (e) {
+      print('Google signOut error: $e');
+    }
+    try {
+      await googleSignIn.disconnect(); // Disconnect Google account
+    } catch (e) {
+      print('Google disconnect error: $e');
+    }
+
+    // Clear app state
+    currentUserId.value = '';
+    authToken.value = '';
+    isLoggedIn.value = false;
+    currentUser = null;
+
+    // Navigate to login screen
+    Get.offAllNamed('/loginScreen'); // Force navigation to login screen
+  } catch (e) {
+    print('Logout error: $e');
+    Get.snackbar('Error', 'Failed to logout: ${e.toString()}');
+  }
+}
 
 
   // === Reset Password Flow Methods ===

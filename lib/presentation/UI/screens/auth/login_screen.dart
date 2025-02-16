@@ -58,33 +58,7 @@ class _LoginScreenState extends State<LoginScreen> {
     await authController.loginWithEmail(email, password);
   }
 
-Future<void> signInWithGoogle() async {
-  try {
-    final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-    if (googleUser != null) {
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-      final String? idToken = googleAuth.idToken;
-      final String? accessToken = googleAuth.accessToken;
 
-      // Envoyez le jeton ID et le jeton d'accès à votre backend pour vérification
-      final response = await http.post(
-        Uri.parse('https://abc123.ngrok.io/auth/google/callback'),
-        body: {
-          'idToken': idToken,
-          'accessToken': accessToken,
-        },
-      );
-
-      if (response.statusCode == 200) {
-        print('Connexion réussie');
-      } else {
-        print('Échec de la connexion');
-      }
-    }
-  } catch (error) {
-    print('Erreur lors de la connexion Google: $error');
-  }
-}
 
 
 
@@ -222,25 +196,23 @@ Future<void> signInWithGoogle() async {
 
 
   children: [
-    ElevatedButton(
+    ElevatedButton.icon(
       onPressed: () async {
-        var user = await LoginApi.login();
-        if (user != null) {
-          print("Connexion Google réussie !");
-        } else {
-          print("Échec de la connexion Google.");
+        var result = await LoginApi.login();
+        if (result != null) {
+          // Navigation is already handled in LoginApi.login()
+          print("Successfully logged in with Google!");
         }
       },
+      icon: Icon(Icons.g_mobiledata),
+      label: Text('Google'),
       style: ElevatedButton.styleFrom(
-        padding:
-        const EdgeInsets.symmetric(vertical:2),
+        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         backgroundColor: Colors.blue,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8.0),
         ),
-
       ),
-      child: const Text('Google'),
     ),
     ElevatedButton(
       onPressed: () async {
