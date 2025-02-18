@@ -7,7 +7,7 @@ class VerifyCode {
 
   VerifyCode(this.repository);
 
-  Future<Either<Failure, void>> call(String email, String code) async {
+  Future<void> call(String email, String code) async {
     return await repository.verifyCode(email, code);
   }
 }

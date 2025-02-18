@@ -7,7 +7,7 @@ class ResetPassword {
 
   ResetPassword(this.repository);
 
-  Future<Either<Failure, void>> call(String email, String password) async {
+  Future<void> call(String email, String password) async {
     return await repository.resetPassword(email, password);
   }
 }

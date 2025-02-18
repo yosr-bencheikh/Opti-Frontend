@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:opti_app/core/error/failures.dart';
 import 'package:opti_app/domain/entities/user.dart';
@@ -13,57 +14,71 @@ abstract class AuthRemoteDataSource {
   Future<void> verifyCode(String email, String code);
   Future<void> resetPassword(String email, String password);
   Future<String> uploadImage(String filePath, String userId);
-  Future<void> updateUserImage(
-      String userId, String imageUrl); // <-- New method
+  Future<void> updateUserImage(String userId, String imageUrl);
+  Future<Map<String, dynamic>> getUserByEmail(String email); // <-- New method
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   final http.Client client;
 
   // Use your server's IP and port (make sure this is accessible from your phone)
-  final String baseUrl = 'http://192.168.1.18:3000/api';
+  final String baseUrl = 'http://192.168.1.22:3000/api';
 
-
-  
   static String? verifiedEmail; // Made static
   static String? verificationCode;
 
   AuthRemoteDataSourceImpl({required this.client});
 
   @override
-  Future<String> loginWithEmail(String email, String password) async {
-    final url = Uri.parse('$baseUrl/login');
+  Future<Map<String, dynamic>> getUserByEmail(String email) async {
     try {
+      final response = await client.get(
+        Uri.parse('$baseUrl/users/$email'),
+        headers: {'Content-Type': 'application/json'},
+      );
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> userData = json.decode(response.body);
+        return userData;
+      } else {
+        throw Exception('Server returned status code ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Failed to load user by email: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<String> loginWithEmail(String email, String password) async {
+    try {
+      debugPrint('Inside loginWithEmail: Sending request...');
+
       final response = await client.post(
-        url,
+        Uri.parse('$baseUrl/login'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'email': email, 'password': password}),
       );
-      print('Response status: ${response.statusCode}'); // Log response status
-      print('Response body: ${response.body}');
+
+      debugPrint(
+          'Received response: ${response.statusCode}, Body: ${response.body}');
+
       final responseData = json.decode(response.body);
+
       if (response.statusCode == 200 && responseData['token'] != null) {
+        debugPrint('Login successful, token: ${responseData['token']}');
         return responseData['token'];
-      } else if (response.statusCode == 404) {
-        String errorMessage = responseData['message'] ?? 'Login Failed';
-        if (errorMessage == 'Email not found') {
-          throw Exception('Email not found. Please check your email address.');
-        } else if (errorMessage == 'Incorrect password') {
-          throw Exception('Incorrect password. Please try again.');
-        } else {
-          throw Exception(errorMessage);
-        }
       } else {
-        throw Exception(
-            'Server failure: ${responseData['message'] ?? 'Unknown error'}');
+        debugPrint(
+            'Login failed: ${responseData['message'] ?? 'Unknown error'}');
+        throw Exception(responseData['message'] ?? 'Login failed');
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('Error inside loginWithEmail: $e');
+      debugPrint('Stack trace: $stackTrace');
       throw Exception('An error occurred: ${e.toString()}');
     }
   }
 
   @override
-
   Future<String> loginWithGoogle(String token) async {
     final url = Uri.parse('https://abc123.ngrok.io/auth/google/callback');
 
@@ -86,7 +101,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   }
 
   @override
-
   Future<Map<String, dynamic>> signUp(User user) async {
     final url = Uri.parse('$baseUrl/users');
     try {
@@ -120,33 +134,32 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     }
   }
 
- @override
+  @override
   Future<Map<String, dynamic>> getUser(String userId) async {
-  final url = Uri.parse('$baseUrl/users/$userId');
-  print('Full URL being called: $url'); // Add this
-  
-  final response = await client.get(url);
-  print('Response status code: ${response.statusCode}'); // Add this
-  print('Response body: ${response.body}');
-   // Add this
-  
-  if (response.statusCode == 200) {
-    return json.decode(response.body);
-  } else {
-    final errorData = json.decode(response.body);
-    print('Error data received: $errorData'); // Add this
-    final errorMessage = errorData['message'] ?? 'Failed to load user';
-    throw Exception('HTTP ${response.statusCode}: $errorMessage');
+    final url = Uri.parse('$baseUrl/users/$userId');
+    print('Full URL being called: $url'); // Add this
+
+    final response = await client.get(url);
+    print('Response status code: ${response.statusCode}'); // Add this
+    print('Response body: ${response.body}');
+    // Add this
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      final errorData = json.decode(response.body);
+      print('Error data received: $errorData'); // Add this
+      final errorMessage = errorData['message'] ?? 'Failed to load user';
+      throw Exception('HTTP ${response.statusCode}: $errorMessage');
+    }
   }
-}
 
   @override
-  Future<void> updateUser(String userId, User user) async {
-    final url = Uri.parse('$baseUrl/users/$userId');
-    final response = await client.put(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode({
+  Future<void> updateUser(String email, User user) async {
+    try {
+      final url = Uri.parse('$baseUrl/update/$email');
+
+      final Map<String, dynamic> userData = {
         'nom': user.nom,
         'prenom': user.prenom,
         'email': user.email,
@@ -154,12 +167,28 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         'phone': user.phone,
         'region': user.region,
         'genre': user.genre,
-        'password': user.password,
-      }),
-    );
-    if (response.statusCode != 200) {
-      final errorResponse = json.decode(response.body);
-      throw Exception('Failed to update user: ${errorResponse['message']}');
+      };
+
+      // Only include password if it's being updated
+      if (user.password != null && user.password!.isNotEmpty) {
+        userData['password'] = user.password;
+      }
+
+      final response = await client.put(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(userData),
+      );
+
+      if (response.statusCode == 200) {
+        print('Update successful: ${response.body}');
+      } else {
+        final errorResponse = json.decode(response.body);
+        throw Exception('Failed to update user: ${errorResponse['message']}');
+      }
+    } catch (e) {
+      print('Data source update error: $e');
+      throw Exception('Error updating user: $e');
     }
   }
 
@@ -216,30 +245,33 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     }
   }
 
-@override
-Future<String> uploadImage(String filePath, String userId) async {
-  final url = Uri.parse('$baseUrl/upload');
-  var request = http.MultipartRequest('POST', url);
-  request.files.add(await http.MultipartFile.fromPath('image', filePath));
-  final streamedResponse = await request.send();
-  final response = await http.Response.fromStream(streamedResponse);
+  @override
+  Future<String> uploadImage(String filePath, String email) async {
+    final url = Uri.parse(
+        '$baseUrl/upload'); // Adjusted URL to match the backend endpoint
+    var request = http.MultipartRequest('POST', url);
+    request.files.add(await http.MultipartFile.fromPath('image', filePath));
 
-  if (response.statusCode == 200) {
-    final responseData = json.decode(response.body);
-    final imageUrl = responseData['imageUrl'];
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
 
-    // Update the user's imageUrl in the database
-    await updateUserImage(userId, imageUrl);
+    if (response.statusCode == 200) {
+      final responseData = json.decode(response.body);
+      final imageUrl = responseData['imageUrl'];
 
-    return imageUrl; // Ensure a String is returned
-  } else {
-    throw Exception('Image upload failed: ${response.body}');
+      // Update the user's image URL in the database by email
+      await updateUserImage(email, imageUrl);
+
+      return imageUrl; // Return the uploaded image URL
+    } else {
+      throw Exception('Image upload failed: ${response.body}');
+    }
   }
-}
 
   @override
-  Future<void> updateUserImage(String userId, String imageUrl) async {
-    final url = Uri.parse('$baseUrl/users/$userId/image');
+  Future<void> updateUserImage(String email, String imageUrl) async {
+    final url = Uri.parse(
+        '$baseUrl/upload/$email/image'); // Updated URL to match the backend route
     try {
       final response = await client.put(
         url,

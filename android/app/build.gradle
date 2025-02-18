@@ -1,6 +1,7 @@
 plugins {
     id 'com.android.application'
     id 'kotlin-android'
+    id 'dev.flutter.flutter-gradle-plugin'
 }
 
 def localProperties = new Properties()
@@ -19,7 +20,7 @@ if (flutterRoot == null) {
 def flutterVersionCode = '1'
 def flutterVersionName = '1.0'
 
-apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
+//apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 
 android {
     namespace = "com.example.opti_app"

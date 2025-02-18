@@ -1,9 +1,13 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:get/get.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:opti_app/Presentation/utils/jwt_utils.dart';
+import 'package:opti_app/data/models/user_model.dart';
 import 'package:opti_app/domain/entities/user.dart';
 import 'package:opti_app/domain/repositories/auth_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -14,11 +18,16 @@ import 'package:http/http.dart' as http;
 class AuthController extends GetxController {
   final AuthRepository authRepository;
   final SharedPreferences prefs;
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: ['email', 'profile'],
+    serverClientId:
+        "95644263598-p1ko0g4ds7ko6v6obqkdc38j76ndjmt2.apps.googleusercontent.com",
+  );
 
   var isLoading = false.obs;
   var isLoggedIn = false.obs;
   var currentUserId = ''.obs;
-  final Rx<User?> _currentUser = Rx<User?>(null); // Private variable
+  final Rx<User?> _currentUser = Rx<User?>(null);
   var authToken = ''.obs;
 
   AuthController({
@@ -26,26 +35,23 @@ class AuthController extends GetxController {
     required this.prefs,
   });
 
-  // Getter and setter for currentUser
   User? get currentUser => _currentUser.value;
   set currentUser(User? value) => _currentUser.value = value;
 
- /* @override
+  @override
   void onInit() {
     super.onInit();
-    ever(isLoggedIn, handleAuthenticationChanged);
-    checkLoginStatus();
-  }*/
+    loadUserFromPrefs();
+  }
 
   void handleAuthenticationChanged(bool isLoggedIn) {
     if (isLoggedIn) {
-      Future.microtask(() => Get.offAllNamed('/profileScreen', arguments: currentUserId.value));
+      Future.microtask(() =>
+          Get.offAllNamed('/profileScreen', arguments: currentUserId.value));
     } else {
       Future.microtask(() => Get.offAllNamed('/login'));
     }
   }
-
-
 
   Future checkLoginStatus() async {
     try {
@@ -75,38 +81,190 @@ class AuthController extends GetxController {
         return;
       }
 
-      // Si tout est OK, mettez à jour l'état
       currentUserId.value = userId;
       isLoggedIn.value = true;
-
     } catch (e) {
       isLoggedIn.value = false;
       print('Error in checkLoginStatus: $e');
     }
   }
 
-
- Future<void> loadUserData(String userId) async {
-  try {
-    print('Loading user data for ID: $userId');
-    print('User ID format check: ${userId.length} characters: $userId');
-     // Add this
-    final userData = await authRepository.getUser(userId);
-
-    if (userData == null) {
-      print('Null response from server');
-      throw Exception('Server returned null');
-    }
-
-    print('Received user data: ${userData.toString()}');
-    currentUser = User.fromJson(userData);
-  } catch (e) {
-    print('loadUserData ERROR: ${e.toString()}');
-    // Check if we're getting a response at all
-  
-  
+  Map<String, dynamic> _formatUserData(Map<String, dynamic> data) {
+    return {
+      'nom': data['nom'] ?? '',
+      'prenom': data['prenom'] ?? '',
+      'email': data['email'] ?? '',
+      'date': data['date'] ?? '',
+      'phone': data['phone'] ?? '',
+      'region': data['region'] ?? '',
+      'genre': data['genre'] ?? 'Homme',
+      'imageUrl': data['imageUrl'] ?? '',
+      'password': data['password'] ?? '', // Include password if available
+    };
   }
-}
+
+  Future<void> loadUserData(String email) async {
+    try {
+      isLoading.value = true;
+      if (email.isEmpty) {
+        throw Exception('Email cannot be empty');
+      }
+
+      debugPrint('Fetching user data for email: $email');
+      final userData = await authRepository.getUserByEmail(email);
+
+      if (userData == null) {
+        throw Exception('User data not found for email: $email');
+      }
+
+      debugPrint('Raw user data received: $userData');
+      final formattedUserData = _formatUserData(userData);
+      debugPrint('Formatted user data: $formattedUserData');
+
+      // Create a UserModel instance from the formatted data
+      _currentUser.value = UserModel.fromJson(formattedUserData);
+
+      // Store the current user data
+      await prefs.setString(
+          'currentUser_$email', json.encode(formattedUserData));
+      await prefs.setString('lastLoggedInEmail', email);
+
+      debugPrint('User data loaded and stored successfully');
+    } catch (e) {
+      debugPrint('Error loading user data: $e');
+      Get.snackbar(
+        'Error',
+        'Failed to load user data: $e',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      rethrow;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+// Load user data from SharedPreferences on app start
+  Future<void> loadUserFromPrefs() async {
+    try {
+      final String? lastEmail = prefs.getString('lastLoggedInEmail');
+      if (lastEmail == null) return;
+
+      final String? userJson = prefs.getString('currentUser_$lastEmail');
+      if (userJson != null) {
+        final Map<String, dynamic> userData = json.decode(userJson);
+        _currentUser.value = User.fromJson(userData);
+      }
+    } catch (e) {
+      print('Error loading user from prefs: $e');
+    }
+  }
+
+  Future<void> loginWithGoogle() async {
+    try {
+      isLoading.value = true;
+      await _googleSignIn.signOut(); // Force account selection
+
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) {
+        Get.snackbar('Cancelled', 'Google sign-in cancelled');
+        return;
+      }
+
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+
+      final response = await http.post(
+        Uri.parse(
+            'https://0b60-197-3-209-201.ngrok-free.app/auth/google/callback'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'idToken': googleAuth.idToken,
+          'email': googleUser.email,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        final token = responseData['token'];
+        final userId = JwtDecoder.decode(token)['userId'].toString();
+
+        await prefs.setString('token', token);
+        await prefs.setString('userId', userId);
+
+        authToken.value = token;
+        currentUserId.value = userId;
+        isLoggedIn.value = true;
+        await loadUserData(googleUser.email);
+        Get.offAllNamed('/profileScreen', arguments: userId);
+      } else {
+        throw Exception('Google login failed: ${response.body}');
+      }
+    } catch (error) {
+      Get.snackbar(
+        'Error',
+        'Google login failed: ${error.toString()}',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      rethrow;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /// 🔹 Facebook Sign-In
+  Future<void> loginWithFacebook() async {
+    try {
+      isLoading.value = true;
+      final LoginResult result = await FacebookAuth.instance.login();
+
+      if (result.status != LoginStatus.success) {
+        Get.snackbar('Cancelled', 'Facebook sign-in cancelled');
+        return;
+      }
+
+      final AccessToken accessToken = result.accessToken!;
+      final userData = await FacebookAuth.instance.getUserData();
+
+      final response = await http.post(
+        Uri.parse(
+            'https://0b60-197-3-209-201.ngrok-free.app/auth/facebook/callback'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'token': accessToken.tokenString,
+          'email': userData['email'],
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        final token = responseData['token'];
+        final userId = JwtDecoder.decode(token)['userId'].toString();
+
+        await prefs.setString('token', token);
+        await prefs.setString('userId', userId);
+
+        authToken.value = token;
+        currentUserId.value = userId;
+        isLoggedIn.value = true;
+
+        Get.offAllNamed('/profileScreen', arguments: userId);
+      } else {
+        throw Exception('Facebook login failed: ${response.body}');
+      }
+    } catch (error) {
+      Get.snackbar(
+        'Error',
+        'Facebook login failed: ${error.toString()}',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
 
   Future<void> loginWithEmail(String email, String password) async {
     if (email.isEmpty || password.isEmpty) {
@@ -115,52 +273,61 @@ class AuthController extends GetxController {
     }
 
     isLoading.value = true;
+
     try {
+      debugPrint('Calling loginWithEmail function...');
       final response = await authRepository.loginWithEmail(email, password);
+      debugPrint('Server Response: $response');
 
       if (response.isEmpty) {
-        throw Exception('Invalid response from server');
+        throw Exception('Empty response received from server');
       }
 
-      // Store the token
+      final Map<String, dynamic> decodedToken = JwtDecoder.decode(response);
+      final String? userEmail = decodedToken['email'];
+      final String? userId = decodedToken['id']?.toString();
+
+      if (userId == null || userId.isEmpty) {
+        throw Exception('Invalid token: Unable to extract user ID');
+      }
+
+      if (userEmail == null || userEmail.isEmpty) {
+        throw Exception('Invalid token: Unable to extract email');
+      }
+
+      // Store authentication data
       authToken.value = response;
-      await prefs.setString('token', response);
+      currentUserId.value = userId;
+      isLoggedIn.value = true;
 
-      // Extract user ID from token
-      try {
-        final Map<String, dynamic> decodedToken = JwtDecoder.decode(response);
-        final String? userId = decodedToken['userId']?.toString() ??
-            decodedToken['sub']?.toString() ??
-            decodedToken['id']?.toString();
+      await Future.wait([
+        prefs.setString('token', response),
+        prefs.setString('userId', userId),
+        prefs.setString('userEmail', userEmail),
+      ]);
 
-        if (userId == null || userId.isEmpty) {
-          throw Exception('Unable to extract user ID from token');
-        }
-
-        // Save user ID
-        currentUserId.value = userId;
-        await prefs.setString('userId', userId);
-        isLoggedIn.value = true;
-
-        // Load user data
-        
-
-        // Navigate to profile screen and pass the userId as argument
-        Get.offAllNamed('/profileScreen', arguments: userId);
-         await loadUserData(userId);
-
-        Get.snackbar('Success', 'Login successful');
-      } catch (e) {
-        print('Error decoding token: $e');
-        throw Exception('Invalid token format');
-      }
-    } catch (e) {
+      await loadUserData(userEmail);
+      Get.offAllNamed('/profileScreen', arguments: {
+        'email': userEmail,
+      });
+    } catch (e, stackTrace) {
       print('Login error: $e');
+      debugPrint('Stack trace: $stackTrace');
+      authToken.value = '';
+      currentUserId.value = '';
+      isLoggedIn.value = false;
+
+      await Future.wait([
+        prefs.remove('token'),
+        prefs.remove('userId'),
+        prefs.remove('userEmail'),
+      ]);
+
       Get.snackbar(
-        'Login Failed',
-        'Please check your credentials and try again',
-        duration: const Duration(seconds: 3),
-        snackPosition: SnackPosition.BOTTOM,
+        'Error',
+        'Login failed: ${e.toString()}',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
       );
     } finally {
       isLoading.value = false;
@@ -171,17 +338,18 @@ class AuthController extends GetxController {
     isLoading.value = true;
     try {
       final signupData = await authRepository.signUp(newUser);
+
       final token = signupData["token"] as String;
-      final userId = JwtUtils.getUserId(token);
+      final email = JwtUtils.getEmailFromToken(token);
 
       await prefs.setString('token', token);
-      await prefs.setString('userId', userId);
+      await prefs.setString('userEmail', email);
 
       authToken.value = token;
-      currentUserId.value = userId;
+
       isLoggedIn.value = true;
 
-      await loadUserData(userId);
+      await loadUserData(email);
 
       Get.snackbar(
         'Succès',
@@ -189,8 +357,7 @@ class AuthController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
       );
 
-      // Navigate to profile screen and pass the userId as argument
-      Get.offAllNamed('/profileScreen', arguments: userId);
+      Get.offAllNamed('/profileScreen', arguments: email);
     } catch (e) {
       print('Sign Up error: $e');
       if (e.toString().contains('User already exists')) {
@@ -215,42 +382,33 @@ class AuthController extends GetxController {
     }
   }
 
- Future<void> logout() async {
-  try {
-    // Clear local storage
-    await prefs.clear();
-
-    // Clear any Google sessions
-    final GoogleSignIn googleSignIn = GoogleSignIn();
+  Future<void> logout() async {
     try {
-      await googleSignIn.signOut(); // Terminate Google session
-    } catch (e) {
-      print('Google signOut error: $e');
-    }
-    try {
-      await googleSignIn.disconnect(); // Disconnect Google account
-    } catch (e) {
-      print('Google disconnect error: $e');
-    }
+      await prefs.clear();
+      final GoogleSignIn googleSignIn = GoogleSignIn();
+      try {
+        await googleSignIn.signOut();
+      } catch (e) {
+        print('Google signOut error: $e');
+      }
+      try {
+        await googleSignIn.disconnect();
+      } catch (e) {
+        print('Google disconnect error: $e');
+      }
 
-    // Clear app state
-    currentUserId.value = '';
-    authToken.value = '';
-    isLoggedIn.value = false;
-    currentUser = null;
+      currentUserId.value = '';
+      authToken.value = '';
+      isLoggedIn.value = false;
+      currentUser = null;
 
-    // Navigate to login screen
-    Get.offAllNamed('/loginScreen'); // Force navigation to login screen
-  } catch (e) {
-    print('Logout error: $e');
-    Get.snackbar('Error', 'Failed to logout: ${e.toString()}');
+      Get.offAllNamed('/loginScreen');
+    } catch (e) {
+      print('Logout error: $e');
+      Get.snackbar('Error', 'Failed to logout: ${e.toString()}');
+    }
   }
-}
 
-
-  // === Reset Password Flow Methods ===
-
-  /// Sends a verification code to the given email.
   Future<bool> sendCodeToEmail(String email) async {
     isLoading.value = true;
     try {
@@ -326,10 +484,12 @@ class AuthController extends GetxController {
     }
   }
 
-  Future<void> uploadImage(String userId) async {
+  Future<void> uploadImage(String email) async {
     try {
       final filePath = _selectedImage.value!.path;
-      final imageUrl = await authRepository.uploadImage(filePath, userId);
+      print('Uploading image from path: $filePath');
+      final imageUrl = await authRepository.uploadImage(filePath, email);
+      print('Image uploaded successfully. URL: $imageUrl');
 
       // Update the user's imageUrl in the backend
       final updatedUser = User(
@@ -345,14 +505,67 @@ class AuthController extends GetxController {
       );
 
       // Save the updated user to the backend
-      await authRepository.updateUser(userId, updatedUser);
+      await authRepository.updateUser(email, updatedUser);
 
       // Refresh the current user data
-      await loadUserData(userId);
+      await loadUserData(email);
 
       Get.snackbar('Success', 'Image uploaded successfully!');
     } catch (e) {
+      print('Error uploading image: $e');
       Get.snackbar('Error', 'Failed to upload image: $e');
+    }
+  }
+
+  Future<void> updateUserProfile(String email, User updatedUser) async {
+    try {
+      isLoading.value = true;
+
+      // Use the email as is (no encoding)
+      final encodedEmail = email; // Remove the encoding
+
+      // Create a complete user object with all required fields
+      final userToUpdate = User(
+          nom: updatedUser.nom,
+          prenom: updatedUser.prenom,
+          email: updatedUser.email,
+          date: updatedUser.date,
+          phone: updatedUser.phone ??
+              '', // Provide default values for optional fields
+          region: updatedUser.region ?? '',
+          genre: updatedUser.genre ?? 'Homme',
+          password: updatedUser.password, // Only included if changed
+          imageUrl: currentUser?.imageUrl ?? '' // Preserve existing image URL
+          );
+
+      // Call repository to update user
+      await authRepository.updateUser(encodedEmail, userToUpdate);
+
+      // Reload user data to ensure UI is in sync
+      await loadUserData(updatedUser.email);
+
+      Get.snackbar(
+        'Success',
+        'Profile updated successfully',
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+
+      // Navigate using the new email in case it was updated
+      Get.offAllNamed('/profileScreen', arguments: userToUpdate.email);
+    } catch (e) {
+      print('Update profile error: $e');
+      Get.snackbar(
+        'Error',
+        'Failed to update profile: ${e.toString()}',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      rethrow;
+    } finally {
+      isLoading.value = false;
     }
   }
 }

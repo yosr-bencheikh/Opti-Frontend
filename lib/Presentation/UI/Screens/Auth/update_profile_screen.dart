@@ -1,18 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:get/get.dart';
+import 'package:opti_app/Presentation/controllers/auth_controller.dart';
 import 'package:opti_app/core/constants/regions.dart';
-import 'package:opti_app/data/data_sources/auth_remote_datasource.dart';
 import 'package:opti_app/data/models/user_model.dart';
 import 'package:opti_app/domain/entities/user.dart';
-import 'package:opti_app/domain/repositories/auth_repository.dart';
-import 'package:opti_app/domain/repositories/auth_repository_impl.dart';
 
 class UpdateProfileScreen extends StatefulWidget {
-  final String userId;
+  final String email;
 
   const UpdateProfileScreen({
     super.key,
-    required this.userId,
+    required this.email,
   });
 
   @override
@@ -30,13 +28,8 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
   bool _isLoading = false;
   User? _currentUser;
 
-  // Initialize repository
-  final AuthRepository _authRepository =
-      AuthRepositoryImpl(AuthRemoteDataSourceImpl(client: http.Client()));
-
-  // List of genres for dropdown
+  final AuthController _authController = Get.find<AuthController>();
   final List<String> _genres = ['Homme', 'Femme'];
-
   @override
   void initState() {
     super.initState();
@@ -44,62 +37,71 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
     _prenomController = TextEditingController();
     _emailController = TextEditingController();
     _dateNaissanceController = TextEditingController();
+    _selectedGenre = 'Homme';
 
-    // Fetch user data on init
-    _loadUserData();
-  }
+    debugPrint('Initial email: ${widget.email}'); // Add this log
 
-  @override
-  void dispose() {
-    _nomController.dispose();
-    _prenomController.dispose();
-    _emailController.dispose();
-    _dateNaissanceController.dispose();
-    super.dispose();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.email.isEmpty) {
+        debugPrint('Email is empty!');
+        Get.snackbar(
+          'Error',
+          'Email is required',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        Get.back();
+      } else {
+        _loadUserData();
+      }
+    });
   }
 
   Future<void> _loadUserData() async {
+    if (!mounted) return;
+
     setState(() => _isLoading = true);
 
     try {
-      if (widget.userId.isEmpty) {
-        throw Exception('Invalid user ID');
+      User? user = _authController.currentUser;
+
+      if (user == null) {
+        debugPrint('Loading user data for email: ${widget.email}');
+        await _authController.loadUserData(widget.email);
+        user = _authController.currentUser;
       }
-      debugPrint('Fetching user with ID: ${widget.userId}');
-      
-      // Get the user data (JSON map) from the repository
-      final userMap = await _authRepository.getUser(widget.userId);
-      
-      // Convert the map to a User object
-      final user = User.fromJson(userMap);
 
-      if (!mounted) return;
+      if (user == null) {
+        throw Exception('User data not found');
+      }
 
-      setState(() {
-        _currentUser = user;
-        // Populate controllers with user data
-        _nomController.text = user.nom;
-        _prenomController.text = user.prenom;
-        _emailController.text = user.email;
-        _dateNaissanceController.text = user.date;
-        _selectedRegion = user.region;
-        _selectedGenre = user.genre ?? 'Homme'; // Default to 'Homme' if null
-      });
-    } catch (e, stackTrace) {
-      debugPrint('Error loading user: $e\n$stackTrace');
+      debugPrint('User data loaded successfully: ${user.toJson()}');
+
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            action: SnackBarAction(
-              label: 'Retry',
-              onPressed: _loadUserData,
-            ),
-          ),
+        setState(() {
+          _currentUser = user;
+          _nomController.text = user!.nom;
+          _prenomController.text = user.prenom;
+          _emailController.text = user.email;
+          _dateNaissanceController.text = user.date;
+          _selectedRegion = user.region;
+          _selectedGenre = user.genre.isNotEmpty ? user.genre : 'Homme';
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading user data: $e');
+      if (mounted) {
+        Get.snackbar(
+          'Error',
+          'Failed to load user data: ${e.toString()}',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
         );
       }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -108,47 +110,47 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
-      // Create a new UserModel with updated information.
+      // Make sure we're using the correct email
+      final email = widget.email; // This should be the current user's email
+
       final updatedUser = UserModel(
         nom: _nomController.text,
         prenom: _prenomController.text,
-        email: _emailController.text,
+        email: _emailController
+            .text, // This can be different if user is changing their email
         date: _dateNaissanceController.text,
         region: _selectedRegion ?? '',
         genre: _selectedGenre ?? 'Homme',
-        password: _currentUser!.password, // Preserving password
+        password: _currentUser!.password,
         phone: _currentUser!.phone,
       );
 
-      // Call repository to update the user
-      await _authRepository.updateUser(widget.userId, updatedUser);
+      debugPrint('Updating profile with email: $email');
+      debugPrint('Update payload: ${updatedUser.toJson()}');
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Profil mis à jour avec succès !"),
-            backgroundColor: Colors.green,
-          ),
-        );
-        Navigator.pop(context, true); // Return true to indicate successful update
-      }
+      await _authController.updateUserProfile(email, updatedUser);
+
+      Get.snackbar(
+        'Success',
+        'Profile updated successfully',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      Get.back(result: true);
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text("Erreur lors de la mise à jour: ${e.toString()}")),
-        );
-      }
+      debugPrint('Update profile error: $e');
+      Get.snackbar(
+        'Error',
+        'Failed to update profile. Please check your information and try again.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
     } finally {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() => _isLoading = false);
       }
     }
   }
@@ -161,7 +163,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
       lastDate: DateTime.now(),
     );
 
-    if (picked != null) {
+    if (picked != null && mounted) {
       setState(() {
         _dateNaissanceController.text =
             "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
@@ -260,31 +262,6 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: _selectedRegion,
-                decoration: const InputDecoration(
-                  labelText: 'Région',
-                  border: OutlineInputBorder(),
-                ),
-                items: Regions.list.map((region) {
-                  return DropdownMenuItem<String>(
-                    value: region,
-                    child: Text(region),
-                  );
-                }).toList(),
-                onChanged: (String? newValue) {
-                  setState(() {
-                    _selectedRegion = newValue;
-                  });
-                },
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Veuillez sélectionner votre région';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
                 value: _selectedGenre,
                 decoration: const InputDecoration(
                   labelText: 'Genre',
@@ -323,5 +300,14 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _nomController.dispose();
+    _prenomController.dispose();
+    _emailController.dispose();
+    _dateNaissanceController.dispose();
+    super.dispose();
   }
 }

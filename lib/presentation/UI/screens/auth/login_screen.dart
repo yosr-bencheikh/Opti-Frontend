@@ -58,10 +58,6 @@ class _LoginScreenState extends State<LoginScreen> {
     await authController.loginWithEmail(email, password);
   }
 
-
-
-
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -193,41 +189,43 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 20),
                       Row(
+                        children: [
+                          ElevatedButton.icon(
+                            onPressed: () async {
+                              var result =
+                                  Get.find<AuthController>().loginWithGoogle();
+                              //LoginApi.login();
 
-
-  children: [
-    ElevatedButton.icon(
-      onPressed: () async {
-        var result = await LoginApi.login();
-        if (result != null) {
-          // Navigation is already handled in LoginApi.login()
-          print("Successfully logged in with Google!");
-        }
-      },
-      icon: Icon(Icons.g_mobiledata),
-      label: Text('Google'),
-      style: ElevatedButton.styleFrom(
-        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        backgroundColor: Colors.blue,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8.0),
-        ),
-      ),
-    ),
-    ElevatedButton(
-      onPressed: () async {
-        var user = await LoginApi.loginWithFacebook();
-        if (user != null) {
-          print("Connexion Facebook réussie !");
-        } else {
-          print("Échec de la connexion Facebook.");
-        }
-      },
-      child: const Text('Login avec Facebook'),
-    ),
-  ],
-),
-
+                              if (result != null) {
+                                // Navigation is already handled in LoginApi.login()
+                                print("Successfully logged in with Google!");
+                              }
+                            },
+                            icon: Icon(Icons.g_mobiledata),
+                            label: Text('Google'),
+                            style: ElevatedButton.styleFrom(
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 12),
+                              backgroundColor: Colors.blue,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8.0),
+                              ),
+                            ),
+                          ),
+                          ElevatedButton(
+                            onPressed: () async {
+                              var user = Get.find<AuthController>()
+                                  .loginWithFacebook();
+                              if (user != null) {
+                                print("Connexion Facebook réussie !");
+                              } else {
+                                print("Échec de la connexion Facebook.");
+                              }
+                            },
+                            child: const Text('Login avec Facebook'),
+                          ),
+                        ],
+                      ),
                       const SizedBox(height: 20),
                       TextButton(
                         onPressed: () {

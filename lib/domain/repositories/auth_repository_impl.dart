@@ -1,4 +1,3 @@
-// lib/data/repositories/auth_repository_impl.dart
 import 'package:dartz/dartz.dart';
 import 'package:opti_app/core/constants/api_constants.dart';
 import 'package:opti_app/core/error/failures.dart';
@@ -13,6 +12,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
   AuthRepositoryImpl(this.dataSource);
 
+  @override
   Future<bool> verifyToken(String token) async {
     try {
       final response = await http.get(
@@ -22,11 +22,7 @@ class AuthRepositoryImpl implements AuthRepository {
           'Content-Type': 'application/json',
         },
       );
-
-      if (response.statusCode == 200) {
-        return true;
-      }
-      return false;
+      return response.statusCode == 200;
     } catch (e) {
       print('Error verifying token: $e');
       return false;
@@ -34,27 +30,11 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<String> loginWithEmail(String email, String password) {
-    return dataSource.loginWithEmail(email, password);
-  }
-
-  /*@override
-  Future<String> loginWithGoogle(String token) {
-    return dataSource.loginWithGoogle(token);
-  }*/
-
-  @override
-  Future<User> getUser(String userId) async {
-    final userData = await dataSource.getUser(userId);
-    return UserModel.fromJson(userData);
-  }
-
-  @override
-  Future<void> updateUser(String userId, User user) async {
-    if (user is UserModel) {
-      await dataSource.updateUser(userId, user);
-    } else {
-      throw Exception('User must be a UserModel instance');
+  Future<String> loginWithEmail(String email, String password) async {
+    try {
+      return await dataSource.loginWithEmail(email, password);
+    } catch (e) {
+      throw Exception('Login failed: $e');
     }
   }
 
@@ -63,64 +43,80 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       return await dataSource.signUp(user);
     } catch (e) {
-      throw Exception('signup failed: $e');
+      throw Exception('Signup failed: $e');
     }
   }
 
   @override
-  Future<Either<Failure, void>> sendCodeToEmail(String email) async {
+  Future<User> getUser(String userId) async {
+    try {
+      final userData = await dataSource.getUser(userId);
+      return UserModel.fromJson(userData);
+    } catch (e) {
+      throw Exception('Failed to get user: $e');
+    }
+  }
+
+  @override
+  Future<void> updateUser(String userId, User user) async {
+    try {
+      await dataSource.updateUser(userId, user);
+    } catch (e) {
+      throw Exception('Failed to update user: $e');
+    }
+  }
+
+  @override
+  Future<void> sendCodeToEmail(String email) async {
     try {
       await dataSource.sendCodeToEmail(email);
-      return const Right(null);
     } catch (e) {
-      return Left(ServerFailure(e.toString()));
+      throw Exception('Failed to send code: $e');
     }
   }
 
   @override
-  Future<Either<Failure, void>> verifyCode(String email, String code) async {
+  Future<void> verifyCode(String email, String code) async {
     try {
       await dataSource.verifyCode(email, code);
-      return const Right(null);
     } catch (e) {
-      return Left(ServerFailure(e.toString()));
+      throw Exception('Failed to verify code: $e');
     }
   }
 
   @override
-  Future<Either<Failure, void>> resetPassword(
-      String email, String password) async {
+  Future<void> resetPassword(String email, String password) async {
     try {
       await dataSource.resetPassword(email, password);
-      return const Right(null);
     } catch (e) {
-      return Left(ServerFailure(e.toString()));
+      throw Exception('Failed to reset password: $e');
     }
   }
- /*  @override
-  Future<String> loginWithFacebook(String accessToken) async {
+
+  @override
+  Future<String> uploadImage(String filePath, String userId) async {
     try {
-      final token = await dataSource.loginWithFacebook(accessToken);
-      return token;
+      return await dataSource.uploadImage(filePath, userId);
     } catch (e) {
-      throw Exception('Repository: Facebook login failed - ${e.toString()}');
+      throw Exception('Failed to upload image: $e');
     }
-  }*/
-@override
-Future<String> uploadImage(String filePath, String userId) async {
-  try {
-    return await dataSource.uploadImage(filePath, userId);
-  } catch (e) {
-    throw Exception('Failed to upload image: $e');
+  }
+
+  @override
+  Future<void> updateUserImage(String userId, String imageUrl) async {
+    try {
+      await dataSource.updateUserImage(userId, imageUrl);
+    } catch (e) {
+      throw Exception('Failed to update user image: $e');
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> getUserByEmail(String email) async {
+    try {
+      return await dataSource.getUserByEmail(email);
+    } catch (e) {
+      throw Exception('Failed to get user by email: $e');
+    }
   }
 }
-
-@override
-Future<void> updateUserImage(String userId, String imageUrl) async {
-  try {
-    return await dataSource.updateUserImage(userId, imageUrl);
-  } catch (e) {
-    throw Exception('Failed to update user image: $e');
-  }
-}}
-

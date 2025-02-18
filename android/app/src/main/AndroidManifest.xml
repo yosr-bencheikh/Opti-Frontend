@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+
     package="com.example.opti_app">
 
     <!-- Permissions -->
@@ -13,6 +14,7 @@
 
     </queries>
     <application
+     android:usesCleartextTraffic="true"
         android:label="opti_app"
         android:icon="@mipmap/ic_launcher">
         
@@ -36,10 +38,15 @@
             </intent-filter>
         </activity>
 
-        <!-- ✅ Google Sign-In configuration -->
-        <meta-data
-            android:name="com.google.android.gms.auth.api.signin.API_KEY"
-            android:value="@string/default_web_client_id" />
+
+<meta-data
+    android:name="com.google.android.gms.auth.api.signin.CLIENT_ID"
+    android:value="@string/default_android_client_id" />
+
+    <!-- If using Google Sign-In, you also need the Android Client ID (not API Key) -->
+    <meta-data
+        android:name="com.google.android.gms.auth.api.signin.CLIENT_ID"
+        android:value="@string/default_android_client_id" />
 
       <!--  facebook -->
       <meta-data android:name="com.facebook.sdk.ApplicationId" android:value="@string/facebook_app_id"/>

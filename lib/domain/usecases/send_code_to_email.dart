@@ -8,7 +8,7 @@ class SendCodeToEmail {
 
   SendCodeToEmail(this.repository);
 
-  Future<Either<Failure, void>> call(String email) async {
+  Future<void> call(String email) async {
     return await repository.sendCodeToEmail(email);
   }
 }

@@ -1,6 +1,9 @@
 <resources>
     <string name="app_name">opti_app</string>
-      <string name="default_web_client_id">95644263598-s2g9bi8pl2g59h6og9h65fqmsn72bbje.apps.googleusercontent.com</string>
+      <string name="default_web_client_id">95644263598-p1ko0g4ds7ko6v6obqkdc38j76ndjmt2.apps.googleusercontent.com</string>
+      
+      <string name="default_android_client_id">95644263598-s2g9bi8pl2g59h6og9h65fqmsn72bbje.apps.googleusercontent.com</string>
+
 
   <string name="fb_login_protocol_scheme">fb4021778701431702</string>
 <string name="facebook_app_id">1304521740805476</string>
