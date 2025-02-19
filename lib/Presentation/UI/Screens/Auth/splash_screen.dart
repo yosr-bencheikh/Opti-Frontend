@@ -21,7 +21,7 @@ class SplashScreen extends StatelessWidget {
           }
 
           if (snapshot.hasError) {
-            Future.microtask(() => Get.offAllNamed('/login'));
+            Future.microtask(() => Get.offAllNamed('/welcomePage'));
             return const SizedBox.shrink();
           }
 
@@ -29,7 +29,7 @@ class SplashScreen extends StatelessWidget {
             Future.microtask(() => Get.offAllNamed('/profileScreen',
                 arguments: authController.currentUser?.email));
           } else {
-            Future.microtask(() => Get.offAllNamed('/login'));
+            Future.microtask(() => Get.offAllNamed('/welcomePage'));
           }
 
           return const SizedBox.shrink();

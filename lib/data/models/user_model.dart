@@ -1,19 +1,25 @@
 import '../../domain/entities/user.dart';
 
 class UserModel extends User {
-  const UserModel({
+  // Removed 'const' from the constructor
+  UserModel({
     required super.email,
-    String? nom,
-    String? prenom,
     required super.date,
     required super.phone,
     required super.password,
     required super.region,
     required super.genre,
+    String? nom,
+    String? prenom,
+    String? imageUrl,
+    String? refreshTokens,
     String? id,
   }) : super(
           nom: nom ?? "", // Provide a default value for nullable fields
           prenom: prenom ?? "",
+          imageUrl: imageUrl ?? '', // Pass imageUrl to the superclass
+          refreshTokens:
+              refreshTokens ?? '', // Pass refreshTokens to the superclass
         );
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -26,7 +32,10 @@ class UserModel extends User {
       region: json['region'] ?? '',
       genre: json['genre'] ?? '',
       phone: json['phone'] ?? '',
-      password: json['password'] ?? '', 
+      password: json['password'] ?? '',
+      imageUrl: json['imageUrl'] ?? '', // Include imageUrl in the factory
+      refreshTokens:
+          json['refreshTokens'] ?? '', // Include refreshTokens in the factory
     );
   }
 
@@ -41,7 +50,9 @@ class UserModel extends User {
       'genre': genre,
       'phone': phone,
       'password': password,
-    }..removeWhere((key, value) => value == null); 
+      'imageUrl': imageUrl, // Include imageUrl in the toJson
+      'refreshTokens': refreshTokens, // Include refreshTokens in the toJson
+    }..removeWhere((key, value) => value == null);
   }
 
   // Optional: Add a method to create a copy of the model with some changes
@@ -54,7 +65,8 @@ class UserModel extends User {
     String? genre,
     String? phone,
     String? password,
-    String? photoUrl,
+    String? imageUrl,
+    String? refreshTokens,
   }) {
     return UserModel(
       email: email ?? this.email,
@@ -65,6 +77,9 @@ class UserModel extends User {
       genre: genre ?? this.genre,
       phone: phone ?? this.phone,
       password: password ?? this.password,
+      imageUrl: imageUrl ?? this.imageUrl, // Include imageUrl in copyWith
+      refreshTokens: refreshTokens ??
+          this.refreshTokens, // Include refreshTokens in copyWith
     );
   }
 }

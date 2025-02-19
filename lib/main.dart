@@ -11,7 +11,7 @@ import 'package:opti_app/Presentation/UI/screens/auth/login_screen.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/profile_screen.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/forgot_password.dart';
 import 'package:opti_app/data/data_sources/auth_remote_datasource.dart';
-import 'package:opti_app/domain/repositories/auth_repository_impl.dart';
+import 'package:opti_app/data/repositories/auth_repository_impl.dart';
 import 'package:opti_app/domain/repositories/auth_repository.dart';
 import 'package:opti_app/domain/usecases/send_code_to_email.dart';
 
@@ -54,12 +54,17 @@ class MyApp extends StatelessWidget {
       getPages: [
         GetPage(
           name: '/splash',
-          page: () => const SplashScreen(),
+          page: () => SplashScreen(),
           binding: AuthBinding(),
         ),
         GetPage(
           name: '/login',
           page: () => LoginScreen(),
+          binding: AuthBinding(),
+        ),
+        GetPage(
+          name: '/welcomePage',
+          page: () => WelcomePage(),
           binding: AuthBinding(),
         ),
         GetPage(

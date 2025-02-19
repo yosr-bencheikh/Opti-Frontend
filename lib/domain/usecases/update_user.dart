@@ -1,8 +1,8 @@
 import 'package:opti_app/domain/entities/user.dart';
-import 'package:opti_app/domain/repositories/user_repository.dart';
+import 'package:opti_app/domain/repositories/auth_repository.dart';
 
 class UpdateUser {
-  final UserRepository repository;
+  final AuthRepository repository;
 
   UpdateUser(this.repository);
 

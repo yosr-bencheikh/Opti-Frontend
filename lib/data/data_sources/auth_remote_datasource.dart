@@ -18,13 +18,14 @@ abstract class AuthRemoteDataSource {
   Future<Map<String, dynamic>> getUserByEmail(String email);
   Future<String> refreshToken(String refreshToken);
   Future<bool> verifyToken(String token);
+  Future<void> deleteUserImage(String email);
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   final http.Client client;
 
   // Use your server's IP and port (make sure this is accessible from your phone)
-  final String baseUrl = 'http://localhost:3000/api';
+  final String baseUrl = 'http://192.168.1.22:3000/api';
 
   static String? verifiedEmail; // Made static
   static String? verificationCode;
@@ -114,28 +115,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       debugPrint('Error inside loginWithEmail: $e');
       debugPrint('Stack trace: $stackTrace');
       throw Exception('An error occurred: ${e.toString()}');
-    }
-  }
-
-  @override
-  Future<String> loginWithGoogle(String token) async {
-    final url = Uri.parse('https://abc123.ngrok.io/auth/google/callback');
-
-    try {
-      final response = await client.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({'token': token}),
-      );
-
-      final responseData = json.decode(response.body);
-
-      if (response.statusCode == 200 && responseData['token'] != null) {
-        return responseData['token'];
-      }
-      throw ServerFailure(responseData['message'] ?? 'Google Login Failed');
-    } catch (e) {
-      throw ServerFailure(e.toString());
     }
   }
 
@@ -322,6 +301,22 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       }
     } catch (e) {
       throw Exception('Error updating user image: $e');
+    }
+  }
+
+  @override
+  Future<void> deleteUserImage(String email) async {
+    // Implement the logic to call your backend API to delete the image
+    final response = await http.delete(
+      Uri.parse('$baseUrl/upload/$email/image'),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: json.encode({'email': email}),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to delete image: ${response.body}');
     }
   }
 }

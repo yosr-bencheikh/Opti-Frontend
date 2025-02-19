@@ -9,10 +9,7 @@ class ProfileScreen extends GetView<AuthController> {
 
   @override
   Widget build(BuildContext context) {
-    final String userEmail =
-        (Get.arguments is String) ? Get.arguments as String : 'Unknown User';
-
-    // Call loadUserData when the screen initializes
+    // Call loadUser  Data when the screen initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (controller.currentUser == null) {
         final userEmail = Get.find<SharedPreferences>().getString('userEmail');
@@ -36,8 +33,6 @@ class ProfileScreen extends GetView<AuthController> {
         }
 
         final user = controller.currentUser;
-
-        // Add null check and loading state
         if (user == null) {
           return const Center(child: Text('Loading user data...'));
         }
@@ -48,25 +43,85 @@ class ProfileScreen extends GetView<AuthController> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
-                CircleAvatar(
-                  radius: 50,
-                  backgroundColor: Colors.grey[300],
-                  backgroundImage: user.imageUrl.isNotEmpty
-                      ? NetworkImage(user.imageUrl)
-                      : null,
-                  child: user.imageUrl.isEmpty
-                      ? const Icon(
-                          Icons.person,
-                          size: 50,
-                          color: Colors.white,
-                        )
-                      : null,
+                Stack(
+                  children: [
+                    Obx(() {
+                      final imageUrl = controller.currentUser?.imageUrl ?? '';
+                      final key =
+                          ValueKey(imageUrl + DateTime.now().toString());
+
+                      return CircleAvatar(
+                        key: key,
+                        radius: 50,
+                        backgroundColor: Colors.grey[300],
+                        backgroundImage: imageUrl.isNotEmpty
+                            ? NetworkImage(
+                                imageUrl,
+                                headers: {'Cache-Control': 'no-cache'},
+                              )
+                            : null,
+                        child: imageUrl.isEmpty
+                            ? const Icon(
+                                Icons.person,
+                                size: 50,
+                                color: Colors.white,
+                              )
+                            : null,
+                      );
+                    }),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: Row(
+                        children: [
+                          // Popup menu button for upload and delete options
+                          PopupMenuButton<String>(
+                            icon: const Icon(Icons.edit, color: Colors.blue),
+                            onSelected: (value) {
+                              if (value == 'upload') {
+                                _uploadImage(user.email);
+                              } else if (value == 'delete') {
+                                _showDeleteConfirmationDialog(
+                                    context, user.email);
+                              }
+                            },
+                            itemBuilder: (BuildContext context) {
+                              return [
+                                PopupMenuItem<String>(
+                                  value: 'upload',
+                                  child: Row(
+                                    children: const [
+                                      Icon(Icons.camera_alt,
+                                          color: Colors.blue),
+                                      SizedBox(width: 8),
+                                      Text('Upload Image'),
+                                    ],
+                                  ),
+                                ),
+                                PopupMenuItem<String>(
+                                  value: 'delete',
+                                  child: Row(
+                                    children: const [
+                                      Icon(Icons.delete, color: Colors.red),
+                                      SizedBox(width: 8),
+                                      Text('Delete Image'),
+                                    ],
+                                  ),
+                                ),
+                              ];
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 20),
-                Text('Welcome ${user.prenom}',
-                    style: Theme.of(context).textTheme.titleLarge),
+                Text(
+                  'Welcome ${user.prenom}',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
                 const SizedBox(height: 20),
-                // Display user information with better formatting
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
@@ -86,26 +141,6 @@ class ProfileScreen extends GetView<AuthController> {
                 ),
                 const SizedBox(height: 20),
                 ElevatedButton(
-                  onPressed: () async {
-                    try {
-                      await controller.pickImage();
-                      if (controller.selectedImage != null) {
-                        await controller
-                            .uploadImage(user.email); // Pass the email here
-                      }
-                    } catch (e) {
-                      Get.snackbar(
-                        'Error',
-                        'Failed to upload image: ${e.toString()}',
-                        snackPosition: SnackPosition.BOTTOM,
-                      );
-                    }
-                  },
-                  child: const Text('Upload Image'),
-                ),
-
-                const SizedBox(height: 20),
-                ElevatedButton(
                   onPressed: () {
                     if (user.email.isEmpty) {
                       Get.snackbar(
@@ -114,10 +149,6 @@ class ProfileScreen extends GetView<AuthController> {
                         snackPosition: SnackPosition.BOTTOM,
                       );
                     } else {
-                      // In the profile screen, check the email passed to the update screen
-                      debugPrint(
-                          'Navigating to UpdateProfileScreen with email: ${user.email}');
-
                       Get.to(() => UpdateProfileScreen(email: user.email));
                     }
                   },
@@ -148,6 +179,42 @@ class ProfileScreen extends GetView<AuthController> {
           Text(value.isEmpty ? 'N/A' : value),
         ],
       ),
+    );
+  }
+
+  void _uploadImage(String email) async {
+    try {
+      await controller.pickImage();
+      if (controller.selectedImage != null) {
+        await controller.uploadImage(email);
+        // Force UI refresh after upload
+        controller.update();
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to upload image: ${e.toString()}',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
+  }
+
+  void _showDeleteConfirmationDialog(BuildContext context, String email) {
+    Get.defaultDialog(
+      title: 'Delete Image',
+      middleText: 'Are you sure you want to delete your profile image?',
+      onConfirm: () async {
+        Get.back();
+        await controller.clearImage(email);
+        // Close the dialog after the image is cleared
+      },
+      onCancel: () {
+        Get.back(); // Close the dialog when cancel is pressed
+      },
+      confirmTextColor: Colors.white,
+      textConfirm: 'Yes',
+      textCancel: 'No',
+      buttonColor: Theme.of(context).primaryColor,
     );
   }
 }

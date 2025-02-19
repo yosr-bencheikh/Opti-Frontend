@@ -9,10 +9,11 @@ class User extends Equatable {
   final String genre;
   final String password;
   final String phone;
-  final String imageUrl;
+  String imageUrl; // Changed from final to non-final
   final String refreshTokens;
 
-  const User({
+  // Removed 'const' from the constructor
+  User({
     required this.nom,
     required this.prenom,
     required this.email,

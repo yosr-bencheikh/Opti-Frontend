@@ -120,4 +120,13 @@ class AuthRepositoryImpl implements AuthRepository {
       throw Exception('Error refreshing token: $e');
     }
   }
+
+  @override
+  Future<void> deleteUserImage(String email) async {
+    try {
+      return await dataSource.deleteUserImage(email);
+    } catch (e) {
+      throw Exception('Error deleting the image: $e');
+    }
+  }
 }
