@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:opti_app/AuthBinding.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/splash_screen.dart';
+import 'package:opti_app/Presentation/UI/screens/auth/WelcomePage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/SignUpScreen.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/admin_panel.dart';

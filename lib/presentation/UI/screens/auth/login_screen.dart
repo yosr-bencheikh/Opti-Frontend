@@ -58,193 +58,396 @@ class _LoginScreenState extends State<LoginScreen> {
     await authController.loginWithEmail(email, password);
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Colors.blueAccent, Color.fromARGB(255, 236, 225, 237)],
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: Card(
-                elevation: 8.0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16.0),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(
-                        'Welcome Back!',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      const Text(
-                        'Sign in to continue',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey,
-                        ),
-                      ),
-                      const SizedBox(height: 40),
-                      TextField(
-                        controller: emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: InputDecoration(
-                          labelText: 'Email',
-                          prefixIcon:
-                              const Icon(Icons.email, color: Colors.blue),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8.0),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8.0),
-                            borderSide: const BorderSide(
-                                color: Colors.blue, width: 2.0),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      TextField(
-                        controller: passwordController,
-                        obscureText: _obscurePassword,
-                        decoration: InputDecoration(
-                          labelText: 'Password',
-                          prefixIcon:
-                              const Icon(Icons.lock, color: Colors.blue),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePassword
-                                  ? Icons.visibility
-                                  : Icons.visibility_off,
-                              color: Colors.grey,
-                            ),
-                            onPressed: () {
-                              setState(
-                                  () => _obscurePassword = !_obscurePassword);
-                            },
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8.0),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8.0),
-                            borderSide: const BorderSide(
-                                color: Colors.blue, width: 2.0),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 30),
-                      Obx(() => SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: authController.isLoading.value
-                                  ? null
-                                  : loginUser,
-                              style: ElevatedButton.styleFrom(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 15),
-                                backgroundColor: Colors.blue,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8.0),
-                                ),
-                              ),
-                              child: authController.isLoading.value
-                                  ? const CircularProgressIndicator(
-                                      color: Colors.white)
-                                  : const Text(
-                                      'Login',
-                                      style: TextStyle(
-                                          fontSize: 18, color: Colors.white),
-                                    ),
-                            ),
-                          )),
-                      const SizedBox(height: 20),
-                      TextButton(
-                        onPressed: () {
-                          Get.toNamed('/ForgotPasswordScreen');
-                        },
-                        child: const Text(
-                          'Forgot Password?',
-                          style: TextStyle(color: Colors.blue),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      const Text(
-                        'Or continue with',
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                      const SizedBox(height: 20),
-                      Row(
-                        children: [
-                          ElevatedButton.icon(
-                            onPressed: () async {
-                              var result =
-                                  Get.find<AuthController>().loginWithGoogle();
-                              //LoginApi.login();
-
-                              if (result != null) {
-                                // Navigation is already handled in LoginApi.login()
-                                print("Successfully logged in with Google!");
-                              }
-                            },
-                            icon: Icon(Icons.g_mobiledata),
-                            label: Text('Google'),
-                            style: ElevatedButton.styleFrom(
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 20, vertical: 12),
-                              backgroundColor: Colors.blue,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8.0),
-                              ),
-                            ),
-                          ),
-                          ElevatedButton(
-                            onPressed: () async {
-                              var user = Get.find<AuthController>()
-                                  .loginWithFacebook();
-                              if (user != null) {
-                                print("Connexion Facebook réussie !");
-                              } else {
-                                print("Échec de la connexion Facebook.");
-                              }
-                            },
-                            child: const Text('Login avec Facebook'),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      TextButton(
-                        onPressed: () {
-                          Get.toNamed('/signup');
-                        },
-                        child: const Text(
-                          'Don\'t have an account? Sign up',
-                          style:
-                              TextStyle(color: Color.fromARGB(255, 22, 27, 32)),
-                        ),
-                      ),
-                    ],
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    body: Container(
+      decoration: BoxDecoration(
+        image: DecorationImage(
+      image: AssetImage('assets/images/b2.jpeg'), // Chemin de ton image
+      fit: BoxFit.cover,
+      ),),
+      child: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+            child: Column(
+              children: [
+                // Logo et branding
+                Container(
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.1),
+                  ),
+                  child: Icon(
+                    Icons.visibility,
+                    size: 70,
+                    color: const Color.fromARGB(255, 108, 97, 192),
                   ),
                 ),
-              ),
+                SizedBox(height: 24),
+                Text(
+                  'VISION EXCELLENCE',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w300,
+                    letterSpacing: 4,
+                    color: const Color.fromARGB(255, 108, 97, 192),
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'CENTRE D\'OPTOMÉTRIE',
+                  style: TextStyle(
+                    fontSize: 14,
+                    letterSpacing: 2,
+                    color: const Color.fromARGB(255, 108, 97, 192),
+                  ),
+                ),
+                SizedBox(height: 48),
+                // Carte principale
+                Card(
+                  elevation: 20,
+                  shadowColor: Colors.black38,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24.0),
+                  ),
+                  color: Colors.white.withOpacity(0.4),
+                  child: Container(
+                    padding: EdgeInsets.all(32),
+                    width: double.infinity,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Connexion',
+                          style: TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF0A2647),
+                            letterSpacing: 1,
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'Accédez à votre espace personnel',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 16,
+                          ),
+                        ),
+                        SizedBox(height: 40),
+                        // Champs de saisie stylisés
+                        Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.1),
+                                blurRadius: 8,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: TextField(
+                            controller: emailController,
+                            keyboardType: TextInputType.emailAddress,
+                            style: TextStyle(fontSize: 16),
+                            decoration: InputDecoration(
+                              labelText: 'Adresse email',
+                              labelStyle: TextStyle(
+                                color: Color(0xFF0A2647),
+                                fontSize: 14,
+                              ),
+                              prefixIcon: Icon(
+                                Icons.email_outlined,
+                                color: Color(0xFF0A2647),
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey[50],
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide.none,
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide(
+                                  color: Color(0xFF0A2647),
+                                  width: 2,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 24),
+                        Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.1),
+                                blurRadius: 8,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: TextField(
+                            controller: passwordController,
+                            obscureText: _obscurePassword,
+                            style: TextStyle(fontSize: 16),
+                            decoration: InputDecoration(
+                              labelText: 'Mot de passe',
+                              labelStyle: TextStyle(
+                                color: Color(0xFF0A2647),
+                                fontSize: 14,
+                              ),
+                              prefixIcon: Icon(
+                                Icons.lock_outline,
+                                color: Color(0xFF0A2647),
+                              ),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscurePassword
+                                      ? Icons.visibility_outlined
+                                      : Icons.visibility_off_outlined,
+                                  color: Color(0xFF0A2647),
+                                ),
+                                onPressed: () => setState(
+                                    () => _obscurePassword = !_obscurePassword),
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey[50],
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide.none,
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide(
+                                  color: Color(0xFF0A2647),
+                                  width: 2,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 32),
+                        // Bouton de connexion avec animation
+                        Obx(() => Container(
+                          width: double.infinity,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            gradient: LinearGradient(
+                              colors: [
+                                Color(0xFF0A2647),
+                                Color(0xFF205295),
+                              ],
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Color(0xFF0A2647).withOpacity(0.3),
+                                blurRadius: 12,
+                                offset: Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          child: ElevatedButton(
+                            onPressed:
+                                authController.isLoading.value ? null : loginUser,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: authController.isLoading.value
+                                ? SizedBox(
+                                    height: 24,
+                                    width: 24,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : Text(
+                                    'SE CONNECTER',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: 2,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                          ),
+                        )),
+                        SizedBox(height: 24),
+                        // Options supplémentaires
+                        Center(
+                          child: TextButton(
+                            onPressed: () => Get.toNamed('/ForgotPasswordScreen'),
+                            child: Text(
+                              'Mot de passe oublié ?',
+                              style: TextStyle(
+                                color: Color(0xFF0A2647),
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 32),
+                        // Séparateur élégant
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                height: 1,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Colors.transparent,
+                                      Colors.grey[300]!,
+                                      Colors.grey[300]!,
+                                      Colors.transparent,
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 16),
+                              child: Text(
+                                'Ou continuer avec',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: Container(
+                                height: 1,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Colors.transparent,
+                                      Colors.grey[300]!,
+                                      Colors.grey[300]!,
+                                      Colors.transparent,
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 32),
+                        // Boutons sociaux modernisés
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: () async {
+                                  var result = Get.find<AuthController>()
+                                      .loginWithGoogle();
+                                  if (result != null) {
+                                    print("Connexion Google réussie!");
+                                  }
+                                },
+                                icon: Icon(Icons.g_mobiledata,
+                                    size: 24, color: Color(0xFF0A2647)),
+                                label: Text(
+                                  'Google',
+                                  style: TextStyle(
+                                    color: Color(0xFF0A2647),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  padding: EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    side: BorderSide(
+                                      color: Colors.grey[200]!,
+                                    ),
+                                  ),
+                                  elevation: 0,
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: 16),
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: () async {
+                                  var user = Get.find<AuthController>()
+                                      .loginWithFacebook();
+                                  if (user != null) {
+                                    print("Connexion Facebook réussie!");
+                                  }
+                                },
+                                icon: Icon(Icons.facebook,
+                                    size: 24, color: Color(0xFF0A2647)),
+                                label: Text(
+                                  'Facebook',
+                                  style: TextStyle(
+                                    color: Color(0xFF0A2647),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  padding: EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    side: BorderSide(
+                                      color: Colors.grey[200]!,
+                                    ),
+                                  ),
+                                  elevation: 0,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 32),
+                        // Lien d'inscription élégant
+                        Center(
+                          child: TextButton(
+                            onPressed: () => Get.toNamed('/signup'),
+                            child: RichText(
+                              text: TextSpan(
+                                style: TextStyle(fontSize: 14),
+                                children: [
+                                  TextSpan(
+                                    text: 'Nouveau patient ? ',
+                                    style: TextStyle(color: Colors.grey[600]),
+                                  ),
+                                  TextSpan(
+                                    text: 'Créer un compte',
+                                    style: TextStyle(
+                                      color: Color(0xFF0A2647),
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
