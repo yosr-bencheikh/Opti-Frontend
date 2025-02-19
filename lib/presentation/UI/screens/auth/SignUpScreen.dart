@@ -71,6 +71,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
       ),
       body: Obx(() => Stack(
             children: [
+              Container(
+            decoration: const BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage("assets/images/b4.jpeg"),
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
               SingleChildScrollView(
                 child: Padding(
                   padding: const EdgeInsets.all(20.0),
@@ -79,6 +87,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        
                         const SizedBox(height: 10),
                         const Text(
                           "Créez votre compte",
