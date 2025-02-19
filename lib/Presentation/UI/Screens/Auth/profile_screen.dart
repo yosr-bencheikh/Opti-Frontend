@@ -27,7 +27,7 @@ class ProfileScreen extends GetView<AuthController> {
         title: const Text('Profile'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Get.offAllNamed('/'),
+          onPressed: () => Get.offAllNamed('/login'),
         ),
       ),
       body: Obx(() {

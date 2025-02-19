@@ -1,7 +1,6 @@
 import 'package:equatable/equatable.dart';
 
 class User extends Equatable {
-
   final String nom;
   final String prenom;
   final String email;
@@ -10,10 +9,10 @@ class User extends Equatable {
   final String genre;
   final String password;
   final String phone;
-   final String imageUrl;
+  final String imageUrl;
+  final String refreshTokens;
 
   const User({
-   
     required this.nom,
     required this.prenom,
     required this.email,
@@ -22,27 +21,51 @@ class User extends Equatable {
     required this.genre,
     required this.password,
     required this.phone,
-     this.imageUrl = '',
+    this.imageUrl = '',
+    this.refreshTokens = '',
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      // Handle both '_id' and 'id'
       nom: json['nom'],
       prenom: json['prenom'],
       email: json['email'],
       date: json['date'],
       region: json['region'],
       genre: json['genre'],
-      password: json['password'] ?? '', // Adjust based on your needs
+      password: json['password'] ?? '',
       phone: json['phone'],
-       imageUrl: json['imageUrl'] ?? '',
+      imageUrl: json['imageUrl'] ?? '',
+      refreshTokens: json['refreshTokens'] ?? '',
     );
   }
-  
-  @override
-  // TODO: implement props
-  List<Object?> get props => throw UnimplementedError();
 
-  toJson() {}
+  @override
+  List<Object?> get props => [
+        nom,
+        prenom,
+        email,
+        date,
+        region,
+        genre,
+        password,
+        phone,
+        imageUrl,
+        refreshTokens,
+      ];
+
+  Map<String, dynamic> toJson() {
+    return {
+      'nom': nom,
+      'prenom': prenom,
+      'email': email,
+      'date': date,
+      'region': region,
+      'genre': genre,
+      'password': password,
+      'phone': phone,
+      'imageUrl': imageUrl,
+      'refreshTokens': refreshTokens,
+    };
+  }
 }

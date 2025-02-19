@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:opti_app/AuthBinding.dart';
+import 'package:opti_app/Presentation/UI/Screens/Auth/splash_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/SignUpScreen.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/admin_panel.dart';
@@ -15,30 +16,24 @@ import 'package:opti_app/domain/usecases/send_code_to_email.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
- 
 
   // Initialize SharedPreferences
   final prefs = await SharedPreferences.getInstance();
   Get.put<SharedPreferences>(prefs);
 
-  // Register dependencies in the correct order
+  // Register dependencies
   final client = http.Client();
   Get.put<http.Client>(client);
 
-  // Initialize AuthRemoteDataSource
   final authRemoteDataSource = AuthRemoteDataSourceImpl(client: client);
   Get.put<AuthRemoteDataSource>(authRemoteDataSource);
 
-  // Initialize AuthRepository
   final authRepository = AuthRepositoryImpl(authRemoteDataSource);
   Get.put<AuthRepository>(authRepository);
 
-  // Initialize SendCodeToEmail use case
   final sendCodeToEmail = SendCodeToEmail(Get.find());
   Get.put(sendCodeToEmail);
 
-  
- 
   runApp(const MyApp());
 }
 
@@ -54,10 +49,15 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      initialRoute: '/',
+      initialRoute: '/splash',
       getPages: [
         GetPage(
-          name: '/',
+          name: '/splash',
+          page: () => const SplashScreen(),
+          binding: AuthBinding(),
+        ),
+        GetPage(
+          name: '/login',
           page: () => LoginScreen(),
           binding: AuthBinding(),
         ),

@@ -14,4 +14,5 @@ abstract class AuthRepository {
   Future<String> uploadImage(String filePath, String userId);
   Future<void> updateUserImage(String userId, String imageUrl);
   Future<Map<String, dynamic>> getUserByEmail(String email);
+  Future<String> refreshToken(String refreshToken);
 }

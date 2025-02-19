@@ -15,17 +15,9 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<bool> verifyToken(String token) async {
     try {
-      final response = await http.get(
-        Uri.parse('${ApiConstants.baseUrl}/verify-token'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      );
-      return response.statusCode == 200;
+      return await dataSource.verifyToken(token);
     } catch (e) {
-      print('Error verifying token: $e');
-      return false;
+      throw Exception('Login failed: $e');
     }
   }
 
@@ -117,6 +109,15 @@ class AuthRepositoryImpl implements AuthRepository {
       return await dataSource.getUserByEmail(email);
     } catch (e) {
       throw Exception('Failed to get user by email: $e');
+    }
+  }
+
+  @override
+  Future<String> refreshToken(String refreshToken) async {
+    try {
+      return await dataSource.refreshToken(refreshToken);
+    } catch (e) {
+      throw Exception('Error refreshing token: $e');
     }
   }
 }

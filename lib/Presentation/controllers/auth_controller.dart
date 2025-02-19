@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:opti_app/Presentation/utils/SecureStorage.dart';
 import 'package:opti_app/Presentation/utils/jwt_utils.dart';
 import 'package:opti_app/data/models/user_model.dart';
 import 'package:opti_app/domain/entities/user.dart';
@@ -64,7 +65,7 @@ class AuthController extends GetxController {
       }
 
       if (JwtDecoder.isExpired(token)) {
-        print('Token expiré');
+        print('Token expired');
         isLoggedIn.value = false;
         return;
       }
@@ -76,7 +77,7 @@ class AuthController extends GetxController {
       client.close();
 
       if (!isValid) {
-        print('Token invalide selon le serveur');
+        print('Token invalid according to server');
         isLoggedIn.value = false;
         return;
       }
@@ -87,20 +88,6 @@ class AuthController extends GetxController {
       isLoggedIn.value = false;
       print('Error in checkLoginStatus: $e');
     }
-  }
-
-  Map<String, dynamic> _formatUserData(Map<String, dynamic> data) {
-    return {
-      'nom': data['nom'] ?? '',
-      'prenom': data['prenom'] ?? '',
-      'email': data['email'] ?? '',
-      'date': data['date'] ?? '',
-      'phone': data['phone'] ?? '',
-      'region': data['region'] ?? '',
-      'genre': data['genre'] ?? 'Homme',
-      'imageUrl': data['imageUrl'] ?? '',
-      'password': data['password'] ?? '', // Include password if available
-    };
   }
 
   Future<void> loadUserData(String email) async {
@@ -125,9 +112,8 @@ class AuthController extends GetxController {
       _currentUser.value = UserModel.fromJson(formattedUserData);
 
       // Store the current user data
-      await prefs.setString(
-          'currentUser_$email', json.encode(formattedUserData));
-      await prefs.setString('lastLoggedInEmail', email);
+      await prefs.setString('currentUser', json.encode(formattedUserData));
+      await prefs.setString('userEmail', email);
 
       debugPrint('User data loaded and stored successfully');
     } catch (e) {
@@ -145,20 +131,98 @@ class AuthController extends GetxController {
     }
   }
 
-// Load user data from SharedPreferences on app start
+  Future<bool> autoLogin() async {
+    try {
+      print("Auto-login started...");
+
+      final String? token = prefs.getString('token');
+      final String? email = prefs.getString('userEmail');
+
+      if (token == null || email == null) {
+        print("No token found. Redirecting to login.");
+        return false;
+      }
+
+      print("Retrieved token: $token");
+      print("Retrieved email: $email");
+
+      // Add a timeout to prevent infinite waiting
+      final isValid = await authRepository.verifyToken(token).timeout(
+        Duration(seconds: 10),
+        onTimeout: () {
+          print("Token verification request timed out!");
+          return false;
+        },
+      );
+
+      if (!isValid) {
+        print("Token is invalid.");
+        return false;
+      }
+
+      print("Token is valid. Loading user data...");
+      await loadUserData(email);
+
+      print("Auto-login successful! Navigating to home screen.");
+      return true;
+    } catch (e) {
+      print("Auto-login error: $e");
+      return false;
+    }
+  }
+
+  Future<void> _attemptTokenRefresh(String email) async {
+    try {
+      final String? refreshToken = prefs.getString('refreshToken');
+      if (refreshToken == null) return;
+
+      final newToken = await authRepository.refreshToken(refreshToken);
+      await prefs.setString('token', newToken);
+      await loadUserData(email);
+    } catch (e) {
+      await logout();
+    }
+  }
+
   Future<void> loadUserFromPrefs() async {
     try {
-      final String? lastEmail = prefs.getString('lastLoggedInEmail');
-      if (lastEmail == null) return;
+      final String? userJson = prefs.getString('currentUser');
+      final String? email = prefs.getString('userEmail');
 
-      final String? userJson = prefs.getString('currentUser_$lastEmail');
-      if (userJson != null) {
+      if (userJson == null || email == null) {
+        debugPrint('No stored user data found');
+        return;
+      }
+
+      try {
         final Map<String, dynamic> userData = json.decode(userJson);
-        _currentUser.value = User.fromJson(userData);
+        _currentUser.value = UserModel.fromJson(userData);
+        debugPrint('User data loaded from prefs successfully');
+      } catch (e) {
+        debugPrint('Error parsing stored user data: $e');
+        // Clear invalid stored data
+        await prefs.remove('currentUser');
+        await prefs.remove('userEmail');
       }
     } catch (e) {
-      print('Error loading user from prefs: $e');
+      debugPrint('Error loading user from prefs: $e');
     }
+  }
+
+  Map<String, dynamic> _formatUserData(Map<String, dynamic> data) {
+    return {
+      'nom': data['nom'] ?? '',
+      'prenom': data['prenom'] ?? '',
+      'email': data['email'] ?? '',
+      'date': data['date'] ?? '',
+      'phone': data['phone'] ?? '',
+      'region': data['region'] ?? '',
+      'genre': data['genre'] ?? 'Homme',
+      'imageUrl': data['imageUrl'] ?? '',
+      'password': data['password'] ?? '',
+      // Add the ID field if present
+      if (data['_id'] != null) 'id': data['_id'],
+    };
   }
 
   Future<void> loginWithGoogle() async {
@@ -177,7 +241,7 @@ class AuthController extends GetxController {
 
       final response = await http.post(
         Uri.parse(
-            'https://0b60-197-3-209-201.ngrok-free.app/auth/google/callback'),
+            'https://e263-41-62-158-98.ngrok-free.app/auth/google/callback'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'idToken': googleAuth.idToken,
@@ -192,6 +256,13 @@ class AuthController extends GetxController {
 
         await prefs.setString('token', token);
         await prefs.setString('userId', userId);
+        // NEW: Save and register refreshToken if available
+        if (responseData.containsKey('refreshToken') &&
+            responseData['refreshToken'] != null) {
+          final refreshToken = responseData['refreshToken'];
+          await prefs.setString('refreshToken', refreshToken);
+          await authRepository.refreshToken(refreshToken);
+        }
 
         authToken.value = token;
         currentUserId.value = userId;
@@ -230,7 +301,7 @@ class AuthController extends GetxController {
 
       final response = await http.post(
         Uri.parse(
-            'https://0b60-197-3-209-201.ngrok-free.app/auth/facebook/callback'),
+            'https://e263-41-62-158-98.ngrok-free.app/auth/facebook/callback'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'token': accessToken.tokenString,
@@ -245,6 +316,13 @@ class AuthController extends GetxController {
 
         await prefs.setString('token', token);
         await prefs.setString('userId', userId);
+        // NEW: Save and register refreshToken if available
+        if (responseData.containsKey('refreshToken') &&
+            responseData['refreshToken'] != null) {
+          final refreshToken = responseData['refreshToken'];
+          await prefs.setString('refreshToken', refreshToken);
+          await authRepository.refreshToken(refreshToken);
+        }
 
         authToken.value = token;
         currentUserId.value = userId;
@@ -276,14 +354,32 @@ class AuthController extends GetxController {
 
     try {
       debugPrint('Calling loginWithEmail function...');
-      final response = await authRepository.loginWithEmail(email, password);
-      debugPrint('Server Response: $response');
+      // Get the response from the repository.
+      final String loginResponseString =
+          await authRepository.loginWithEmail(email, password);
 
-      if (response.isEmpty) {
-        throw Exception('Empty response received from server');
+      String token;
+      String? refreshToken;
+
+      // Check if the returned string is JSON or already a token.
+      if (loginResponseString.trim().startsWith('{')) {
+        final Map<String, dynamic> loginResponse =
+            json.decode(loginResponseString);
+        token = loginResponse['token'];
+        refreshToken = loginResponse['refreshToken'];
+      } else {
+        token = loginResponseString;
+        refreshToken = null;
       }
 
-      final Map<String, dynamic> decodedToken = JwtDecoder.decode(response);
+      debugPrint('Login successful, token: $token');
+
+      if (token.isEmpty) {
+        throw Exception('Empty token received from server');
+      }
+
+      // Decode the token to extract user info.
+      final Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
       final String? userEmail = decodedToken['email'];
       final String? userId = decodedToken['id']?.toString();
 
@@ -295,24 +391,33 @@ class AuthController extends GetxController {
         throw Exception('Invalid token: Unable to extract email');
       }
 
-      // Store authentication data
-      authToken.value = response;
+      // Store authentication data.
+      authToken.value = token;
       currentUserId.value = userId;
       isLoggedIn.value = true;
 
       await Future.wait([
-        prefs.setString('token', response),
+        prefs.setString('token', token),
         prefs.setString('userId', userId),
         prefs.setString('userEmail', userEmail),
+        if (refreshToken != null && refreshToken.isNotEmpty)
+          prefs.setString('refreshToken', refreshToken),
       ]);
+
+      // NEW: Register the refresh token in the database (if available)
+      if (refreshToken != null && refreshToken.isNotEmpty) {
+        await authRepository.refreshToken(refreshToken);
+      }
 
       await loadUserData(userEmail);
       Get.offAllNamed('/profileScreen', arguments: {
         'email': userEmail,
       });
     } catch (e, stackTrace) {
-      print('Login error: $e');
+      debugPrint('Login error: $e');
       debugPrint('Stack trace: $stackTrace');
+
+      // Reset authentication state.
       authToken.value = '';
       currentUserId.value = '';
       isLoggedIn.value = false;
@@ -321,6 +426,7 @@ class AuthController extends GetxController {
         prefs.remove('token'),
         prefs.remove('userId'),
         prefs.remove('userEmail'),
+        prefs.remove('refreshToken'),
       ]);
 
       Get.snackbar(
@@ -332,6 +438,24 @@ class AuthController extends GetxController {
     } finally {
       isLoading.value = false;
     }
+  }
+
+  // Add a helper method to handle login errors
+  void _handleLoginError(dynamic error) {
+    authToken.value = '';
+    currentUserId.value = '';
+    isLoggedIn.value = false;
+
+    SecureStorage.clearTokens();
+    prefs.remove('userEmail');
+    prefs.remove('userId');
+
+    Get.snackbar(
+      'Error',
+      'Login failed: ${error.toString()}',
+      backgroundColor: Colors.red,
+      colorText: Colors.white,
+    );
   }
 
   Future<void> signUp(User newUser) async {
@@ -402,7 +526,7 @@ class AuthController extends GetxController {
       isLoggedIn.value = false;
       currentUser = null;
 
-      Get.offAllNamed('/loginScreen');
+      Get.offAllNamed('/login');
     } catch (e) {
       print('Logout error: $e');
       Get.snackbar('Error', 'Failed to logout: ${e.toString()}');
@@ -530,11 +654,10 @@ class AuthController extends GetxController {
           prenom: updatedUser.prenom,
           email: updatedUser.email,
           date: updatedUser.date,
-          phone: updatedUser.phone ??
-              '', // Provide default values for optional fields
+          phone: updatedUser.phone ?? '',
           region: updatedUser.region ?? '',
           genre: updatedUser.genre ?? 'Homme',
-          password: updatedUser.password, // Only included if changed
+          password: updatedUser.password,
           imageUrl: currentUser?.imageUrl ?? '' // Preserve existing image URL
           );
 

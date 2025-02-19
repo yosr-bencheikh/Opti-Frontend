@@ -15,7 +15,9 @@ abstract class AuthRemoteDataSource {
   Future<void> resetPassword(String email, String password);
   Future<String> uploadImage(String filePath, String userId);
   Future<void> updateUserImage(String userId, String imageUrl);
-  Future<Map<String, dynamic>> getUserByEmail(String email); // <-- New method
+  Future<Map<String, dynamic>> getUserByEmail(String email);
+  Future<String> refreshToken(String refreshToken);
+  Future<bool> verifyToken(String token);
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -28,6 +30,43 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   static String? verificationCode;
 
   AuthRemoteDataSourceImpl({required this.client});
+  @override
+  Future<bool> verifyToken(String token) async {
+    try {
+      final response = await http.get(
+        Uri.parse('${baseUrl}/verify-token'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Error verifying token: $e');
+      return false;
+    }
+  }
+
+  @override
+  Future<String> refreshToken(String refreshToken) async {
+    try {
+      final url = Uri.parse('$baseUrl/refresh-token');
+      final response = await client.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'refreshToken': refreshToken}),
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        return responseData['token']; // Return the new access token
+      } else {
+        throw Exception('Failed to refresh token: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Error refreshing token: $e');
+    }
+  }
 
   @override
   Future<Map<String, dynamic>> getUserByEmail(String email) async {
