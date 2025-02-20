@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:opti_app/core/constants/regions.dart';
 import 'package:opti_app/Presentation/utils/validators.dart';
+import 'package:opti_app/core/styles/colors.dart';
+import 'package:opti_app/core/styles/text_styles.dart';
 import 'package:opti_app/domain/entities/user.dart';
 import 'package:opti_app/Presentation/controllers/auth_controller.dart';
 
@@ -59,12 +61,23 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          "Inscription",
+          style: AppTextStyles.titleStyle.copyWith(
+            color: AppColors.whiteColor,
+            fontSize: 20,
+          ),
+        ),
+        backgroundColor: AppColors.primaryColor,
+        centerTitle: true,
+      ),
       body: Obx(() => Stack(
             children: [
               Container(
                 decoration: const BoxDecoration(
                   image: DecorationImage(
-                    image: AssetImage("assets/images/b1.jpeg"),
+                    image: AssetImage("assets/images/b4.jpeg"),
                     fit: BoxFit.cover,
                   ),
                 ),
@@ -78,72 +91,167 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         const SizedBox(height: 10),
-                        const Text(
+                        Text(
                           "Créez votre compte",
-                          style: TextStyle(
+                          style: AppTextStyles.loginTitleStyle.copyWith(
+                            color: AppColors.primaryColor,
                             fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blueAccent,
                           ),
                           textAlign: TextAlign.center,
                         ),
+                        const SizedBox(height: 10),
+                        Text(
+                          "Remplissez les champs ci-dessous pour vous inscrire.",
+                          style: AppTextStyles.loginSubtitleStyle,
+                          textAlign: TextAlign.center,
+                        ),
                         const SizedBox(height: 20),
-                        _buildTextField(
-                            nameController,
-                            "Nom",
-                            "Entrez votre nom",
-                            Icons.person,
-                            Validators.isValidName),
-                        _buildTextField(
-                            prenomController,
-                            "Prénom",
-                            "Entrez votre prénom",
-                            Icons.person_outline,
-                            Validators.isValidPrenom),
-                        _buildTextField(
-                            emailController,
-                            "Email",
-                            "Entrez votre email",
-                            Icons.email,
-                            Validators.isValidEmail),
+
+                        // Form Fields
+                        _buildStyledTextField(
+                          controller: nameController,
+                          label: "Nom",
+                          hint: "Entrez votre nom",
+                          icon: Icons.person,
+                          validator: Validators.isValidName,
+                        ),
+                        const SizedBox(height: 10),
+                        _buildStyledTextField(
+                          controller: prenomController,
+                          label: "Prénom",
+                          hint: "Entrez votre prénom",
+                          icon: Icons.person_outline,
+                          validator: Validators.isValidPrenom,
+                        ),
+                        const SizedBox(height: 10),
+                        _buildStyledTextField(
+                          controller: emailController,
+                          label: "Email",
+                          hint: "Entrez votre email",
+                          icon: Icons.email,
+                          validator: Validators.isValidEmail,
+                        ),
+                        const SizedBox(height: 10),
                         GestureDetector(
                           onTap: _selectDate,
                           child: AbsorbPointer(
-                            child: _buildTextField(
-                                dateController,
-                                "Date de naissance",
-                                "YYYY-MM-DD",
-                                Icons.calendar_today,
-                                Validators.isValidDate),
+                            child: _buildStyledTextField(
+                              controller: dateController,
+                              label: "Date de naissance",
+                              hint: "YYYY-MM-DD",
+                              icon: Icons.calendar_today,
+                              validator: Validators.isValidDate,
+                            ),
                           ),
                         ),
-                        _buildPasswordField(
+                        const SizedBox(height: 10),
+                        _buildStyledTextField(
                           controller: passwordController,
-                          hintText: 'Mot de passe',
-                        ),
-                        _buildPasswordField(
-                          controller: confirmPasswordController,
-                          hintText: 'Confirmer le mot de passe',
+                          label: "Mot de passe",
+                          hint: "Entrez votre mot de passe",
                           obscureText: true,
+                          icon: Icons.lock,
+                          validator: Validators.isValidPassword,
                         ),
-                        _buildDropdownField(regionController, "Région",
-                            Icons.location_on, Regions.list),
-                        _buildDropdownField(genreController, "Genre",
-                            Icons.transgender, ['Homme', 'Femme']),
-                        _buildTextField(
-                            phoneController,
-                            "Numéro de téléphone",
-                            "Entrez votre numéro de téléphone",
-                            Icons.phone,
-                            Validators.isValidPhone),
+                        const SizedBox(height: 10),
+                        _buildStyledTextField(
+                          controller: confirmPasswordController,
+                          label: "Confirmer le mot de passe",
+                          hint: "Confirmez votre mot de passe",
+                          obscureText: true,
+                          icon: Icons.lock_outline,
+                          validator: (value) =>
+                              Validators.isValidConfirmPassword(
+                                  value, passwordController.text),
+                        ),
+                        const SizedBox(height: 10),
+
+                        // Styled Dropdowns
+                        _buildStyledDropdown(
+                          value: regionController.text,
+                          label: 'Région',
+                          icon: Icons.location_on,
+                          items: Regions.list,
+                          onChanged: (value) {
+                            setState(() {
+                              regionController.text = value!;
+                            });
+                          },
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Veuillez sélectionner une région';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 10),
+                        _buildStyledDropdown(
+                          value: genreController.text,
+                          label: 'Genre',
+                          icon: Icons.transgender,
+                          items: ['Homme', 'Femme'],
+                          onChanged: (value) {
+                            setState(() {
+                              genreController.text = value!;
+                            });
+                          },
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Veuillez sélectionner votre genre';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 10),
+                        _buildStyledTextField(
+                          controller: phoneController,
+                          label: "Numéro de téléphone",
+                          hint: "Entrez votre numéro de téléphone",
+                          icon: Icons.phone,
+                          validator: Validators.isValidPhone,
+                        ),
                         const SizedBox(height: 20),
-                        ElevatedButton(
-                          onPressed:
-                              _authController.isLoading.value ? null : _signUp,
-                          style: ElevatedButton.styleFrom(
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 15)),
-                          child: const Text("Inscription"),
+
+                        // Submit Button
+                        Container(
+                          decoration: AppDecorations.buttonDecoration,
+                          child: ElevatedButton(
+                            onPressed: _authController.isLoading.value
+                                ? null
+                                : () async {
+                                    if (_formKey.currentState!.validate()) {
+                                      List<String> dateParts =
+                                          dateController.text.split('-');
+                                      if (dateParts.length == 3) {
+                                        String formattedDate =
+                                            "${dateParts[0]}-${dateParts[1]}-${dateParts[2]}";
+                                        User newUser = User(
+                                          nom: nameController.text,
+                                          prenom: prenomController.text,
+                                          email: emailController.text,
+                                          date: formattedDate,
+                                          password: passwordController.text,
+                                          region: regionController.text,
+                                          genre: genreController.text,
+                                          phone: phoneController.text,
+                                        );
+                                        await _authController.signUp(newUser);
+                                      }
+                                    }
+                                  },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              padding: const EdgeInsets.symmetric(vertical: 15),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: Text(
+                              "Inscription",
+                              style: AppTextStyles.buttonTextStyle,
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -152,96 +260,106 @@ class _SignUpScreenState extends State<SignUpScreen> {
               ),
               if (_authController.isLoading.value)
                 Container(
-                  color: Colors.black.withOpacity(0.5),
-                  child: const Center(child: CircularProgressIndicator()),
+                  color: AppColors.blackColor.withOpacity(0.5),
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      color: AppColors.whiteColor,
+                    ),
+                  ),
                 ),
             ],
           )),
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String label,
-      String hint, IconData icon, String? Function(String?)? validator,
-      {bool obscureText = false}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
+  Widget _buildStyledTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData icon,
+    bool obscureText = false,
+    String? Function(String?)? validator,
+  }) {
+    return Container(
+      decoration: AppDecorations.inputDecoration,
       child: TextFormField(
         controller: controller,
         obscureText: obscureText,
         decoration: InputDecoration(
           labelText: label,
           hintText: hint,
-          prefixIcon: Icon(icon),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          labelStyle: TextStyle(
+            color: AppColors.primaryColor,
+            fontSize: 14,
+          ),
+          prefixIcon: Icon(
+            icon,
+            color: AppColors.primaryColor,
+          ),
+          filled: true,
+          fillColor: Colors.grey[50],
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(
+              color: AppColors.primaryColor,
+              width: 2,
+            ),
+          ),
         ),
         validator: validator,
       ),
     );
   }
 
-  Widget _buildDropdownField(TextEditingController controller, String label,
-      IconData icon, List<String> items) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
+  Widget _buildStyledDropdown({
+    required String value,
+    required String label,
+    required IconData icon,
+    required List<String> items,
+    required Function(String?) onChanged,
+    required String? Function(String?)? validator,
+  }) {
+    return Container(
+      decoration: AppDecorations.inputDecoration,
       child: DropdownButtonFormField<String>(
-        value: controller.text.isEmpty ? null : controller.text,
-        onChanged: (value) => setState(() => controller.text = value!),
+        value: value.isEmpty ? null : value,
+        onChanged: onChanged,
         decoration: InputDecoration(
           labelText: label,
-          prefixIcon: Icon(icon),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-        items: items
-            .map((item) => DropdownMenuItem(value: item, child: Text(item)))
-            .toList(),
-        validator: (value) => value == null || value.isEmpty
-            ? 'Veuillez sélectionner une option'
-            : null,
-      ),
-    );
-  }
-
-  Widget _buildPasswordField({
-    required TextEditingController controller,
-    required String hintText,
-    bool obscureText = true,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
-      child: TextFormField(
-        controller: controller,
-        obscureText: obscureText,
-        decoration: InputDecoration(
-          labelText: hintText,
-          prefixIcon: const Icon(Icons.lock_outline),
-          suffixIcon: IconButton(
-            icon: Icon(obscureText ? Icons.visibility_off : Icons.visibility),
-            onPressed: () => setState(() {
-              obscureText = !obscureText;
-            }),
+          labelStyle: TextStyle(
+            color: AppColors.primaryColor,
+            fontSize: 14,
           ),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          prefixIcon: Icon(
+            icon,
+            color: AppColors.primaryColor,
+          ),
+          filled: true,
+          fillColor: Colors.grey[50],
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(
+              color: AppColors.primaryColor,
+              width: 2,
+            ),
+          ),
         ),
-        validator: Validators.isValidPassword,
+        items: items.map((item) {
+          return DropdownMenuItem<String>(
+            value: item,
+            child: Text(item),
+          );
+        }).toList(),
+        validator: validator,
       ),
     );
   }
-
-  void _signUp() async {
-    if (_formKey.currentState!.validate()) {
-      User newUser = User(
-        nom: nameController.text,
-        prenom: prenomController.text,
-        email: emailController.text,
-        date: dateController.text,
-        password: passwordController.text,
-        region: regionController.text,
-        genre: genreController.text,
-        phone: phoneController.text,
-      );
-      await _authController.signUp(newUser);
-    }
-  }
-
-  // Modify the confirm password field
 }

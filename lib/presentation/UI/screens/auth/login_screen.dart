@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:opti_app/Presentation/controllers/auth_controller.dart';
 import 'package:http/http.dart' as http;
+import 'package:opti_app/core/styles/colors.dart';
+import 'package:opti_app/core/styles/text_styles.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -71,66 +73,53 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Center(
             child: SingleChildScrollView(
               padding:
-                  const EdgeInsets.symmetric(horizontal: 24.0, vertical: 5.0),
+                  const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
               child: Column(
                 children: [
+                  // Logo and branding
                   Container(
-                    padding: EdgeInsets.all(8),
+                    padding: EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.white.withOpacity(0.1),
+                      color: AppColors.whiteColor.withOpacity(0.1),
                     ),
                     child: Icon(
                       Icons.visibility,
-                      size: 60,
-                      color: const Color.fromARGB(255, 108, 97, 192),
+                      size: 70,
+                      color: AppColors.accentColor,
                     ),
                   ),
+                  SizedBox(height: 24),
+                  Text('VISION EXCELLENCE', style: AppTextStyles.titleStyle),
+                  SizedBox(height: 8),
+                  Text('CENTRE D\'OPTOMÉTRIE',
+                      style: AppTextStyles.subtitleStyle),
+                  SizedBox(height: 48),
 
-                  // Carte principale
+                  // Main Card
                   Card(
                     elevation: 20,
-                    shadowColor: Colors.black38,
+                    shadowColor: AppColors.blackColor.withOpacity(0.38),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(24.0),
                     ),
-                    color: Colors.white.withOpacity(0.4),
+                    color: AppColors.whiteColor.withOpacity(0.4),
                     child: Container(
                       padding: EdgeInsets.all(32),
                       width: double.infinity,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Connexion',
-                            style: TextStyle(
-                              fontSize: 32,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF0A2647),
-                              letterSpacing: 1,
-                            ),
-                          ),
+                          Text('Connexion',
+                              style: AppTextStyles.loginTitleStyle),
                           SizedBox(height: 8),
-                          Text(
-                            'Accédez à votre espace personnel',
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 16,
-                            ),
-                          ),
+                          Text('Accédez à votre espace personnel',
+                              style: AppTextStyles.loginSubtitleStyle),
                           SizedBox(height: 40),
-                          // Champs de saisie stylisés
+
+                          // Email Field
                           Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.grey.withOpacity(0.1),
-                                  blurRadius: 8,
-                                  offset: Offset(0, 2),
-                                ),
-                              ],
-                            ),
+                            decoration: AppDecorations.inputDecoration,
                             child: TextField(
                               controller: emailController,
                               keyboardType: TextInputType.emailAddress,
@@ -138,12 +127,12 @@ class _LoginScreenState extends State<LoginScreen> {
                               decoration: InputDecoration(
                                 labelText: 'Adresse email',
                                 labelStyle: TextStyle(
-                                  color: Color(0xFF0A2647),
+                                  color: AppColors.primaryColor,
                                   fontSize: 14,
                                 ),
                                 prefixIcon: Icon(
                                   Icons.email_outlined,
-                                  color: Color(0xFF0A2647),
+                                  color: AppColors.primaryColor,
                                 ),
                                 filled: true,
                                 fillColor: Colors.grey[50],
@@ -154,7 +143,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(16),
                                   borderSide: BorderSide(
-                                    color: Color(0xFF0A2647),
+                                    color: AppColors.primaryColor,
                                     width: 2,
                                   ),
                                 ),
@@ -162,17 +151,10 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                           SizedBox(height: 24),
+
+                          // Password Field
                           Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.grey.withOpacity(0.1),
-                                  blurRadius: 8,
-                                  offset: Offset(0, 2),
-                                ),
-                              ],
-                            ),
+                            decoration: AppDecorations.inputDecoration,
                             child: TextField(
                               controller: passwordController,
                               obscureText: _obscurePassword,
@@ -180,19 +162,19 @@ class _LoginScreenState extends State<LoginScreen> {
                               decoration: InputDecoration(
                                 labelText: 'Mot de passe',
                                 labelStyle: TextStyle(
-                                  color: Color(0xFF0A2647),
+                                  color: AppColors.primaryColor,
                                   fontSize: 14,
                                 ),
                                 prefixIcon: Icon(
                                   Icons.lock_outline,
-                                  color: Color(0xFF0A2647),
+                                  color: AppColors.primaryColor,
                                 ),
                                 suffixIcon: IconButton(
                                   icon: Icon(
                                     _obscurePassword
                                         ? Icons.visibility_outlined
                                         : Icons.visibility_off_outlined,
-                                    color: Color(0xFF0A2647),
+                                    color: AppColors.primaryColor,
                                   ),
                                   onPressed: () => setState(() =>
                                       _obscurePassword = !_obscurePassword),
@@ -206,7 +188,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(16),
                                   borderSide: BorderSide(
-                                    color: Color(0xFF0A2647),
+                                    color: AppColors.primaryColor,
                                     width: 2,
                                   ),
                                 ),
@@ -214,26 +196,12 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                           SizedBox(height: 32),
-                          // Bouton de connexion avec animation
+
+                          // Login Button
                           Obx(() => Container(
                                 width: double.infinity,
                                 height: 56,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(16),
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      Color(0xFF0A2647),
-                                      Color(0xFF205295),
-                                    ],
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Color(0xFF0A2647).withOpacity(0.3),
-                                      blurRadius: 12,
-                                      offset: Offset(0, 6),
-                                    ),
-                                  ],
-                                ),
+                                decoration: AppDecorations.buttonDecoration,
                                 child: ElevatedButton(
                                   onPressed: authController.isLoading.value
                                       ? null
@@ -250,39 +218,28 @@ class _LoginScreenState extends State<LoginScreen> {
                                           height: 24,
                                           width: 24,
                                           child: CircularProgressIndicator(
-                                            color: Colors.white,
+                                            color: AppColors.whiteColor,
                                             strokeWidth: 2,
                                           ),
                                         )
-                                      : Text(
-                                          'SE CONNECTER',
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w600,
-                                            letterSpacing: 2,
-                                            color: Colors.white,
-                                          ),
-                                        ),
+                                      : Text('SE CONNECTER',
+                                          style: AppTextStyles.buttonTextStyle),
                                 ),
                               )),
                           SizedBox(height: 24),
-                          // Options supplémentaires
+
+                          // Forgot Password
                           Center(
                             child: TextButton(
                               onPressed: () =>
                                   Get.toNamed('/ForgotPasswordScreen'),
-                              child: Text(
-                                'Mot de passe oublié ?',
-                                style: TextStyle(
-                                  color: Color(0xFF0A2647),
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
+                              child: Text('Mot de passe oublié ?',
+                                  style: AppTextStyles.forgotPasswordStyle),
                             ),
                           ),
                           SizedBox(height: 32),
-                          // Séparateur élégant
+
+                          // Divider
                           Row(
                             children: [
                               Expanded(
@@ -302,13 +259,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               Padding(
                                 padding: EdgeInsets.symmetric(horizontal: 16),
-                                child: Text(
-                                  'Ou continuer avec',
-                                  style: TextStyle(
-                                    color: Colors.grey[600],
-                                    fontSize: 14,
-                                  ),
-                                ),
+                                child: Text('Ou continuer avec',
+                                    style: AppTextStyles.loginSubtitleStyle),
                               ),
                               Expanded(
                                 child: Container(
@@ -328,7 +280,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             ],
                           ),
                           SizedBox(height: 32),
-                          // Boutons sociaux modernisés
+
+                          // Social Buttons
                           Row(
                             children: [
                               Expanded(
@@ -341,16 +294,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                     }
                                   },
                                   icon: Icon(Icons.g_mobiledata,
-                                      size: 24, color: Color(0xFF0A2647)),
-                                  label: Text(
-                                    'Google',
-                                    style: TextStyle(
-                                      color: Color(0xFF0A2647),
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
+                                      size: 24, color: AppColors.primaryColor),
+                                  label: Text('Google',
+                                      style:
+                                          AppTextStyles.socialButtonTextStyle),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.white,
+                                    backgroundColor: AppColors.whiteColor,
                                     padding: EdgeInsets.symmetric(vertical: 16),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
@@ -373,16 +322,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                     }
                                   },
                                   icon: Icon(Icons.facebook,
-                                      size: 24, color: Color(0xFF0A2647)),
-                                  label: Text(
-                                    'Facebook',
-                                    style: TextStyle(
-                                      color: Color(0xFF0A2647),
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
+                                      size: 24, color: AppColors.primaryColor),
+                                  label: Text('Facebook',
+                                      style:
+                                          AppTextStyles.socialButtonTextStyle),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.white,
+                                    backgroundColor: AppColors.whiteColor,
                                     padding: EdgeInsets.symmetric(vertical: 16),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
@@ -397,7 +342,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             ],
                           ),
                           SizedBox(height: 32),
-                          // Lien d'inscription élégant
+
+                          // Sign Up Link
                           Center(
                             child: TextButton(
                               onPressed: () => Get.toNamed('/signup'),
@@ -407,14 +353,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                   children: [
                                     TextSpan(
                                       text: 'Nouveau patient ? ',
-                                      style: TextStyle(color: Colors.grey[600]),
+                                      style: AppTextStyles.signUpTextStyle,
                                     ),
                                     TextSpan(
                                       text: 'Créer un compte',
-                                      style: TextStyle(
-                                        color: Color(0xFF0A2647),
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                      style: AppTextStyles.signUpLinkStyle,
                                     ),
                                   ],
                                 ),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:opti_app/core/styles/colors.dart';
+import 'package:opti_app/core/styles/text_styles.dart';
 
 class WelcomePage extends StatefulWidget {
   const WelcomePage({super.key});
@@ -8,7 +10,8 @@ class WelcomePage extends StatefulWidget {
   _WelcomePageState createState() => _WelcomePageState();
 }
 
-class _WelcomePageState extends State<WelcomePage> with TickerProviderStateMixin {
+class _WelcomePageState extends State<WelcomePage>
+    with TickerProviderStateMixin {
   late final AnimationController _controller;
   late final AnimationController _buttonController;
   late final Animation<double> _fadeInAnimation;
@@ -16,7 +19,7 @@ class _WelcomePageState extends State<WelcomePage> with TickerProviderStateMixin
   late final Animation<Offset> _slideInTextAnimation;
   late final Animation<double> _scaleButtonAnimation;
   late final Animation<double> _zoomImageAnimation;
-  
+
   late int _currentImageIndex;
   late PageController _pageController;
   bool _showButton = false;
@@ -31,13 +34,16 @@ class _WelcomePageState extends State<WelcomePage> with TickerProviderStateMixin
   final List<Map<String, String>> _welcomeTexts = [
     {
       'title': 'Bienvenue sur OptiApp',
-      'subtitle': 'Votre assistant numérique pour une gestion simplifiée des opticiens.',
-      'description': 'Une solution moderne pour les professionnels de l\'optique.'
+      'subtitle':
+          'Votre assistant numérique pour une gestion simplifiée des opticiens.',
+      'description':
+          'Une solution moderne pour les professionnels de l\'optique.'
     },
     {
       'title': 'Gestion Intelligente',
       'subtitle': 'Optimisez votre travail avec nos outils innovants.',
-      'description': 'Simplifiez vos tâches quotidiennes grâce à l\'intelligence artificielle.'
+      'description':
+          'Simplifiez vos tâches quotidiennes grâce à l\'intelligence artificielle.'
     },
     {
       'title': 'Commencez Maintenant',
@@ -92,7 +98,7 @@ class _WelcomePageState extends State<WelcomePage> with TickerProviderStateMixin
 
     // Start initial animations
     _controller.forward();
-    
+
     // Delay the start of image sequence to ensure PageView is built
     WidgetsBinding.instance.addPostFrameCallback((_) {
       setState(() {
@@ -153,17 +159,8 @@ class _WelcomePageState extends State<WelcomePage> with TickerProviderStateMixin
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              const Color(0xFF1A4D6B),
-              const Color(0xFF2C7DA0),
-              const Color(0xFF1A4D6B).withOpacity(0.9),
-            ],
-          ),
-        ),
+        decoration: AppDecorations
+            .welcomeGradientDecoration, // Using the gradient background
         child: FadeTransition(
           opacity: _fadeInAnimation,
           child: Stack(
@@ -173,27 +170,17 @@ class _WelcomePageState extends State<WelcomePage> with TickerProviderStateMixin
                 painter: ImprovedPatternPainter(),
                 size: Size.infinite,
               ),
-              
+
               SafeArea(
                 child: Column(
                   children: [
                     const SizedBox(height: 20),
-                    
+
                     // Logo
                     Container(
                       padding: const EdgeInsets.all(15),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 10,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                      ),
-                      
+                      decoration: AppDecorations
+                          .welcomeLogoDecoration, // Custom logo decoration
                     ),
 
                     const SizedBox(height: 30),
@@ -212,20 +199,12 @@ class _WelcomePageState extends State<WelcomePage> with TickerProviderStateMixin
                             margin: const EdgeInsets.symmetric(horizontal: 20),
                             child: Column(
                               children: [
-                                // Image container
+                                // Image container with decoration
                                 Container(
                                   height: 300,
                                   width: 400,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(20),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.2),
-                                        blurRadius: 15,
-                                        offset: const Offset(0, 5),
-                                      ),
-                                    ],
-                                  ),
+                                  decoration: AppDecorations
+                                      .welcomeImageDecoration, // Image decoration
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.circular(20),
                                     child: Image.asset(
@@ -243,18 +222,24 @@ class _WelcomePageState extends State<WelcomePage> with TickerProviderStateMixin
                                   children: List.generate(
                                     _welcomeImages.length,
                                     (dotIndex) => AnimatedContainer(
-                                      duration: const Duration(milliseconds: 300),
-                                      margin: const EdgeInsets.symmetric(horizontal: 5),
+                                      duration:
+                                          const Duration(milliseconds: 300),
+                                      margin: const EdgeInsets.symmetric(
+                                          horizontal: 5),
                                       height: 8,
-                                      width: _currentImageIndex == dotIndex ? 24 : 8,
+                                      width: _currentImageIndex == dotIndex
+                                          ? 24
+                                          : 8,
                                       decoration: BoxDecoration(
                                         color: _currentImageIndex == dotIndex
-                                            ? Colors.white
-                                            : Colors.white.withOpacity(0.4),
+                                            ? AppColors.whiteColor
+                                            : AppColors.whiteColor
+                                                .withOpacity(0.4),
                                         borderRadius: BorderRadius.circular(4),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: Colors.black.withOpacity(0.1),
+                                            color: AppColors.black
+                                                .withOpacity(0.1),
                                             blurRadius: 4,
                                             spreadRadius: 1,
                                           ),
@@ -266,101 +251,78 @@ class _WelcomePageState extends State<WelcomePage> with TickerProviderStateMixin
 
                                 const SizedBox(height: 30),
 
-                                // Title
+                                // Title with AppTextStyles
                                 Text(
                                   _welcomeTexts[index]['title']!,
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                    shadows: [
-                                      Shadow(
-                                        color: Colors.black.withOpacity(0.3),
-                                        offset: const Offset(0, 2),
-                                        blurRadius: 4,
-                                      ),
-                                    ],
-                                  ),
+                                  style: AppTextStyles
+                                      .welcomeTitleStyle, // Applied welcome title style
                                   textAlign: TextAlign.center,
                                 ),
 
                                 const SizedBox(height: 15),
 
-                                // Subtitle
+                                // Subtitle with AppTextStyles
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 20),
                                   child: Text(
                                     _welcomeTexts[index]['subtitle']!,
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 18,
-                                      color: Colors.white.withOpacity(0.9),
-                                      height: 1.4,
-                                    ),
+                                    style: AppTextStyles
+                                        .welcomeSubtitleStyle, // Applied welcome subtitle style
                                     textAlign: TextAlign.center,
                                   ),
                                 ),
 
                                 const SizedBox(height: 10),
 
-                                // Description
+                                // Description with AppTextStyles
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 30),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 30),
                                   child: Text(
                                     _welcomeTexts[index]['description']!,
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 16,
-                                      color: Colors.white.withOpacity(0.7),
-                                      fontStyle: FontStyle.italic,
-                                    ),
+                                    style: AppTextStyles
+                                        .welcomeDescriptionStyle, // Applied description style
                                     textAlign: TextAlign.center,
                                   ),
                                 ),
                               ],
-                            ),
+                              ),
                           );
                         },
                       ),
                     ),
-
-                    // Continue button
-                    if (_showButton) 
-                    Padding(
-  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
-  child: FadeTransition(
-    opacity: _buttonFadeAnimation,
-    child: ScaleTransition(
-      scale: _buttonFadeAnimation,
-      child: ElevatedButton(
-        onPressed: () => Navigator.pushReplacementNamed(context, '/login'), // Change '/home' to '/login'
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.white,
-          foregroundColor: const Color(0xFF1A4D6B),
-          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
-          ),
-          elevation: 8,
-          shadowColor: Colors.black.withOpacity(0.3),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Continuer',
-              style: GoogleFonts.poppins(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(width: 8),
-            const Icon(Icons.arrow_forward_ios, size: 18),
-          ],
-        ),
-      ),
-    ),
-  ),
-),
-
+                    if (_showButton)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 30, vertical: 20),
+                        child: FadeTransition(
+                          opacity: _buttonFadeAnimation,
+                          child: ScaleTransition(
+                            scale: _buttonFadeAnimation,
+                            child: ElevatedButton(
+                              onPressed: () => Navigator.pushReplacementNamed(
+                                  context, '/login'),
+                              style: AppDecorations
+                                  .welcomeButtonStyle, // Custom button style
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'Continuer',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Icon(Icons.arrow_forward_ios, size: 18),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
 
                     const SizedBox(height: 20),
                   ],
@@ -379,7 +341,7 @@ class ImprovedPatternPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.05)
+      ..color = AppColors.whiteColor.withOpacity(0.05)
       ..strokeWidth = 1
       ..style = PaintingStyle.stroke;
 
