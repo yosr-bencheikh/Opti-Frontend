@@ -204,7 +204,7 @@ class AuthController extends GetxController {
         debugPrint('User data loaded from prefs successfully');
       } catch (e) {
         debugPrint('Error parsing stored user data: $e');
-        // Clear invalid stored data
+        
         await prefs.remove('currentUser');
         await prefs.remove('userEmail');
       }
@@ -224,7 +224,7 @@ class AuthController extends GetxController {
       'genre': data['genre'] ?? 'Homme',
       'imageUrl': data['imageUrl'] ?? '',
       'password': data['password'] ?? '',
-      // Add the ID field if present
+    
       if (data['_id'] != null) 'id': data['_id'],
     };
   }
@@ -293,12 +293,12 @@ class AuthController extends GetxController {
     try {
       isLoading.value = true;
 
-      // Sign out to clear any cached credentials
+  
       await FacebookAuth.instance.logOut();
 
-      // Use web login to force account selection
+      
       final LoginResult result = await FacebookAuth.instance.login(
-        loginBehavior: LoginBehavior.nativeOnly, // Force web login
+        loginBehavior: LoginBehavior.nativeOnly, 
       );
 
       if (result.status != LoginStatus.success) {
