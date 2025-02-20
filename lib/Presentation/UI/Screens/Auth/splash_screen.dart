@@ -26,7 +26,7 @@ class SplashScreen extends StatelessWidget {
           }
 
           if (snapshot.data == true) {
-            Future.microtask(() => Get.offAllNamed('/profileScreen',
+            Future.microtask(() => Get.offAllNamed('/HomeScreen',
                 arguments: authController.currentUser?.email));
           } else {
             Future.microtask(() => Get.offAllNamed('/welcomePage'));

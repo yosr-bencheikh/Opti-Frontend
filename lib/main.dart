@@ -2,8 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:opti_app/AuthBinding.dart';
+import 'package:opti_app/Presentation/UI/Screens/Auth/cart_screen.dart';
+import 'package:opti_app/Presentation/UI/Screens/Auth/favourite_screen.dart';
+import 'package:opti_app/Presentation/UI/Screens/Auth/home_screen.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/splash_screen.dart';
+import 'package:opti_app/Presentation/UI/Screens/Auth/stores_screen.dart';
+import 'package:opti_app/Presentation/UI/Screens/Auth/update_profile_screen.dart';
+import 'package:opti_app/Presentation/UI/Screens/Auth/wishList.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/WelcomePage.dart';
+import 'package:opti_app/Presentation/controllers/navigation_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/SignUpScreen.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/admin_panel.dart';
@@ -34,6 +41,7 @@ Future<void> main() async {
 
   final sendCodeToEmail = SendCodeToEmail(Get.find());
   Get.put(sendCodeToEmail);
+  Get.put(NavigationController(), permanent: true);
 
   runApp(const MyApp());
 }
@@ -73,6 +81,11 @@ class MyApp extends StatelessWidget {
           binding: AuthBinding(),
         ),
         GetPage(
+          name: '/HomeScreen',
+          page: () => HomeScreen(),
+          binding: AuthBinding(),
+        ),
+        GetPage(
           name: '/dashboard',
           page: () => AdminPanelApp(),
           binding: AuthBinding(),
@@ -87,6 +100,23 @@ class MyApp extends StatelessWidget {
           page: () => SignUpScreen(),
           binding: AuthBinding(),
         ),
+        GetPage(
+          name: '/update',
+          page: () => ProfileScreen(),
+          binding: AuthBinding(),
+        ),
+        GetPage(
+            name: '/stores',
+            page: () => StoresScreen(),
+            binding: AuthBinding()),
+        GetPage(
+            name: '/favourites',
+            page: () => FavouriteScreen(),
+            binding: AuthBinding()),
+        GetPage(
+            name: '/wishlist', page: () => Wishlist(), binding: AuthBinding()),
+        GetPage(
+            name: '/cart', page: () => CartScreen(), binding: AuthBinding()),
       ],
     );
   }

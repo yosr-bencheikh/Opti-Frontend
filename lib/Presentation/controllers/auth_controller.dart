@@ -204,7 +204,7 @@ class AuthController extends GetxController {
         debugPrint('User data loaded from prefs successfully');
       } catch (e) {
         debugPrint('Error parsing stored user data: $e');
-        
+
         await prefs.remove('currentUser');
         await prefs.remove('userEmail');
       }
@@ -224,7 +224,6 @@ class AuthController extends GetxController {
       'genre': data['genre'] ?? 'Homme',
       'imageUrl': data['imageUrl'] ?? '',
       'password': data['password'] ?? '',
-    
       if (data['_id'] != null) 'id': data['_id'],
     };
   }
@@ -272,7 +271,7 @@ class AuthController extends GetxController {
         currentUserId.value = userId;
         isLoggedIn.value = true;
         await loadUserData(googleUser.email);
-        Get.offAllNamed('/profileScreen', arguments: userId);
+        Get.offAllNamed('/HomeScreen', arguments: userId);
       } else {
         throw Exception('Google login failed: ${response.body}');
       }
@@ -293,12 +292,10 @@ class AuthController extends GetxController {
     try {
       isLoading.value = true;
 
-  
       await FacebookAuth.instance.logOut();
 
-      
       final LoginResult result = await FacebookAuth.instance.login(
-        loginBehavior: LoginBehavior.nativeOnly, 
+        loginBehavior: LoginBehavior.nativeOnly,
       );
 
       if (result.status != LoginStatus.success) {
@@ -342,7 +339,7 @@ class AuthController extends GetxController {
 
         // Load user data using the email
         await loadUserData(email); // Load user data with the email
-        Get.offAllNamed('/profileScreen',
+        Get.offAllNamed('/HomeScreen',
             arguments: email); // Pass email to the profile screen
       } else {
         throw Exception('Facebook login failed: ${response.body}');
@@ -421,7 +418,7 @@ class AuthController extends GetxController {
       }
 
       await loadUserData(userEmail);
-      Get.offAllNamed('/profileScreen', arguments: {
+      Get.offAllNamed('/HomeScreen', arguments: {
         'email': userEmail,
       });
     } catch (e, stackTrace) {
@@ -621,23 +618,29 @@ class AuthController extends GetxController {
   }
 
   Future<void> uploadImage(String email) async {
+    // Vérifier si une image a été sélectionnée
+    if (selectedImage == null) {
+      Get.snackbar('Error', 'Aucune image sélectionnée!');
+      return;
+    }
     try {
       isLoading.value = true;
-      final filePath = selectedImage!.path;
+      final filePath =
+          selectedImage!.path; // Maintenant, selectedImage n'est pas null
       print('Uploading image from path: $filePath');
       final imageUrl = await authRepository.uploadImage(filePath, email);
       print('Image uploaded successfully. URL: $imageUrl');
 
-      // Ensure we have the current user data
+      // S'assurer que l'utilisateur courant existe
       if (currentUser == null) {
         throw Exception('Current user is null');
       }
-      if (currentUser != null) {
-        currentUser!.imageUrl = imageUrl; // Update the imageUrl
-        update(); // Notify GetX to rebuild
-      }
 
-      // Create updated user with all current data plus new image
+      // Mettre à jour l'image de l'utilisateur
+      currentUser!.imageUrl = imageUrl;
+      update(); // Pour rafraîchir l'interface
+
+      // Créer un utilisateur mis à jour avec la nouvelle image
       final updatedUser = UserModel(
         nom: currentUser!.nom,
         prenom: currentUser!.prenom,
@@ -647,23 +650,19 @@ class AuthController extends GetxController {
         phone: currentUser!.phone ?? '',
         region: currentUser!.region ?? '',
         genre: currentUser!.genre ?? 'Homme',
-        imageUrl: imageUrl, // Set the new image URL
+        imageUrl: imageUrl,
       );
 
-      // Update in backend
+      // Mettre à jour côté backend
       await authRepository.updateUser(email, updatedUser);
 
-      // Directly update the current user
+      // Mise à jour locale de l'utilisateur courant
       _currentUser.value = updatedUser;
 
-      // Store in SharedPreferences
+      // Stocker les données mises à jour dans SharedPreferences
       await prefs.setString('currentUser', json.encode(updatedUser.toJson()));
 
-      print('New current user image URL: ${_currentUser.value?.imageUrl}');
-
       Get.snackbar('Success', 'Image uploaded successfully!');
-
-      // Force UI refresh
       Get.forceAppUpdate();
     } catch (e) {
       print('Error uploading image: $e');
