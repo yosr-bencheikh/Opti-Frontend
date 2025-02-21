@@ -1,89 +1,70 @@
 import 'dart:io';
-
-import 'package:flutter/foundation.dart';
+import 'package:get/get.dart';
 import 'package:opti_app/data/data_sources/product_datasource.dart';
 import 'package:opti_app/domain/entities/product_entity.dart';
 
-class ProductController extends ChangeNotifier {
+class ProductController extends GetxController {
   final ProductDatasource _datasource;
-  List<Product> _products = [];
-  bool _isLoading = false;
-  String? _error;
+  var products = <Product>[].obs;
+  var isLoading = false.obs;
+  var error = RxnString();
 
   ProductController(this._datasource);
 
-  List<Product> get products => _products;
-  bool get isLoading => _isLoading;
-  String? get error => _error;
-
   Future<void> loadProducts() async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
+    isLoading.value = true;
+    error.value = null;
 
     try {
-      _products = await _datasource.getProducts();
+      final productList = await _datasource.getProducts();
+      products.assignAll(productList);
     } catch (e) {
-      _error = e.toString();
+      error.value = e.toString();
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      isLoading.value = false;
     }
   }
 
   Future<void> addProduct(Product product) async {
     try {
       final newProduct = await _datasource.createProduct(product);
-      _products.add(newProduct);
-      notifyListeners();
+      products.add(newProduct);
     } catch (e) {
-      _error = e.toString();
-      notifyListeners();
+      error.value = e.toString();
     }
   }
 
   Future<void> updateProduct(String id, Product product) async {
     try {
       final updatedProduct = await _datasource.updateProduct(id, product);
-      final index = _products.indexWhere((p) => p.id == id);
+      final index = products.indexWhere((p) => p.id == id);
       if (index != -1) {
-        _products[index] = updatedProduct;
-        notifyListeners();
+        products[index] = updatedProduct;
       }
     } catch (e) {
-      _error = e.toString();
-      notifyListeners();
+      error.value = e.toString();
     }
   }
 
   Future<void> deleteProduct(String id) async {
     try {
       await _datasource.deleteProduct(id);
-      _products.removeWhere((p) => p.id == id);
-      notifyListeners();
+      products.removeWhere((p) => p.id == id);
     } catch (e) {
-      _error = e.toString();
-      notifyListeners();
+      error.value = e.toString();
     }
   }
 
   Future<String?> uploadImage(File imageFile) async {
-try {
-    _isLoading = true;
-    notifyListeners();
-
-    final imageUrl = await _datasource.uploadImage(imageFile);
-
-    _isLoading = false;
-    notifyListeners();
-
-    return imageUrl;
-  } catch (e) {
-    print("Error uploading image: $e");
-    _error = e.toString();
-    _isLoading = false;
-    notifyListeners();
-    return null;
+    try {
+      isLoading.value = true;
+      final imageUrl = await _datasource.uploadImage(imageFile);
+      return imageUrl;
+    } catch (e) {
+      error.value = e.toString();
+      return null;
+    } finally {
+      isLoading.value = false;
+    }
   }
-}
 }

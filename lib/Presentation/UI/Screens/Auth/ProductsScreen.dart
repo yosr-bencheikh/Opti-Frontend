@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
 import 'package:opti_app/data/data_sources/product_datasource.dart';
@@ -19,50 +20,248 @@ class _ProductsScreenState extends State<ProductsScreen> {
   File? _imageFile;
   TextEditingController _searchController = TextEditingController();
 
-  @override
-  void initState() {
-    super.initState();
-    _controller = ProductController(ProductDatasource());
-    _controller.loadProducts();
-    
-  }
-  List<Product> get _filteredProducts {
-  if (_searchController.text.isEmpty) {
-    return _controller.products;
-  }
+// Pagination variables
+  int _itemsPerPage = 10;
+  int _currentPage = 0;
+  
+  // Filter variables
+  String? _selectedCategory;
+  String? _selectedBrand;
+  RangeValues _priceRange = RangeValues(0, 1000);
+  bool _showFilters = false;
+
+@override
+void initState() {
+  super.initState();
+  _controller = ProductController(ProductDatasource());
+  _controller.loadProducts().then((_) {
+    if (_controller.products.isNotEmpty) {
+      final maxPrice = _controller.products
+          .map((p) => p.prix)
+          .reduce((max, price) => price > max ? price : max);
+      setState(() {
+        _priceRange = RangeValues(0, maxPrice);
+      });
+    }
+  });
+}
+List<Product> get _filteredProducts {
+  print('Filtering products...');
+  print('Search text: ${_searchController.text}');
+  print('Selected category: $_selectedCategory');
+  print('Selected brand: $_selectedBrand');
+  print('Price range: ${_priceRange.start} - ${_priceRange.end}');
+
   return _controller.products.where((product) {
-    final query = _searchController.text.toLowerCase();
-    return product.name.toLowerCase().contains(query) ||
-           product.category.toLowerCase().contains(query) ||
-           product.description.toLowerCase().contains(query);
+    final matchesSearch = _searchController.text.isEmpty || 
+      [
+        product.name,
+        product.category,
+        product.description,
+        product.marque,
+        product.couleur,
+        product.typeVerre,
+        product.prix.toString(),
+        product.quantiteStock.toString()
+      ].any((field) => 
+        field?.toLowerCase().contains(_searchController.text.toLowerCase()) ?? false
+      );
+
+    final matchesCategory = _selectedCategory == null || 
+      product.category == _selectedCategory;
+
+    final matchesBrand = _selectedBrand == null || 
+      product.marque == _selectedBrand;
+
+    final matchesPrice = product.prix >= _priceRange.start && 
+      product.prix <= _priceRange.end;
+
+    return matchesSearch && matchesCategory && matchesBrand && matchesPrice;
   }).toList();
 }
+List<Product> get _paginatedProducts {
+  final startIndex = _currentPage * _itemsPerPage;
+  final endIndex = startIndex + _itemsPerPage;
+  final filteredList = _filteredProducts;
+  
+  if (startIndex >= filteredList.length) {
+    return [];
+  }
+  
+  return filteredList.sublist(
+    startIndex,
+    endIndex > filteredList.length ? filteredList.length : endIndex
+  );
+}
+ Widget _buildFilters() {
+    if (!_showFilters) return const SizedBox.shrink();
 
+    final categories = _controller.products
+        .map((p) => p.category)
+        .toSet()
+        .toList();
+    
+    final brands = _controller.products
+        .map((p) => p.marque)
+        .toSet()
+        .toList();
 
- @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[100],
-      body: ListenableBuilder(
-        listenable: _controller,
-        builder: (context, child) {
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(),
-                const SizedBox(height: 24),
-                _buildContent(),
-              ],
+    final maxPrice = _controller.products
+        .map((p) => p.prix)
+        .reduce((max, price) => price > max ? price : max);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          DropdownButtonFormField<String>(
+            value: _selectedCategory,
+            decoration: const InputDecoration(
+              labelText: 'Catégorie',
             ),
-          );
-        },
+            items: [
+              const DropdownMenuItem(
+                value: null,
+                child: Text('Toutes les catégories'),
+              ),
+              ...categories.map((category) => DropdownMenuItem(
+                value: category,
+                child: Text(category),
+              )),
+            ],
+            onChanged: (value) => setState(() => _selectedCategory = value),
+          ),
+          const SizedBox(height: 16),
+          DropdownButtonFormField<String>(
+            value: _selectedBrand,
+            decoration: const InputDecoration(
+              labelText: 'Marque',
+            ),
+            items: [
+              const DropdownMenuItem(
+                value: null,
+                child: Text('Toutes les marques'),
+              ),
+              ...brands.map((brand) => DropdownMenuItem(
+                value: brand,
+                child: Text(brand),
+              )),
+            ],
+            onChanged: (value) => setState(() => _selectedBrand = value),
+          ),
+          const SizedBox(height: 16),
+          const Text('Plage de prix'),
+          RangeSlider(
+            values: _priceRange,
+            max: maxPrice,
+            divisions: 20,
+            labels: RangeLabels(
+              '${_priceRange.start.round()}€',
+              '${_priceRange.end.round()}€',
+            ),
+            onChanged: (values) => setState(() => _priceRange = values),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () => setState(() {
+                  _selectedCategory = null;
+                  _selectedBrand = null;
+                  _priceRange = RangeValues(0, maxPrice);
+                }),
+                child: const Text('Réinitialiser'),
+              ),
+              const SizedBox(width: 8),
+              FilledButton(
+                onPressed: () => setState(() => _showFilters = false),
+                child: const Text('Appliquer'),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
- Widget _buildHeader() {
+  Widget _buildPagination() {
+  final pageCount = (_filteredProducts.length / _itemsPerPage).ceil();
+  
+  return Row(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      IconButton(
+        icon: const Icon(Icons.chevron_left),
+        onPressed: _currentPage > 0
+            ? () => setState(() => _currentPage--)
+            : null,
+      ),
+      Text('${_currentPage + 1} / $pageCount'),
+      IconButton(
+        icon: const Icon(Icons.chevron_right),
+        onPressed: _currentPage < pageCount - 1
+            ? () => setState(() => _currentPage++)
+            : null,
+      ),
+      const SizedBox(width: 16),
+      DropdownButton<int>(
+        value: _itemsPerPage,
+        items: [10, 20, 50, 100].map((value) => DropdownMenuItem(
+          value: value,
+          child: Text('$value par page'),
+        )).toList(),
+        onChanged: (value) {
+          if (value != null) {
+            setState(() {
+              _itemsPerPage = value;
+              _currentPage = 0;
+            });
+          }
+        },
+      ),
+    ],
+  );
+}
+
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    backgroundColor: Colors.grey[100],
+    body: ListenableBuilder(
+      listenable: _controller,
+      builder: (context, child) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(),
+              const SizedBox(height: 24),
+              if (_showFilters) _buildFilters(),
+              if (_showFilters) const SizedBox(height: 24),
+              _buildContent(),
+              const SizedBox(height: 16),
+              _buildPagination(),
+            ],
+          ),
+        );
+      },
+    ),
+  );
+}
+  Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Row(
@@ -79,12 +278,12 @@ class _ProductsScreenState extends State<ProductsScreen> {
           Row(
             children: [
               FilledButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.file_download),
-                label: const Text('Filtrer'),
+                onPressed: () => setState(() => _showFilters = !_showFilters),
+                icon: Icon(_showFilters ? Icons.filter_list_off : Icons.filter_list),
+                label: Text(_showFilters ? 'Masquer les filtres' : 'Filtrer'),
                 style: FilledButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.black87,
+                  backgroundColor: _showFilters ? Colors.grey : Colors.white,
+                  foregroundColor: _showFilters ? Colors.white : Colors.black87,
                 ),
               ),
               const SizedBox(width: 12),
@@ -102,214 +301,138 @@ class _ProductsScreenState extends State<ProductsScreen> {
       ),
     );
   }
+Widget _buildContent() {
+  if (_controller.isLoading.value) {
+    return const Center(child: CircularProgressIndicator());
+  }
 
-  Widget _buildContent() {
-    if (_controller.isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    
-    if (_controller.error != null) {
-      return Center(
-        child: Column(
-          children: [
-            Text('Erreur: ${_controller.error}'),
-            const SizedBox(height: 12),
-            FilledButton(
-              onPressed: () => _controller.loadProducts(),
-              child: const Text('Réessayer'),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+  if (_controller.error.value != null) {
+    return Center(
       child: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-  controller: _searchController,
-  onChanged: (value) => setState(() {}), // Met à jour l'affichage des produits filtrés
-  decoration: InputDecoration(
-    hintText: 'Rechercher un produit...',
-    prefixIcon: const Icon(Icons.search),
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(8),
-      borderSide: BorderSide.none,
-    ),
-    filled: true,
-    fillColor: Colors.grey[100],
-  ),
-),
-
-                ),
-              ],
-            ),
-          ),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: // ... previous imports and code remain the same ...
-
-DataTable(
-  headingRowColor: MaterialStateProperty.all(Colors.grey[50]),
-  dataRowMaxHeight: 80,
-  columns: const [
-    DataColumn(
-      label: Text(
-        'Image',
-        style: TextStyle(fontWeight: FontWeight.bold),
-      ),
-    ),
-    DataColumn(
-      label: Text(
-        'Nom',
-        style: TextStyle(fontWeight: FontWeight.bold),
-      ),
-    ),
-    DataColumn(
-      label: Text(
-        'Catégorie',
-        style: TextStyle(fontWeight: FontWeight.bold),
-      ),
-    ),
-      DataColumn(
-      label: Text(
-        'Description',
-        style: TextStyle(fontWeight: FontWeight.bold),
-      ),
-    ),
-    DataColumn(
-      label: Text(
-        'Marque',
-        style: TextStyle(fontWeight: FontWeight.bold),
-      ),
-    ),
-    DataColumn(
-      label: Text(
-        'Couleur',
-        style: TextStyle(fontWeight: FontWeight.bold),
-      ),
-    ),
-    DataColumn(
-      label: Text(
-        'Type de verre',
-        style: TextStyle(fontWeight: FontWeight.bold),
-      ),
-    ),
-    DataColumn(
-      label: Text(
-        'Prix',
-        style: TextStyle(fontWeight: FontWeight.bold),
-      ),
-    ),
-    DataColumn(
-      label: Text(
-        'Stock',
-        style: TextStyle(fontWeight: FontWeight.bold),
-      ),
-    ),
-    DataColumn(
-      label: Text(
-        'Actions',
-        style: TextStyle(fontWeight: FontWeight.bold),
-      ),
-    ),
-  ],
-  rows: _filteredProducts.map((product) {
-    return DataRow(
-      cells: [
-        DataCell(
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: product.imageUrl != null && product.imageUrl!.isNotEmpty
-                ? Image.network(
-                    product.imageUrl!,
-                    width: 50,
-                    height: 50,
-                    fit: BoxFit.cover,
-                  )
-                : Container(
-                    width: 50,
-                    height: 50,
-                    color: Colors.grey[200],
-                    child: const Icon(Icons.image_not_supported),
-                  ),
-          ),
-        ),
-        DataCell(
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                product.name,
-                style: const TextStyle(fontWeight: FontWeight.w500),
-              ),
-            
-            ],
-          ),
-        ),
-        DataCell(Text(product.category)),
-        DataCell(Text(product.description)),
-        DataCell(Text(product.marque)),
-        DataCell(Text(product.couleur)),
-DataCell(Text(product.typeVerre ?? 'N/A')),
-        DataCell(
-          Text(
-            '${product.prix.toStringAsFixed(2)} €',
-            style: const TextStyle(fontWeight: FontWeight.w500),
-          ),
-        ),
-        DataCell(
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 8,
-              vertical: 4,
-            ),
-            decoration: BoxDecoration(
-              color: product.quantiteStock > 0
-                  ? Colors.green[50]
-                  : Colors.red[50],
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Text(
-              product.quantiteStock.toString(),
-              style: TextStyle(
-                color: product.quantiteStock > 0
-                    ? Colors.green[700]
-                    : Colors.red[700],
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ),
-        DataCell(_buildActionButtons(product)),
-      ],
-    );
-  }).toList(),
-),
-
+          Text('Erreur: ${_controller.error.value}'),
+          const SizedBox(height: 12),
+          FilledButton(
+            onPressed: () => _controller.loadProducts(),
+            child: const Text('Réessayer'),
           ),
         ],
       ),
     );
   }
 
+  return Container(
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.04),
+          blurRadius: 8,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    ),
+    child: Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (value) => setState(() {}), // Force rebuild
+                  decoration: InputDecoration(
+                    hintText: 'Rechercher un produit...',
+                    prefixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide.none,
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey[100],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: DataTable(
+            headingRowColor: MaterialStateProperty.all(Colors.grey[50]),
+            dataRowMaxHeight: 80,
+            columns: const [
+              DataColumn(label: Text('Image')),
+              DataColumn(label: Text('Nom')),
+              DataColumn(label: Text('Catégorie')),
+              DataColumn(label: Text('Description')),
+              DataColumn(label: Text('Marque')),
+              DataColumn(label: Text('Couleur')),
+              DataColumn(label: Text('Type de verre')),
+              DataColumn(label: Text('Prix')),
+              DataColumn(label: Text('Stock')),
+              DataColumn(label: Text('Actions')),
+            ],
+            rows: _paginatedProducts.map((product) {
+              return DataRow(
+                cells: [
+                  DataCell(
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: product.imageUrl != null && product.imageUrl!.isNotEmpty
+                          ? Image.network(
+                              product.imageUrl!,
+                              width: 50,
+                              height: 50,
+                              fit: BoxFit.cover,
+                            )
+                          : Container(
+                              width: 50,
+                              height: 50,
+                              color: Colors.grey[200],
+                              child: const Icon(Icons.image_not_supported),
+                            ),
+                    ),
+                  ),
+                  DataCell(Text(product.name)),
+                  DataCell(Text(product.category)),
+                  DataCell(Text(product.description)),
+                  DataCell(Text(product.marque)),
+                  DataCell(Text(product.couleur)),
+                  DataCell(Text(product.typeVerre ?? 'N/A')),
+                  DataCell(Text('${product.prix.toStringAsFixed(2)} €')),
+                  DataCell(
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: product.quantiteStock > 0
+                            ? Colors.green[50]
+                            : Colors.red[50],
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        product.quantiteStock.toString(),
+                        style: TextStyle(
+                          color: product.quantiteStock > 0
+                              ? Colors.green[700]
+                              : Colors.red[700],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                  DataCell(_buildActionButtons(product)),
+                ],
+              );
+            }).toList(),
+          ),
+        ),
+      ],
+    ),
+  );
+}
   Widget _buildActionButtons(Product product) {
     return Row(
       mainAxisSize: MainAxisSize.min,

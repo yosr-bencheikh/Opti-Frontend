@@ -31,6 +31,7 @@ class AuthController extends GetxController {
   var currentUserId = ''.obs;
   final Rx<User?> _currentUser = Rx<User?>(null);
   var authToken = ''.obs;
+  final RxString error = ''.obs;
 
   AuthController({
     required this.authRepository,

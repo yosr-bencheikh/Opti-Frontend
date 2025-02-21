@@ -1,9 +1,9 @@
 import 'package:equatable/equatable.dart';
 
 class User extends Equatable {
-  final String nom;
+   String nom;
   final String prenom;
-  final String email;
+   String email;
   final String date;
   final String region;
   final String genre;
@@ -11,8 +11,8 @@ class User extends Equatable {
   final String phone;
   String imageUrl; // Changed from final to non-final
   final String refreshTokens;
+  final String status; // Add status property
 
-  // Removed 'const' from the constructor
   User({
     required this.nom,
     required this.prenom,
@@ -24,6 +24,7 @@ class User extends Equatable {
     required this.phone,
     this.imageUrl = '',
     this.refreshTokens = '',
+    this.status = 'Inactive', // Default value for status
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -38,6 +39,7 @@ class User extends Equatable {
       phone: json['phone'],
       imageUrl: json['imageUrl'] ?? '',
       refreshTokens: json['refreshTokens'] ?? '',
+      status: json['status'] ?? 'Inactive', // Include status in the factory
     );
   }
 
@@ -53,6 +55,7 @@ class User extends Equatable {
         phone,
         imageUrl,
         refreshTokens,
+        status, // Include status in props
       ];
 
   Map<String, dynamic> toJson() {
@@ -67,6 +70,7 @@ class User extends Equatable {
       'phone': phone,
       'imageUrl': imageUrl,
       'refreshTokens': refreshTokens,
+      'status': status, // Include status in toJson
     };
   }
 }
