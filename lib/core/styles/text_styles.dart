@@ -55,7 +55,7 @@ class AppTextStyles {
     fontWeight: FontWeight.bold,
   );
 
-   static TextStyle welcomeTitleStyle = GoogleFonts.poppins(
+  static TextStyle welcomeTitleStyle = GoogleFonts.poppins(
     fontSize: 32,
     fontWeight: FontWeight.bold,
     color: AppColors.whiteColor,
@@ -85,7 +85,6 @@ class AppTextStyles {
     fontWeight: FontWeight.bold,
     color: AppColors.welcomeGradientStart,
   );
-
 }
 
 class AppDecorations {
@@ -128,7 +127,7 @@ class AppDecorations {
       ),
     ],
   );
- static BoxDecoration welcomeGradientDecoration = BoxDecoration(
+  static BoxDecoration welcomeGradientDecoration = BoxDecoration(
     gradient: LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,

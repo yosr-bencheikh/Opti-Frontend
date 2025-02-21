@@ -12,7 +12,9 @@ import 'package:opti_app/Presentation/UI/Screens/Auth/wishList.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/WelcomePage.dart';
 import 'package:opti_app/Presentation/controllers/navigation_controller.dart';
 import 'package:opti_app/Presentation/controllers/opticien_controller.dart';
+import 'package:opti_app/Presentation/controllers/product_controller.dart';
 import 'package:opti_app/data/data_sources/opticien_remote_datasource.dart';
+import 'package:opti_app/data/data_sources/product_datasource.dart';
 import 'package:opti_app/data/repositories/opticien_repository_impl.dart';
 import 'package:opti_app/domain/repositories/opticien_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -56,7 +58,6 @@ Future<void> main() async {
   final sendCodeToEmail = SendCodeToEmail(Get.find());
   Get.put(sendCodeToEmail);
   Get.put(NavigationController(), permanent: true);
-
   runApp(const MyApp());
 }
 
@@ -77,6 +78,11 @@ class MyApp extends StatelessWidget {
         GetPage(
           name: '/splash',
           page: () => SplashScreen(),
+          binding: AuthBinding(),
+        ),
+        GetPage(
+          name: '/Admin_pannel',
+          page: () => AdminPanelApp(),
           binding: AuthBinding(),
         ),
         GetPage(

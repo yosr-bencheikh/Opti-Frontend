@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:opti_app/Presentation/controllers/auth_controller.dart';
-import 'package:http/http.dart' as http;
 import 'package:opti_app/core/styles/colors.dart';
 import 'package:opti_app/core/styles/text_styles.dart';
 
@@ -64,9 +63,13 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/images/b1.jpeg'), // Chemin de ton image
-            fit: BoxFit.cover,
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              AppColors.primaryColor.withOpacity(0.1),
+              AppColors.whiteColor,
+            ],
           ),
         ),
         child: SafeArea(
@@ -76,34 +79,15 @@ class _LoginScreenState extends State<LoginScreen> {
                   const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
               child: Column(
                 children: [
-                  // Logo and branding
-                  Container(
-                    padding: EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppColors.whiteColor.withOpacity(0.1),
-                    ),
-                    child: Icon(
-                      Icons.visibility,
-                      size: 70,
-                      color: AppColors.accentColor,
-                    ),
-                  ),
-                  SizedBox(height: 24),
-                  Text('VISION EXCELLENCE', style: AppTextStyles.titleStyle),
-                  SizedBox(height: 8),
-                  Text('CENTRE D\'OPTOMÉTRIE',
-                      style: AppTextStyles.subtitleStyle),
-                  SizedBox(height: 48),
-
                   // Main Card
                   Card(
-                    elevation: 20,
-                    shadowColor: AppColors.blackColor.withOpacity(0.38),
+                    elevation: 10,
+                    shadowColor: const Color.fromARGB(255, 97, 115, 205)
+                        .withOpacity(0.2),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(24.0),
                     ),
-                    color: AppColors.whiteColor.withOpacity(0.4),
+                    color: AppColors.whiteColor,
                     child: Container(
                       padding: EdgeInsets.all(32),
                       width: double.infinity,
@@ -119,7 +103,17 @@ class _LoginScreenState extends State<LoginScreen> {
 
                           // Email Field
                           Container(
-                            decoration: AppDecorations.inputDecoration,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey.withOpacity(0.1),
+                                  spreadRadius: 1,
+                                  blurRadius: 5,
+                                  offset: Offset(0, 2),
+                                ),
+                              ],
+                            ),
                             child: TextField(
                               controller: emailController,
                               keyboardType: TextInputType.emailAddress,
@@ -154,7 +148,17 @@ class _LoginScreenState extends State<LoginScreen> {
 
                           // Password Field
                           Container(
-                            decoration: AppDecorations.inputDecoration,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey.withOpacity(0.1),
+                                  spreadRadius: 1,
+                                  blurRadius: 5,
+                                  offset: Offset(0, 2),
+                                ),
+                              ],
+                            ),
                             child: TextField(
                               controller: passwordController,
                               obscureText: _obscurePassword,
@@ -201,7 +205,24 @@ class _LoginScreenState extends State<LoginScreen> {
                           Obx(() => Container(
                                 width: double.infinity,
                                 height: 56,
-                                decoration: AppDecorations.buttonDecoration,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(16),
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      AppColors.primaryColor,
+                                      AppColors.secondaryColor,
+                                    ],
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.primaryColor
+                                          .withOpacity(0.3),
+                                      spreadRadius: 2,
+                                      blurRadius: 8,
+                                      offset: Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
                                 child: ElevatedButton(
                                   onPressed: authController.isLoading.value
                                       ? null

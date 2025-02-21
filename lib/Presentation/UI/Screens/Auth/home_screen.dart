@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/favourite_screen.dart';
+import 'package:opti_app/Presentation/UI/Screens/Auth/product_details_screen';
 import 'package:opti_app/Presentation/UI/Screens/Auth/wishList.dart';
 import 'package:opti_app/Presentation/controllers/auth_controller.dart';
 import 'package:opti_app/Presentation/controllers/navigation_controller.dart';
 import 'package:opti_app/Presentation/controllers/opticien_controller.dart';
+import 'package:opti_app/Presentation/controllers/product_controller.dart';
 import 'package:opti_app/domain/entities/user.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -14,6 +16,7 @@ class HomeScreen extends GetView<AuthController> {
   final RxInt _currentPage = 0.obs;
   final NavigationController navigationController = Get.find();
   final OpticienController opticienController = Get.find();
+  final ProductController productController = Get.find();
 
   @override
   Widget build(BuildContext context) {
@@ -214,72 +217,157 @@ class HomeScreen extends GetView<AuthController> {
         ),
         SizedBox(
           height: 220,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: 5,
-            itemBuilder: (context, index) {
-              return Container(
-                width: 160,
-                margin: const EdgeInsets.only(right: 16),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.1),
-                      spreadRadius: 1,
-                      blurRadius: 4,
-                      offset: const Offset(0, 1),
+          child: Obx(() {
+            if (productController.isLoading) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            if (productController.error != null) {
+              return Center(child: Text('Error: ${productController.error}'));
+            }
+
+            if (productController.products.isEmpty) {
+              return const Center(child: Text('No products available'));
+            }
+
+            return ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: productController.products.length,
+              itemBuilder: (context, index) {
+                final product = productController.products[index];
+                return GestureDetector(
+                  onTap: () {
+                    Get.to(() => ProductDetailsScreen(product: product));
+                  },
+                  child: Container(
+                    width: 160,
+                    margin: const EdgeInsets.only(right: 16),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.1),
+                          spreadRadius: 1,
+                          blurRadius: 4,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      height: 110,
-                      decoration: BoxDecoration(
-                        borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(12)),
-                        color: Colors.grey[200],
-                      ),
-                      child: const Center(
-                          child: Icon(Icons.shopping_bag, size: 40)),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Product ${index + 1}',
-                            style: const TextStyle(fontWeight: FontWeight.bold),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          height: 98,
+                          decoration: BoxDecoration(
+                            borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(12)),
+                            color: Colors.grey[200],
                           ),
-                          const Text('\$99.99'),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          child: product.imageUrl != null &&
+                                  product.imageUrl!.isNotEmpty
+                              ? ClipRRect(
+                                  borderRadius: const BorderRadius.vertical(
+                                      top: Radius.circular(12)),
+                                  child: Image.network(
+                                    product.imageUrl!,
+                                    fit: BoxFit.cover,
+                                  ),
+                                )
+                              : const Center(
+                                  child: Icon(Icons.shopping_bag, size: 40)),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              IconButton(
-                                icon: const Icon(Icons.shopping_cart_outlined,
-                                    size: 20),
-                                onPressed: () {},
+                              Text(
+                                product.name,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              IconButton(
-                                icon:
-                                    const Icon(Icons.favorite_border, size: 20),
-                                onPressed: () {},
+                              Row(
+                                children: [
+                                  Text(
+                                    '\$${product.prix.toStringAsFixed(2)}',
+                                    style: const TextStyle(
+                                      color: Colors.blue,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.pink.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      '-5%',
+                                      style: TextStyle(
+                                        color: Colors.pink[700],
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Row(
+                                children: [
+                                  Icon(Icons.star,
+                                      color: Colors.amber, size: 16),
+                                  Text(
+                                    ' 4.8',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[700],
+                                    ),
+                                  ),
+                                  Text(
+                                    ' (25)',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[500],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(
+                                        Icons.shopping_cart_outlined,
+                                        size: 20),
+                                    onPressed: () {
+                                      // Add to cart logic
+                                    },
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.favorite_border,
+                                        size: 20),
+                                    onPressed: () {
+                                      // Add to favorites logic
+                                    },
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              );
-            },
-          ),
+                  ),
+                );
+              },
+            );
+          }),
         ),
       ],
     );

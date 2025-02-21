@@ -241,7 +241,7 @@ class AuthController extends GetxController {
 
       final response = await http.post(
         Uri.parse(
-            'https://e263-41-62-158-98.ngrok-free.app/auth/google/callback'),
+            'https://c6d1-102-158-229-114.ngrok-free.app/auth/google/callback'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'idToken': googleAuth.idToken,
@@ -288,15 +288,11 @@ class AuthController extends GetxController {
   Future<void> loginWithFacebook() async {
     try {
       isLoading.value = true;
-
       await FacebookAuth.instance.logOut();
 
-      final LoginResult result = await FacebookAuth.instance.login(
-        loginBehavior: LoginBehavior.nativeOnly,
-      );
-
+      final LoginResult result = await FacebookAuth.instance.login();
       if (result.status != LoginStatus.success) {
-        Get.snackbar('Cancelled', 'Facebook sign-in cancelled');
+        Get.snackbar('Annulé', 'Connexion Facebook annulée');
         return;
       }
 
@@ -305,14 +301,15 @@ class AuthController extends GetxController {
 
       final response = await http.post(
         Uri.parse(
-            'https://e263-41-62-158-98.ngrok-free.app/auth/facebook/callback'),
+            'https://c6d1-102-158-229-114.ngrok-free.app/auth/facebook/callback'),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'token': accessToken.tokenString,
-          'email': userData['email'],
-        }),
+        body: json.encode(
+            {'token': accessToken.tokenString, 'email': userData['email']}),
       );
 
+      final responseBody = json.decode(response.body);
+
+      // Gestion des codes d'état HTTP
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
         final token = responseData['token'];
@@ -336,18 +333,32 @@ class AuthController extends GetxController {
 
         // Load user data using the email
         await loadUserData(email); // Load user data with the email
-        Get.offAllNamed('/HomeScreen',
-            arguments: email); // Pass email to the profile screen
+        Get.offAllNamed('/HomeScreen', arguments: email);
+      } else if (response.statusCode == 409) {
+        // Conflit (duplicate key)
+        throw Exception(responseBody['error']); // Lance l'erreur MongoDB
       } else {
-        throw Exception('Facebook login failed: ${response.body}');
+        throw Exception('Erreur: ${responseBody['message']}');
       }
     } catch (error) {
-      Get.snackbar(
-        'Error',
-        'Facebook login failed: ${error.toString()}',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      // Affiche TOUTES les erreurs pour débogage
+      print("ERREUR COMPLÈTE: ${error.toString()}");
+
+      if (error.toString().contains('E11000')) {
+        Get.snackbar(
+          'Email existant',
+          'Cet email est déjà lié à un compte. Utilisez un autre email.',
+          backgroundColor: const Color.fromARGB(255, 246, 65, 65),
+          duration: Duration(seconds: 5),
+        );
+      } else {
+        Get.snackbar(
+          'Erreur Facebook',
+          error.toString().replaceAll('Exception: ', ''),
+          colorText: Colors.white,
+          backgroundColor: Colors.red,
+        );
+      }
     } finally {
       isLoading.value = false;
     }
