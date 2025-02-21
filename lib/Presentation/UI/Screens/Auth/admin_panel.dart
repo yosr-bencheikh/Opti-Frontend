@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:opti_app/Presentation/UI/screens/auth/ProductsScreen.dart';
 
 class AdminPanelApp extends StatelessWidget {
   const AdminPanelApp({super.key});
@@ -9,7 +10,7 @@ class AdminPanelApp extends StatelessWidget {
       title: 'Admin Panel',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        primaryColor: const Color.fromARGB(255, 139, 190, 232),
         scaffoldBackgroundColor: Colors.grey[100],
       ),
       home: AdminDashboard(),
@@ -52,7 +53,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     return Scaffold(
       appBar: isSmallScreen
           ? AppBar(
-              backgroundColor: Color(0xFF1E88E5),
+              backgroundColor: Color.fromARGB(255, 109, 155, 196),
               title: Text('Admin Panel'),
               leading: IconButton(
                 icon: Icon(Icons.menu),
@@ -140,7 +141,7 @@ class DashboardScreen extends StatelessWidget {
                 decoration: InputDecoration(
                   hintText: 'Search...',
                   hintStyle: TextStyle(color: Colors.grey[400]),
-                  prefixIcon: Icon(Icons.search, color: Color(0xFF1E88E5)),
+                  prefixIcon: Icon(Icons.search, color: Color.fromARGB(255, 71, 129, 179)),
                   border: InputBorder.none,
                   contentPadding:
                       EdgeInsets.symmetric(horizontal: 20, vertical: 13),
@@ -149,7 +150,7 @@ class DashboardScreen extends StatelessWidget {
             ),
             SizedBox(width: 20),
             IconButton(
-              icon: Icon(Icons.notifications, color: Color(0xFF1E88E5)),
+              icon: Icon(Icons.notifications, color: Color.fromARGB(255, 110, 162, 208)),
               onPressed: () {},
             ),
             SizedBox(width: 10),
@@ -233,7 +234,7 @@ class DashboardScreen extends StatelessWidget {
           itemCount: 4,
           itemBuilder: (context, index) {
             final stats = [
-              {'title': 'Total Users', 'value': '2,345', 'color': Colors.blue},
+              {'title': 'Total Users', 'value': '2,345', 'color': const Color.fromARGB(255, 123, 172, 212)},
               {'title': 'Revenue', 'value': '\$34,543', 'color': Colors.green},
               {'title': 'Orders', 'value': '1,234', 'color': Colors.orange},
               {'title': 'Products', 'value': '567', 'color': Colors.purple},
@@ -327,7 +328,7 @@ class NavigationDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 250,
-      color: Color(0xFF1E88E5),
+      color: Color.fromARGB(255, 113, 160, 201),
       child: Column(
         children: [
           SizedBox(height: 40),
@@ -464,80 +465,7 @@ class UsersScreen extends StatelessWidget {
   }
 }
 
-class ProductsScreen extends StatelessWidget {
-  final List<Map<String, dynamic>> products = List.generate(
-    10,
-    (index) => {
-      'id': index + 1,
-      'name': 'Product ${index + 1}',
-      'price': (index + 1) * 10.99,
-      'stock': (index + 1) * 5,
-      'category': index % 2 == 0 ? 'Electronics' : 'Clothing',
-    },
-  );
 
-  ProductsScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: EdgeInsets.symmetric(vertical: 20, horizontal: 100),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Products',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          SizedBox(height: 20),
-          Card(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: DataTable(
-                columns: [
-                  DataColumn(label: Text('ID')),
-                  DataColumn(label: Text('Name')),
-                  DataColumn(label: Text('Price')),
-                  DataColumn(label: Text('Stock')),
-                  DataColumn(label: Text('Category')),
-                  DataColumn(label: Text('Actions')),
-                ],
-                rows: products.map((product) {
-                  return DataRow(cells: [
-                    DataCell(Text('#${product['id']}')),
-                    DataCell(Text(product['name'])),
-                    DataCell(Text('\$${product['price']}')),
-                    DataCell(Text('${product['stock']}')),
-                    DataCell(Text(product['category'])),
-                    DataCell(Row(
-                      children: [
-                        IconButton(
-                          icon: Icon(Icons.edit),
-                          onPressed: () {
-                            showDialog(
-                              context: context,
-                              builder: (context) => EditProductDialog(
-                                product: {},
-                              ),
-                            );
-                          },
-                        ),
-                        IconButton(
-                          icon: Icon(Icons.delete),
-                          onPressed: () {},
-                        ),
-                      ],
-                    )),
-                  ]);
-                }).toList(),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});

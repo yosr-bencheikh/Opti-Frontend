@@ -58,11 +58,16 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      initialRoute: '/splash',
+      initialRoute: '/Admin_pannel',
       getPages: [
         GetPage(
           name: '/splash',
           page: () => SplashScreen(),
+          binding: AuthBinding(),
+        ),
+        GetPage(
+          name: '/Admin_pannel',
+          page: () => AdminPanelApp(),
           binding: AuthBinding(),
         ),
         GetPage(
