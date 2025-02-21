@@ -73,6 +73,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
+<<<<<<< HEAD
       initialRoute: '/splash',
       getPages: [
         GetPage(
@@ -138,6 +139,17 @@ class MyApp extends StatelessWidget {
         GetPage(
             name: '/cart', page: () => CartScreen(), binding: AuthBinding()),
       ],
+=======
+      home: const LoginScreen(), // Profile screen is the first screen
+      routes: {
+        '/profileScreen': (context) => const ProfileScreen(),
+        '/updateProfile': (context) => const UpdateProfileScreen(
+              userId: '67a0cb53c575bdaa95c3421f',
+            ),
+        '/signup': (context) => const SignUpScreen(),
+      }, // Set ProfileScreen as the first screen
+      debugShowCheckedModeBanner: false, // Removes the debug banner
+>>>>>>> cc11e4c (signUp and update)
     );
   }
 }

@@ -28,17 +28,59 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
   bool _isLoading = false;
   User? _currentUser;
 
+<<<<<<< HEAD
   final AuthController _authController = Get.find<AuthController>();
   final List<String> _genres = ['Homme', 'Femme'];
   @override
   void initState() {
     super.initState();
+=======
+  // List of Regions
+  final List<String> _regions = [
+    "Tunis",
+    "Nabeul",
+    "Sousse",
+    "Sfax",
+    "Gabès",
+    "Médenine"
+  ];
+
+  // Fetch user data from the backend
+  Future<void> _fetchUserData(String userId) async {
+    final url = Uri.parse('http://localhost:3000/api/users/$userId');
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final userData = json.decode(response.body);
+
+      // Populate the controllers with the data received
+      setState(() {
+        _nomController.text = userData['nom'] ?? '';
+        _prenomController.text = userData['prenom'] ?? '';
+        _emailController.text = userData['email'] ?? '';
+        _dateNaissanceController.text = userData['dateNaissance'] ?? '';
+        _selectedRegion = userData['region'] ?? _regions[0];
+        _selectedGenre = userData['genre'] ?? 'Homme';
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Erreur: ${response.body}")),
+      );
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+>>>>>>> cc11e4c (signUp and update)
     _nomController = TextEditingController();
     _prenomController = TextEditingController();
     _emailController = TextEditingController();
     _dateNaissanceController = TextEditingController();
     _selectedGenre = 'Homme';
 
+<<<<<<< HEAD
     debugPrint('Initial email: ${widget.email}'); // Add this log
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -54,11 +96,15 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
         _loadUserData();
       }
     });
+=======
+    _fetchUserData(widget.userId);
+>>>>>>> cc11e4c (signUp and update)
   }
 
   Future<void> _loadUserData() async {
     if (!mounted) return;
 
+<<<<<<< HEAD
     setState(() => _isLoading = true);
 
     try {
@@ -168,6 +214,29 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
         _dateNaissanceController.text =
             "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
       });
+=======
+    final response = await http.put(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'nom': _nomController.text,
+        'prenom': _prenomController.text,
+        'email': _emailController.text,
+        'dateNaissance': _dateNaissanceController.text,
+        'region': _selectedRegion,
+        'genre': _selectedGenre,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Profil mis à jour avec succès !")),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Erreur: ${response.body}")),
+      );
+>>>>>>> cc11e4c (signUp and update)
     }
   }
 
@@ -197,6 +266,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
             children: [
               TextFormField(
                 controller: _nomController,
+<<<<<<< HEAD
                 decoration: const InputDecoration(
                   labelText: 'Nom',
                   border: OutlineInputBorder(),
@@ -236,10 +306,52 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
                   }
                   if (!value.contains('@')) {
                     return 'Veuillez entrer un email valide';
+=======
+                decoration: const InputDecoration(labelText: "Nom"),
+                validator: (value) => value == null || value.isEmpty
+                    ? "Veuillez entrer votre nom"
+                    : null,
+              ),
+              const SizedBox(height: 10),
+              TextFormField(
+                controller: _prenomController,
+                decoration: const InputDecoration(labelText: "Prénom"),
+                validator: (value) => value == null || value.isEmpty
+                    ? "Veuillez entrer votre prénom"
+                    : null,
+              ),
+              const SizedBox(height: 10),
+              TextFormField(
+                controller: _emailController,
+                decoration: const InputDecoration(labelText: "Email"),
+                validator: (value) =>
+                    value == null || value.isEmpty || !value.contains("@")
+                        ? "Veuillez entrer un email valide"
+                        : null,
+              ),
+              const SizedBox(height: 10),
+              TextFormField(
+                controller: _dateNaissanceController,
+                decoration:
+                    const InputDecoration(labelText: "Date de Naissance"),
+                readOnly: true,
+                onTap: () async {
+                  DateTime? pickedDate = await showDatePicker(
+                    context: context,
+                    initialDate: DateTime.now(),
+                    firstDate: DateTime(1900),
+                    lastDate: DateTime.now(),
+                  );
+                  if (pickedDate != null) {
+                    setState(() {
+                      _dateNaissanceController.text =
+                          pickedDate.toString().split(" ")[0];
+                    });
+>>>>>>> cc11e4c (signUp and update)
                   }
-                  return null;
                 },
               ),
+<<<<<<< HEAD
               const SizedBox(height: 16),
               GestureDetector(
                 onTap: _selectDate,
@@ -261,6 +373,9 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
                 ),
               ),
               const SizedBox(height: 16),
+=======
+              const SizedBox(height: 10),
+>>>>>>> cc11e4c (signUp and update)
               DropdownButtonFormField<String>(
                 value: _selectedGenre,
                 decoration: const InputDecoration(
@@ -278,9 +393,50 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
                     _selectedGenre = newValue;
                   });
                 },
+<<<<<<< HEAD
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Veuillez sélectionner votre genre';
+=======
+                validator: (value) =>
+                    value == null ? "Sélectionnez une région" : null,
+              ),
+              const SizedBox(height: 10),
+              const Text("Genre", style: TextStyle(fontSize: 16)),
+              Row(
+                children: [
+                  Expanded(
+                    child: RadioListTile<String>(
+                      title: const Text("Homme"),
+                      value: "Homme",
+                      groupValue: _selectedGenre,
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedGenre = value;
+                        });
+                      },
+                    ),
+                  ),
+                  Expanded(
+                    child: RadioListTile<String>(
+                      title: const Text("Femme"),
+                      value: "Femme",
+                      groupValue: _selectedGenre,
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedGenre = value;
+                        });
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  if (_formKey.currentState!.validate()) {
+                    _updateProfile(widget.userId);
+>>>>>>> cc11e4c (signUp and update)
                   }
                   return null;
                 },
