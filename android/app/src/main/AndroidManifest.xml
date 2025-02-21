@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-
     package="com.example.opti_app">
 
     <!-- Permissions -->
@@ -9,15 +8,10 @@
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
 
-    <queries>
-      <provider android:authorities="com.facebook.katana.provider.PlatformProvider" />
-
-    </queries>
     <application
-     android:usesCleartextTraffic="true"
+        android:usesCleartextTraffic="true"
         android:label="opti_app"
         android:icon="@mipmap/ic_launcher">
-        
 
         <activity
             android:name=".MainActivity"
@@ -38,50 +32,42 @@
             </intent-filter>
         </activity>
 
+        <meta-data
+            android:name="com.google.android.gms.auth.api.signin.CLIENT_ID"
+            android:value="@string/default_android_client_id" />
 
-<meta-data
-    android:name="com.google.android.gms.auth.api.signin.CLIENT_ID"
-    android:value="@string/default_android_client_id" />
+        <meta-data
+            android:name="com.facebook.sdk.ApplicationId"
+            android:value="@string/facebook_app_id"/>
+        <meta-data
+            android:name="com.facebook.sdk.ClientToken"
+            android:value="@string/facebook_client_token"/>
 
-    <!-- If using Google Sign-In, you also need the Android Client ID (not API Key) -->
-    <meta-data
-        android:name="com.google.android.gms.auth.api.signin.CLIENT_ID"
-        android:value="@string/default_android_client_id" />
+        <activity android:name="com.facebook.FacebookActivity"
+            android:configChanges="keyboard|keyboardHidden|screenLayout|screenSize|orientation"
+            android:label="@string/app_name" />
+        <activity
+            android:name="com.facebook.CustomTabActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="@string/fb_login_protocol_scheme" />
+            </intent-filter>
+        </activity>
 
-      <!--  facebook -->
-      <meta-data android:name="com.facebook.sdk.ApplicationId" android:value="@string/facebook_app_id"/>
-   	<meta-data android:name="com.facebook.sdk.ClientToken" android:value="@string/facebook_client_token"/>
-      
-      
-    <activity android:name="com.facebook.FacebookActivity"
-        android:configChanges=
-                "keyboard|keyboardHidden|screenLayout|screenSize|orientation"
-        android:label="@string/app_name" />
-    <activity
-        android:name="com.facebook.CustomTabActivity"
-        android:exported="true">
-        <intent-filter>
-            <action android:name="android.intent.action.VIEW" />
-            <category android:name="android.intent.category.DEFAULT" />
-            <category android:name="android.intent.category.BROWSABLE" />
-            <data android:scheme="@string/fb_login_protocol_scheme" />
-        </intent-filter>
-    </activity>
-
-      
         <!-- Flutter Plugin -->
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
-
     </application>
 
-    <!-- Requête pour les activités pouvant traiter du texte -->
     <queries>
+        <provider android:authorities="com.facebook.katana.provider.PlatformProvider" />
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
     </queries>
-
 </manifest>

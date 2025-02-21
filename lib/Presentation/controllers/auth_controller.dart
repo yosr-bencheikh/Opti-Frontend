@@ -175,16 +175,13 @@ class AuthController extends GetxController {
   Future<void> _attemptTokenRefresh(String email) async {
     try {
       final String? refreshToken = prefs.getString('refreshToken');
-      if (refreshToken == null) {
-        throw Exception('No refresh token found');
-      }
+      if (refreshToken == null) return;
 
       final newToken = await authRepository.refreshToken(refreshToken);
       await prefs.setString('token', newToken);
       await loadUserData(email);
     } catch (e) {
       await logout();
-      throw Exception('Token refresh failed: $e');
     }
   }
 
@@ -489,7 +486,8 @@ class AuthController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
       );
 
-      Get.offAllNamed('/profileScreen', arguments: email);
+      selectedImage = null;
+      Get.offAllNamed('/HomeScreen', arguments: email);
     } catch (e) {
       print('Sign Up error: $e');
       if (e.toString().contains('User already exists')) {
@@ -669,7 +667,6 @@ class AuthController extends GetxController {
       Get.snackbar('Error', 'Failed to upload image: $e');
     } finally {
       isLoading.value = false;
-      selectedImage = null;
     }
   }
 

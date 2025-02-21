@@ -5,6 +5,7 @@ import 'package:opti_app/Presentation/UI/Screens/Auth/favourite_screen.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/wishList.dart';
 import 'package:opti_app/Presentation/controllers/auth_controller.dart';
 import 'package:opti_app/Presentation/controllers/navigation_controller.dart';
+import 'package:opti_app/Presentation/controllers/opticien_controller.dart';
 import 'package:opti_app/domain/entities/user.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -12,6 +13,7 @@ class HomeScreen extends GetView<AuthController> {
   final PageController _pageController = PageController(viewportFraction: 0.9);
   final RxInt _currentPage = 0.obs;
   final NavigationController navigationController = Get.find();
+  final OpticienController opticienController = Get.find();
 
   @override
   Widget build(BuildContext context) {
@@ -284,61 +286,78 @@ class HomeScreen extends GetView<AuthController> {
   }
 
   Widget _buildOpticalStores() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.all(16),
-          child: Text(
-            'Optical Stores',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
+    return Obx(() {
+      if (opticienController.isLoading.value) {
+        return const Center(child: CircularProgressIndicator());
+      }
+
+      final opticians = opticienController.opticiensList;
+
+      if (opticians.isEmpty) {
+        return const Center(child: Text('No opticians found.'));
+      }
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.all(16),
+            child: Text(
+              'Optical Stores',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
-        ),
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          itemCount: 5,
-          itemBuilder: (context, index) {
-            return Container(
-              margin: const EdgeInsets.only(bottom: 16),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
-                    spreadRadius: 1,
-                    blurRadius: 4,
-                    offset: const Offset(0, 1),
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: opticians.length,
+            itemBuilder: (context, index) {
+              final optician = opticians[index];
+              return Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
+                ),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.all(16),
+                  leading: CircleAvatar(
+                    backgroundColor: Colors.grey[200],
+                    child: const Icon(Icons.store, color: Colors.grey),
                   ),
-                ],
-              ),
-              child: ListTile(
-                contentPadding: const EdgeInsets.all(16),
-                leading: CircleAvatar(
-                  backgroundColor: Colors.grey[200],
-                  child: const Icon(Icons.store, color: Colors.grey),
+                  title: Text(
+                    optician
+                        .nom, // Assuming the Optician entity has a name property
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(
+                    optician.email,
+                  ), // Assuming a description property
+                  trailing: ElevatedButton(
+                    onPressed: () {
+                      // Navigate to the optician's products or details
+                    },
+                    child: const Text('View Products'),
+                  ),
                 ),
-                title: Text(
-                  'Optical Store ${index + 1}',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                subtitle:
-                    const Text('High-quality eyewear and professional service'),
-                trailing: ElevatedButton(
-                  onPressed: () {},
-                  child: const Text('View Products'),
-                ),
-              ),
-            );
-          },
-        ),
-      ],
-    );
+              );
+            },
+          ),
+        ],
+      );
+    });
   }
 
   Widget _buildBottomNavBar() {

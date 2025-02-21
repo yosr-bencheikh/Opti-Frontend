@@ -11,6 +11,10 @@ import 'package:opti_app/Presentation/UI/Screens/Auth/update_profile_screen.dart
 import 'package:opti_app/Presentation/UI/Screens/Auth/wishList.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/WelcomePage.dart';
 import 'package:opti_app/Presentation/controllers/navigation_controller.dart';
+import 'package:opti_app/Presentation/controllers/opticien_controller.dart';
+import 'package:opti_app/data/data_sources/opticien_remote_datasource.dart';
+import 'package:opti_app/data/repositories/opticien_repository_impl.dart';
+import 'package:opti_app/domain/repositories/opticien_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/SignUpScreen.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/admin_panel.dart';
@@ -38,6 +42,16 @@ Future<void> main() async {
 
   final authRepository = AuthRepositoryImpl(authRemoteDataSource);
   Get.put<AuthRepository>(authRepository);
+
+  final opticienRemoteDataSource = OpticienRemoteDataSourceImpl(client: client);
+  Get.put<OpticienRemoteDataSource>(opticienRemoteDataSource);
+
+  final opticienRepository = OpticienRepositoryImpl(opticienRemoteDataSource);
+  Get.put<OpticienRepository>(opticienRepository);
+
+  // Register the OpticienController
+  Get.put<OpticienController>(
+      OpticienController(opticienRepository: opticienRepository));
 
   final sendCodeToEmail = SendCodeToEmail(Get.find());
   Get.put(sendCodeToEmail);
