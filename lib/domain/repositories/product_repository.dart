@@ -1,9 +1,12 @@
+import 'dart:io';
+
 import 'package:opti_app/domain/entities/product_entity.dart';
 
 abstract class ProductRepository {
   Future<List<Product>> getProducts();
-  Future<Product> addProduct(Product product);
-  Future<void> updateProduct(Product product);
-  Future<void> deleteProduct(int id);
-  Future<String> uploadImage(String imagePath);
+  Future<Product> updateProduct(String id, Product product);
+  Future<void> deleteProduct(String id);
+  Future<String> uploadImage(File imageFile);
+  Future<Product> getProductById(String productId);
+  Future<Product> createProduct(Product product);
 }

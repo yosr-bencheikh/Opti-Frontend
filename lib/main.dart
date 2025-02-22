@@ -7,16 +7,21 @@ import 'package:opti_app/Presentation/UI/Screens/Auth/favourite_screen.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/home_screen.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/splash_screen.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/stores_screen.dart';
-import 'package:opti_app/Presentation/UI/Screens/Auth/update_profile_screen.dart';
+
 import 'package:opti_app/Presentation/UI/Screens/Auth/wishList.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/WelcomePage.dart';
+import 'package:opti_app/data/repositories/cart_item_repository_impl.dart';
+import 'package:opti_app/Presentation/controllers/cart_item_controller.dart';
 import 'package:opti_app/Presentation/controllers/navigation_controller.dart';
 import 'package:opti_app/Presentation/controllers/opticien_controller.dart';
-import 'package:opti_app/Presentation/controllers/product_controller.dart';
+import 'package:opti_app/data/data_sources/cart_item_remote_datasource.dart';
 import 'package:opti_app/data/data_sources/opticien_remote_datasource.dart';
 import 'package:opti_app/data/data_sources/product_datasource.dart';
+
 import 'package:opti_app/data/repositories/opticien_repository_impl.dart';
+import 'package:opti_app/data/repositories/product_repository_impl.dart';
 import 'package:opti_app/domain/repositories/opticien_repository.dart';
+import 'package:opti_app/domain/repositories/product_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/SignUpScreen.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/admin_panel.dart';
@@ -55,9 +60,31 @@ Future<void> main() async {
   Get.put<OpticienController>(
       OpticienController(opticienRepository: opticienRepository));
 
+  // Product Repository
+  // Product Repository
+  final productRemoteDataSource =
+      ProductDatasource(); // Use the correct class name
+  Get.put<ProductDatasource>(
+      productRemoteDataSource); // Register the correct type
+  final productRepository =
+      ProductRepositoryImpl(dataSource: productRemoteDataSource);
+  Get.put<ProductRepository>(productRepository);
+
+  // Cart Item Repository
+  final cartItemRemoteDataSource = CartItemDataSourceImpl(client: client);
+  Get.put<CartItemDataSource>(cartItemRemoteDataSource);
+  final cartItemRepository =
+      CartItemRepositoryImpl(dataSource: cartItemRemoteDataSource);
+  Get.put<CartItemRepository>(cartItemRepository);
+
+  // Cart Item Controller
+  Get.put<CartItemController>(CartItemController(
+      repository: cartItemRepository, productRepository: productRepository));
+
   final sendCodeToEmail = SendCodeToEmail(Get.find());
   Get.put(sendCodeToEmail);
   Get.put(NavigationController(), permanent: true);
+
   runApp(const MyApp());
 }
 
@@ -73,7 +100,6 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-<<<<<<< HEAD
       initialRoute: '/splash',
       getPages: [
         GetPage(
@@ -139,17 +165,6 @@ class MyApp extends StatelessWidget {
         GetPage(
             name: '/cart', page: () => CartScreen(), binding: AuthBinding()),
       ],
-=======
-      home: const LoginScreen(), // Profile screen is the first screen
-      routes: {
-        '/profileScreen': (context) => const ProfileScreen(),
-        '/updateProfile': (context) => const UpdateProfileScreen(
-              userId: '67a0cb53c575bdaa95c3421f',
-            ),
-        '/signup': (context) => const SignUpScreen(),
-      }, // Set ProfileScreen as the first screen
-      debugShowCheckedModeBanner: false, // Removes the debug banner
->>>>>>> cc11e4c (signUp and update)
     );
   }
 }

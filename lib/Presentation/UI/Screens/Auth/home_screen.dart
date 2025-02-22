@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:http/http.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/favourite_screen.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/product_details_screen';
 import 'package:opti_app/Presentation/UI/Screens/Auth/wishList.dart';
@@ -10,6 +9,7 @@ import 'package:opti_app/Presentation/controllers/opticien_controller.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
 import 'package:opti_app/domain/entities/user.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:opti_app/presentation/widgets/product_dialog.dart';
 
 class HomeScreen extends GetView<AuthController> {
   final PageController _pageController = PageController(viewportFraction: 0.9);
@@ -344,16 +344,14 @@ class HomeScreen extends GetView<AuthController> {
                                   IconButton(
                                     icon: const Icon(
                                         Icons.shopping_cart_outlined,
-                                        size: 20),
+                                        color: Colors.black87),
                                     onPressed: () {
-                                      // Add to cart logic
-                                    },
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.favorite_border,
-                                        size: 20),
-                                    onPressed: () {
-                                      // Add to favorites logic
+                                      // Show the product dialog
+                                      showDialog(
+                                        context: context,
+                                        builder: (context) =>
+                                            ProductDialog(product: product),
+                                      );
                                     },
                                   ),
                                 ],

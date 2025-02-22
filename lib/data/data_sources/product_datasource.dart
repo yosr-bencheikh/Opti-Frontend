@@ -1,11 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:http/http.dart' as client;
 import 'package:http_parser/http_parser.dart';
 import 'package:opti_app/domain/entities/product_entity.dart';
 
 class ProductDatasource {
-  final String baseUrl = 'http://192.168.1.22:3000/api/products';
+  final String baseUrl = 'http://192.168.0.104:3000/api/products';
 
   Future<List<Product>> getProducts() async {
     try {
@@ -49,7 +50,7 @@ class ProductDatasource {
 
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('http://localhost:3000/upload'),
+        Uri.parse('http://192.168.0.104:3000/upload'),
       );
 
       var multipartFile = await http.MultipartFile.fromPath(
@@ -109,6 +110,17 @@ class ProductDatasource {
       }
     } catch (e) {
       throw Exception('Erreur lors de la suppression du produit: $e');
+    }
+  }
+
+  @override
+  Future<Product> getProductById(String productId) async {
+    final response =
+        await client.get(Uri.parse('$baseUrl/products/$productId'));
+    if (response.statusCode == 200) {
+      return Product.fromJson(json.decode(response.body));
+    } else {
+      throw Exception('Failed to load product');
     }
   }
 }

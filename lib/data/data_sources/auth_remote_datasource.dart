@@ -25,7 +25,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   final http.Client client;
 
   // Use your server's IP and port (make sure this is accessible from your phone)
-  final String baseUrl = 'http://192.168.1.22:3000/api';
+  final String baseUrl = 'http://192.168.0.104:3000/api';
 
   static String? verifiedEmail; // Made static
   static String? verificationCode;
