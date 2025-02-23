@@ -5,66 +5,82 @@ import 'package:opti_app/domain/entities/product_entity.dart';
 
 class ProductController extends GetxController {
   final ProductDatasource _datasource;
-  var products = <Product>[].obs;
-  var isLoading = false.obs;
-  var error = RxnString();
+
+  // Convert to observable variables using .obs
+  final RxList<Product> _products = <Product>[].obs;
+  final RxBool _isLoading = false.obs;
+  final Rxn<String> _error = Rxn<String>();
 
   ProductController(this._datasource);
 
+  // Getters for the observable variables
+  List<Product> get products => _products;
+  bool get isLoading => _isLoading.value;
+  String? get error => _error.value;
+
+  @override
+  void onInit() {
+    super.onInit();
+    loadProducts();
+  }
+
   Future<void> loadProducts() async {
-    isLoading.value = true;
-    error.value = null;
+    _isLoading.value = true;
+    _error.value = null;
 
     try {
-      final productList = await _datasource.getProducts();
-      products.assignAll(productList);
+      final products = await _datasource.getProducts();
+      _products.assignAll(products); // Use assignAll for RxList
     } catch (e) {
-      error.value = e.toString();
+      _error.value = e.toString();
     } finally {
-      isLoading.value = false;
+      _isLoading.value = false;
     }
   }
 
   Future<void> addProduct(Product product) async {
     try {
       final newProduct = await _datasource.createProduct(product);
-      products.add(newProduct);
+      _products.add(newProduct);
     } catch (e) {
-      error.value = e.toString();
+      _error.value = e.toString();
     }
   }
 
   Future<void> updateProduct(String id, Product product) async {
     try {
       final updatedProduct = await _datasource.updateProduct(id, product);
-      final index = products.indexWhere((p) => p.id == id);
+      final index = _products.indexWhere((p) => p.id == id);
       if (index != -1) {
-        products[index] = updatedProduct;
+        _products[index] = updatedProduct;
       }
     } catch (e) {
-      error.value = e.toString();
+      _error.value = e.toString();
     }
   }
 
   Future<void> deleteProduct(String id) async {
     try {
       await _datasource.deleteProduct(id);
-      products.removeWhere((p) => p.id == id);
+      _products.removeWhere((p) => p.id == id);
     } catch (e) {
-      error.value = e.toString();
+      _error.value = e.toString();
     }
   }
 
   Future<String?> uploadImage(File imageFile) async {
     try {
-      isLoading.value = true;
+      _isLoading.value = true;
+
       final imageUrl = await _datasource.uploadImage(imageFile);
+
+      _isLoading.value = false;
       return imageUrl;
     } catch (e) {
-      error.value = e.toString();
+      print("Error uploading image: $e");
+      _error.value = e.toString();
+      _isLoading.value = false;
       return null;
-    } finally {
-      isLoading.value = false;
     }
   }
 }

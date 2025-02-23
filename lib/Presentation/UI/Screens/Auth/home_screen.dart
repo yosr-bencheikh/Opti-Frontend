@@ -1,26 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:http/http.dart';
-import 'package:opti_app/Presentation/UI/Screens/Auth/favourite_screen.dart';
-import 'package:opti_app/Presentation/UI/Screens/Auth/wishList.dart';
+import 'package:opti_app/Presentation/UI/Screens/Auth/product_details_screen';
+import 'package:opti_app/Presentation/UI/screens/auth/wishlist_page.dart';
 import 'package:opti_app/Presentation/controllers/auth_controller.dart';
 import 'package:opti_app/Presentation/controllers/navigation_controller.dart';
+import 'package:opti_app/Presentation/controllers/opticien_controller.dart';
+import 'package:opti_app/Presentation/controllers/product_controller.dart';
+import 'package:opti_app/Presentation/controllers/wishlist_controller.dart';
 import 'package:opti_app/domain/entities/user.dart';
+import 'package:opti_app/domain/entities/wishlist_item.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:opti_app/presentation/widgets/product_dialog.dart';
 
 class HomeScreen extends GetView<AuthController> {
   final PageController _pageController = PageController(viewportFraction: 0.9);
   final RxInt _currentPage = 0.obs;
   final NavigationController navigationController = Get.find();
-
+  final OpticienController opticienController = Get.find();
+  final ProductController productController = Get.find();
+final RxMap<String, bool> _favorites = <String, bool>{}.obs;
+final WishlistController wishlistController = Get.find();
   @override
   Widget build(BuildContext context) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (controller.currentUser == null) {
-        final userEmail = Get.find<SharedPreferences>().getString('userEmail');
-        if (userEmail != null && userEmail.isNotEmpty) {
-          controller.loadUserData(userEmail);
-        }
+      if (controller.currentUser?.email != null) {
+        wishlistController.initUser(controller.currentUser!.email);
       }
     });
 
@@ -99,20 +103,18 @@ class HomeScreen extends GetView<AuthController> {
                     ],
                   ),
                 ),
-                IconButton(
-                  icon:
-                      const Icon(Icons.favorite_border, color: Colors.black87),
-                  onPressed: () {
-                    Get.to(() => FavouriteScreen());
-                  },
-                ),
-                IconButton(
-                  icon: const Icon(Icons.shopping_cart_outlined,
-                      color: Colors.black87),
-                  onPressed: () {
-                    Get.to(() => Wishlist());
-                  },
-                ),
+              
+IconButton(
+  icon: const Icon(Icons.favorite_border, color: Colors.black87),
+  onPressed: () {
+    final userEmail = controller.currentUser?.email;
+    if (userEmail != null) {
+      Get.to(() => WishlistPage(userEmail: userEmail));
+    } else {
+      Get.snackbar('Error', 'Please log in first');
+    }
+  },
+),
               ],
             ),
           ),
@@ -196,30 +198,249 @@ class HomeScreen extends GetView<AuthController> {
     );
   }
 
-  Widget _buildPopularProducts() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.all(16),
-          child: Text(
-            'Popular Products',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
+Widget _buildPopularProducts() {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const Padding(
+        padding: EdgeInsets.all(16),
+        child: Text(
+          'Popular Products',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
           ),
         ),
-        SizedBox(
-          height: 220,
-          child: ListView.builder(
+      ),
+      SizedBox(
+        height: 220,
+        child: Obx(() {
+          if (productController.isLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (productController.error != null) {
+            return Center(child: Text('Error: ${productController.error}'));
+          }
+
+          if (productController.products.isEmpty) {
+            return const Center(child: Text('No products available'));
+          }
+
+          return ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: 5,
+            itemCount: productController.products.length,
             itemBuilder: (context, index) {
+              final product = productController.products[index];
+              return GestureDetector(
+                onTap: () {
+                  Get.to(() => ProductDetailsScreen(product: product));
+                },
+                child: Container(
+                  width: 160,
+                  margin: const EdgeInsets.only(right: 16),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.1),
+                        spreadRadius: 1,
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        height: 98,
+                        decoration: BoxDecoration(
+                          borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(12)),
+                          color: Colors.grey[200],
+                        ),
+                        child: product.imageUrl != null &&
+                                product.imageUrl!.isNotEmpty
+                            ? ClipRRect(
+                                borderRadius: const BorderRadius.vertical(
+                                    top: Radius.circular(12)),
+                                child: Image.network(
+                                  product.imageUrl!,
+                                  fit: BoxFit.cover,
+                                ),
+                              )
+                            : const Center(
+                                child: Icon(Icons.shopping_bag, size: 40)),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              product.name,
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Row(
+                              children: [
+                                Text(
+                                  '\$${product.prix.toStringAsFixed(2)}',
+                                  style: const TextStyle(
+                                    color: Colors.blue,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.pink.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    '-5%',
+                                    style: TextStyle(
+                                      color: Colors.pink[700],
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Row(
+                              children: [
+                                Icon(Icons.star,
+                                    color: Colors.amber, size: 16),
+                                Text(
+                                  ' 4.8',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[700],
+                                  ),
+                                ),
+                                Text(
+                                  ' (25)',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[500],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Row(
+                              mainAxisAlignment:
+                                  MainAxisAlignment.spaceBetween,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(
+                                      Icons.shopping_cart_outlined,
+                                      color: Colors.black87),
+                                  onPressed: () {
+                                    showDialog(
+                                      context: context,
+                                      builder: (context) =>
+                                          ProductDialog(product: product),
+                                    );
+                                  },
+                                ),
+                                Obx(() {
+                                  final isInWishlist = wishlistController.isProductInWishlist(product.id!);
+                                  return IconButton(
+                                    icon: Icon(
+                                      isInWishlist ? Icons.favorite : Icons.favorite_border,
+                                      color: isInWishlist ? Colors.red : Colors.black87,
+                                    ),
+                                    onPressed: () async {
+                                      final userEmail = controller.currentUser?.email;
+                                      if (userEmail == null) {
+                                        Get.snackbar('Error', 'Please log in first');
+                                        return;
+                                      }
+
+                                      try {
+                                        if (isInWishlist) {
+                                          final wishlistItem = wishlistController.getWishlistItemByProductId(product.id!);
+                                          if (wishlistItem != null) {
+                                            await wishlistController.removeFromWishlist(wishlistItem.id);
+                                          }
+                                        } else {
+                                          final wishlistItem = WishlistItem(
+                                            id: '', // Générer un ID unique si nécessaire
+                                            product: product,
+                                            userId: userEmail,
+                                            productId: product.id!,
+                                          );
+                                          await wishlistController.addToWishlist(wishlistItem);
+                                        }
+                                      } catch (e) {
+                                        Get.snackbar(
+                                          'Error',
+                                          'Failed to update wishlist',
+                                          backgroundColor: Colors.red[100],
+                                          colorText: Colors.red[900],
+                                        );
+                                      }
+                                    },
+                                  );
+                                })
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        }),
+      ),
+    ],
+  );
+}
+
+  Widget _buildOpticalStores() {
+    return Obx(() {
+      if (opticienController.isLoading.value) {
+        return const Center(child: CircularProgressIndicator());
+      }
+
+      final opticians = opticienController.opticiensList;
+
+      if (opticians.isEmpty) {
+        return const Center(child: Text('No opticians found.'));
+      }
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.all(16),
+            child: Text(
+              'Optical Stores',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: opticians.length,
+            itemBuilder: (context, index) {
+              final optician = opticians[index];
               return Container(
-                width: 160,
-                margin: const EdgeInsets.only(right: 16),
+                margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
                   color: Colors.white,
@@ -232,113 +453,33 @@ class HomeScreen extends GetView<AuthController> {
                     ),
                   ],
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      height: 110,
-                      decoration: BoxDecoration(
-                        borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(12)),
-                        color: Colors.grey[200],
-                      ),
-                      child: const Center(
-                          child: Icon(Icons.shopping_bag, size: 40)),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Product ${index + 1}',
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          const Text('\$99.99'),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.shopping_cart_outlined,
-                                    size: 20),
-                                onPressed: () {},
-                              ),
-                              IconButton(
-                                icon:
-                                    const Icon(Icons.favorite_border, size: 20),
-                                onPressed: () {},
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                child: ListTile(
+                  contentPadding: const EdgeInsets.all(16),
+                  leading: CircleAvatar(
+                    backgroundColor: Colors.grey[200],
+                    child: const Icon(Icons.store, color: Colors.grey),
+                  ),
+                  title: Text(
+                    optician
+                        .nom, // Assuming the Optician entity has a name property
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(
+                    optician.email,
+                  ), // Assuming a description property
+                  trailing: ElevatedButton(
+                    onPressed: () {
+                      // Navigate to the optician's products or details
+                    },
+                    child: const Text('View Products'),
+                  ),
                 ),
               );
             },
           ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildOpticalStores() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.all(16),
-          child: Text(
-            'Optical Stores',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          itemCount: 5,
-          itemBuilder: (context, index) {
-            return Container(
-              margin: const EdgeInsets.only(bottom: 16),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
-                    spreadRadius: 1,
-                    blurRadius: 4,
-                    offset: const Offset(0, 1),
-                  ),
-                ],
-              ),
-              child: ListTile(
-                contentPadding: const EdgeInsets.all(16),
-                leading: CircleAvatar(
-                  backgroundColor: Colors.grey[200],
-                  child: const Icon(Icons.store, color: Colors.grey),
-                ),
-                title: Text(
-                  'Optical Store ${index + 1}',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                subtitle:
-                    const Text('High-quality eyewear and professional service'),
-                trailing: ElevatedButton(
-                  onPressed: () {},
-                  child: const Text('View Products'),
-                ),
-              ),
-            );
-          },
-        ),
-      ],
-    );
+        ],
+      );
+    });
   }
 
   Widget _buildBottomNavBar() {

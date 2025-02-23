@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:opti_app/Presentation/controllers/product_controller.dart';
 import 'package:opti_app/Presentation/utils/SecureStorage.dart';
 import 'package:opti_app/Presentation/utils/jwt_utils.dart';
 import 'package:opti_app/data/models/user_model.dart';
@@ -20,6 +21,8 @@ import 'package:http/http.dart' as http;
 class AuthController extends GetxController {
   final AuthRepository authRepository;
   final SharedPreferences prefs;
+  final ProductController productController = Get.find();
+  List<bool> favorites = [];
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: ['email', 'profile'],
     serverClientId:
@@ -28,27 +31,33 @@ class AuthController extends GetxController {
 
   var isLoading = false.obs;
   var isLoggedIn = false.obs;
+  // Observable for storing the auto-generated user id from the backend
   var currentUserId = ''.obs;
   final Rx<User?> _currentUser = Rx<User?>(null);
   var authToken = ''.obs;
   final RxString error = ''.obs;
 
+  User? get currentUser => _currentUser.value;
+  set currentUser(User? value) => _currentUser.value = value;
+
+  // Constructor with named parameters
   AuthController({
     required this.authRepository,
     required this.prefs,
   });
 
-  User? get currentUser => _currentUser.value;
-  set currentUser(User? value) => _currentUser.value = value;
-
   @override
   void onInit() {
     super.onInit();
     loadUserFromPrefs();
+    favorites = List.generate(productController.products.length, (index) => false);
+  }
+   void toggleFavorite(int index) {
+    favorites[index] = !favorites[index];
   }
 
-  void handleAuthenticationChanged(bool isLoggedIn) {
-    if (isLoggedIn) {
+  void handleAuthenticationChanged(bool loggedIn) {
+    if (loggedIn) {
       Future.microtask(() =>
           Get.offAllNamed('/profileScreen', arguments: currentUserId.value));
     } else {
@@ -92,6 +101,7 @@ class AuthController extends GetxController {
     }
   }
 
+  /// Updated loadUserData using the repository's function instead of a direct HTTP call.
   Future<void> loadUserData(String email) async {
     try {
       isLoading.value = true;
@@ -100,21 +110,17 @@ class AuthController extends GetxController {
       }
 
       debugPrint('Fetching user data for email: $email');
-      final userData = await authRepository.getUserByEmail(email);
+      // Call the repository method to get user data by email.
+      final Map<String, dynamic> userData =
+          await authRepository.getUserByEmail(email);
 
-      if (userData == null) {
-        throw Exception('User data not found for email: $email');
-      }
+      // Retrieve the auto-generated id (under 'id' or '_id')
+      currentUserId.value = userData['id'] ?? userData['_id'] ?? '';
 
-      debugPrint('Raw user data received: $userData');
-      final formattedUserData = _formatUserData(userData);
-      debugPrint('Formatted user data: $formattedUserData');
+      debugPrint('User ID retrieved: ${currentUserId.value}');
+      _currentUser.value = UserModel.fromJson(userData);
 
-      // Create a UserModel instance from the formatted data
-      _currentUser.value = UserModel.fromJson(formattedUserData);
-
-      // Store the current user data
-      await prefs.setString('currentUser', json.encode(formattedUserData));
+      await prefs.setString('currentUser', json.encode(userData));
       await prefs.setString('userEmail', email);
 
       debugPrint('User data loaded and stored successfully');
@@ -148,7 +154,6 @@ class AuthController extends GetxController {
       print("Retrieved token: $token");
       print("Retrieved email: $email");
 
-      // Add a timeout to prevent infinite waiting
       final isValid = await authRepository.verifyToken(token).timeout(
         Duration(seconds: 10),
         onTimeout: () {
@@ -176,16 +181,13 @@ class AuthController extends GetxController {
   Future<void> _attemptTokenRefresh(String email) async {
     try {
       final String? refreshToken = prefs.getString('refreshToken');
-      if (refreshToken == null) {
-        throw Exception('No refresh token found');
-      }
+      if (refreshToken == null) return;
 
       final newToken = await authRepository.refreshToken(refreshToken);
       await prefs.setString('token', newToken);
       await loadUserData(email);
     } catch (e) {
       await logout();
-      throw Exception('Token refresh failed: $e');
     }
   }
 
@@ -202,10 +204,10 @@ class AuthController extends GetxController {
       try {
         final Map<String, dynamic> userData = json.decode(userJson);
         _currentUser.value = UserModel.fromJson(userData);
+        currentUserId.value = userData['id'] ?? userData['_id'] ?? '';
         debugPrint('User data loaded from prefs successfully');
       } catch (e) {
         debugPrint('Error parsing stored user data: $e');
-
         await prefs.remove('currentUser');
         await prefs.remove('userEmail');
       }
@@ -214,25 +216,10 @@ class AuthController extends GetxController {
     }
   }
 
-  Map<String, dynamic> _formatUserData(Map<String, dynamic> data) {
-    return {
-      'nom': data['nom'] ?? '',
-      'prenom': data['prenom'] ?? '',
-      'email': data['email'] ?? '',
-      'date': data['date'] ?? '',
-      'phone': data['phone'] ?? '',
-      'region': data['region'] ?? '',
-      'genre': data['genre'] ?? 'Homme',
-      'imageUrl': data['imageUrl'] ?? '',
-      'password': data['password'] ?? '',
-      if (data['_id'] != null) 'id': data['_id'],
-    };
-  }
-
   Future<void> loginWithGoogle() async {
     try {
       isLoading.value = true;
-      await _googleSignIn.signOut(); // Force account selection
+      await _googleSignIn.signOut();
 
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
@@ -244,8 +231,7 @@ class AuthController extends GetxController {
           await googleUser.authentication;
 
       final response = await http.post(
-        Uri.parse(
-            'https://e263-41-62-158-98.ngrok-free.app/auth/google/callback'),
+        Uri.parse('https://your-api-url/auth/google/callback'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'idToken': googleAuth.idToken,
@@ -256,11 +242,12 @@ class AuthController extends GetxController {
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
         final token = responseData['token'];
-        final userId = JwtDecoder.decode(token)['userId'].toString();
+        final decodedToken = JwtDecoder.decode(token);
+        final email = decodedToken['email'] as String;
+        final userId = decodedToken['userId']?.toString() ?? '';
 
         await prefs.setString('token', token);
         await prefs.setString('userId', userId);
-        // NEW: Save and register refreshToken if available
         if (responseData.containsKey('refreshToken') &&
             responseData['refreshToken'] != null) {
           final refreshToken = responseData['refreshToken'];
@@ -292,15 +279,11 @@ class AuthController extends GetxController {
   Future<void> loginWithFacebook() async {
     try {
       isLoading.value = true;
-
       await FacebookAuth.instance.logOut();
 
-      final LoginResult result = await FacebookAuth.instance.login(
-        loginBehavior: LoginBehavior.nativeOnly,
-      );
-
+      final LoginResult result = await FacebookAuth.instance.login();
       if (result.status != LoginStatus.success) {
-        Get.snackbar('Cancelled', 'Facebook sign-in cancelled');
+        Get.snackbar('Cancelled', 'Facebook login cancelled');
         return;
       }
 
@@ -308,24 +291,21 @@ class AuthController extends GetxController {
       final userData = await FacebookAuth.instance.getUserData();
 
       final response = await http.post(
-        Uri.parse(
-            'https://e263-41-62-158-98.ngrok-free.app/auth/facebook/callback'),
+        Uri.parse('https://your-api-url/auth/facebook/callback'),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'token': accessToken.tokenString,
-          'email': userData['email'],
-        }),
+        body: json.encode(
+            {'token': accessToken.tokenString, 'email': userData['email']}),
       );
 
+      final responseBody = json.decode(response.body);
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
         final token = responseData['token'];
-        final email = userData['email']; // Get the email from userData
+        final email = userData['email'];
 
         await prefs.setString('token', token);
-        await prefs.setString('userEmail', email); // Store email in prefs
+        await prefs.setString('userEmail', email);
 
-        // NEW: Save and register refreshToken if available
         if (responseData.containsKey('refreshToken') &&
             responseData['refreshToken'] != null) {
           final refreshToken = responseData['refreshToken'];
@@ -334,24 +314,31 @@ class AuthController extends GetxController {
         }
 
         authToken.value = token;
-        currentUserId.value =
-            ''; // You can keep this empty or set it based on your logic
         isLoggedIn.value = true;
-
-        // Load user data using the email
-        await loadUserData(email); // Load user data with the email
-        Get.offAllNamed('/HomeScreen',
-            arguments: email); // Pass email to the profile screen
+        await loadUserData(email);
+        Get.offAllNamed('/HomeScreen', arguments: email);
+      } else if (response.statusCode == 409) {
+        throw Exception(responseBody['error']);
       } else {
-        throw Exception('Facebook login failed: ${response.body}');
+        throw Exception('Error: ${responseBody['message']}');
       }
     } catch (error) {
-      Get.snackbar(
-        'Error',
-        'Facebook login failed: ${error.toString()}',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      print("Complete error: ${error.toString()}");
+      if (error.toString().contains('E11000')) {
+        Get.snackbar(
+          'Email Exists',
+          'This email is already linked to an account. Please use another email.',
+          backgroundColor: const Color.fromARGB(255, 246, 65, 65),
+          duration: Duration(seconds: 5),
+        );
+      } else {
+        Get.snackbar(
+          'Facebook Error',
+          error.toString().replaceAll('Exception: ', ''),
+          colorText: Colors.white,
+          backgroundColor: Colors.red,
+        );
+      }
     } finally {
       isLoading.value = false;
     }
@@ -413,7 +400,6 @@ class AuthController extends GetxController {
           prefs.setString('refreshToken', refreshToken),
       ]);
 
-      // NEW: Register the refresh token in the database (if available)
       if (refreshToken != null && refreshToken.isNotEmpty) {
         await authRepository.refreshToken(refreshToken);
       }
@@ -426,7 +412,6 @@ class AuthController extends GetxController {
       debugPrint('Login error: $e');
       debugPrint('Stack trace: $stackTrace');
 
-      // Reset authentication state.
       authToken.value = '';
       currentUserId.value = '';
       isLoggedIn.value = false;
@@ -449,24 +434,6 @@ class AuthController extends GetxController {
     }
   }
 
-  // Add a helper method to handle login errors
-  void _handleLoginError(dynamic error) {
-    authToken.value = '';
-    currentUserId.value = '';
-    isLoggedIn.value = false;
-
-    SecureStorage.clearTokens();
-    prefs.remove('userEmail');
-    prefs.remove('userId');
-
-    Get.snackbar(
-      'Error',
-      'Login failed: ${error.toString()}',
-      backgroundColor: Colors.red,
-      colorText: Colors.white,
-    );
-  }
-
   Future<void> signUp(User newUser) async {
     isLoading.value = true;
     try {
@@ -479,32 +446,31 @@ class AuthController extends GetxController {
       await prefs.setString('userEmail', email);
 
       authToken.value = token;
-
       isLoggedIn.value = true;
 
       await loadUserData(email);
 
       Get.snackbar(
-        'Succès',
-        'Inscription réussie!',
+        'Success',
+        'Signup successful!',
         snackPosition: SnackPosition.BOTTOM,
       );
 
-      Get.offAllNamed('/profileScreen', arguments: email);
+      Get.offAllNamed('/HomeScreen', arguments: email);
     } catch (e) {
       print('Sign Up error: $e');
       if (e.toString().contains('User already exists')) {
         Get.snackbar(
-          'Erreur',
-          'Ce email est déjà utilisé. Veuillez essayer un autre.',
+          'Error',
+          'This email is already used. Please try another.',
           backgroundColor: Colors.red,
           colorText: Colors.white,
           snackPosition: SnackPosition.BOTTOM,
         );
       } else {
         Get.snackbar(
-          'Erreur',
-          'Une erreur est survenue: $e',
+          'Error',
+          'An error occurred: $e',
           backgroundColor: Colors.red,
           colorText: Colors.white,
           snackPosition: SnackPosition.BOTTOM,
@@ -533,7 +499,7 @@ class AuthController extends GetxController {
       currentUserId.value = '';
       authToken.value = '';
       isLoggedIn.value = false;
-      currentUser = null;
+      _currentUser.value = null;
 
       Get.offAllNamed('/login');
     } catch (e) {
@@ -561,7 +527,6 @@ class AuthController extends GetxController {
     }
   }
 
-  /// Verifies the code entered by the user.
   Future<bool> verifyCode(String email, String code) async {
     isLoading.value = true;
     try {
@@ -581,7 +546,6 @@ class AuthController extends GetxController {
     }
   }
 
-  /// Resets the password for the user.
   Future<bool> resetPassword(String email, String newPassword) async {
     isLoading.value = true;
     try {
@@ -602,14 +566,10 @@ class AuthController extends GetxController {
   }
 
   File? selectedImage;
-/*  final Rx<XFile?> _selectedImage = Rx<XFile?>(null);
-  XFile? get selectedImage => _selectedImage.value;*/
 
-  // Observable to store the uploaded image URL
   final RxString _imageUrl = ''.obs;
   String get imageUrl => _imageUrl.value;
 
-  // Method to pick an image from the gallery
   Future<void> pickImage() async {
     final pickedFile =
         await ImagePicker().pickImage(source: ImageSource.gallery);
@@ -619,50 +579,40 @@ class AuthController extends GetxController {
   }
 
   Future<void> uploadImage(String email) async {
-    // Vérifier si une image a été sélectionnée
     if (selectedImage == null) {
-      Get.snackbar('Error', 'Aucune image sélectionnée!');
+      Get.snackbar('Error', 'No image selected!');
       return;
     }
     try {
       isLoading.value = true;
-      final filePath =
-          selectedImage!.path; // Maintenant, selectedImage n'est pas null
+      final filePath = selectedImage!.path;
       print('Uploading image from path: $filePath');
       final imageUrl = await authRepository.uploadImage(filePath, email);
       print('Image uploaded successfully. URL: $imageUrl');
 
-      // S'assurer que l'utilisateur courant existe
       if (currentUser == null) {
         throw Exception('Current user is null');
       }
 
-      // Mettre à jour l'image de l'utilisateur
       currentUser!.imageUrl = imageUrl;
-      update(); // Pour rafraîchir l'interface
+      update();
 
-      // Créer un utilisateur mis à jour avec la nouvelle image
       final updatedUser = UserModel(
         nom: currentUser!.nom,
         prenom: currentUser!.prenom,
         email: currentUser!.email,
         date: currentUser!.date,
         password: currentUser!.password,
-        phone: currentUser!.phone ?? '',
-        region: currentUser!.region ?? '',
-        genre: currentUser!.genre ?? 'Homme',
+        phone: currentUser!.phone,
+        region: currentUser!.region,
+        genre: currentUser!.genre,
         imageUrl: imageUrl,
+        refreshTokens: currentUser!.refreshTokens,
       );
 
-      // Mettre à jour côté backend
       await authRepository.updateUser(email, updatedUser);
-
-      // Mise à jour locale de l'utilisateur courant
       _currentUser.value = updatedUser;
-
-      // Stocker les données mises à jour dans SharedPreferences
       await prefs.setString('currentUser', json.encode(updatedUser.toJson()));
-
       Get.snackbar('Success', 'Image uploaded successfully!');
       Get.forceAppUpdate();
     } catch (e) {
@@ -670,7 +620,6 @@ class AuthController extends GetxController {
       Get.snackbar('Error', 'Failed to upload image: $e');
     } finally {
       isLoading.value = false;
-      selectedImage = null;
     }
   }
 
@@ -685,13 +634,12 @@ class AuthController extends GetxController {
         prenom: updatedUser.prenom,
         email: updatedUser.email,
         date: updatedUser.date,
-        phone: updatedUser.phone ?? '',
-        region: updatedUser.region ?? '',
-        genre: updatedUser.genre ?? 'Homme',
-        // Use the current user's password if no new password is provided
-        password: currentUser?.password ??
-            '', // This ensures we always have a password value
+        region: updatedUser.region,
+        genre: updatedUser.genre,
+        phone: updatedUser.phone,
+        password: currentUser?.password ?? '',
         imageUrl: currentUser?.imageUrl ?? '',
+        refreshTokens: updatedUser.refreshTokens,
       );
       await authRepository.updateUser(email, userToUpdate);
       await loadUserData(updatedUser.email);
@@ -707,41 +655,27 @@ class AuthController extends GetxController {
   Future<void> clearImage(String email) async {
     try {
       isLoading.value = true;
-
-      // Ensure we have the current user data
       if (currentUser == null) {
         throw Exception('Current user is null');
       }
-
-      // Call the repository method to delete the image from the database
       await authRepository.deleteUserImage(email);
-
-      // Update the current user's imageUrl to an empty string
-      currentUser!.imageUrl = ''; // Clear the image URL
-      update(); // Notify GetX to rebuild
-
-      // Create updated user with all current data minus the image
+      currentUser!.imageUrl = '';
+      update();
       final updatedUser = UserModel(
         nom: currentUser!.nom,
         prenom: currentUser!.prenom,
         email: currentUser!.email,
         date: currentUser!.date,
         password: currentUser!.password,
-        phone: currentUser!.phone ?? '',
-        region: currentUser!.region ?? '',
-        genre: currentUser!.genre ?? 'Homme',
-        imageUrl: '', // Set the image URL to empty
+        phone: currentUser!.phone,
+        region: currentUser!.region,
+        genre: currentUser!.genre,
+        imageUrl: '',
+        refreshTokens: currentUser!.refreshTokens,
       );
-
-      // Update in backend
       await authRepository.updateUser(email, updatedUser);
-
-      // Directly update the current user
       _currentUser.value = updatedUser;
-
-      // Store in SharedPreferences
-      await prefs.setString('currentUser ', json.encode(updatedUser.toJson()));
-
+      await prefs.setString('currentUser', json.encode(updatedUser.toJson()));
       Get.snackbar('Success', 'Image cleared successfully!');
     } catch (e) {
       print('Error clearing image: $e');

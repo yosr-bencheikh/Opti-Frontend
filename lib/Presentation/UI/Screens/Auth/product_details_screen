@@ -1,0 +1,479 @@
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:opti_app/domain/entities/product_entity.dart';
+import 'package:opti_app/Presentation/controllers/product_controller.dart';
+
+class ProductDetailsScreen extends GetView<ProductController> {
+  final Product product;
+
+  ProductDetailsScreen({required this.product});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: CustomScrollView(
+        slivers: [
+          // Sticky Image Section
+          SliverAppBar(
+            expandedHeight: 300, // Height of the image when expanded
+            pinned: true, // Make the image stick to the top
+            flexibleSpace: FlexibleSpaceBar(
+              background: Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                ),
+                child: product.imageUrl != null && product.imageUrl!.isNotEmpty
+                    ? Container(
+                        width: 50, // Full width
+                        height: 50, // Fixed height
+                        child: Image.network(
+                          product.imageUrl!,
+                          fit: BoxFit.cover,
+                        ),
+                      )
+                    : Container(
+                        width: double.infinity, // Full width for placeholder
+                        height: 300, // Fixed height for placeholder
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200],
+                        ),
+                        child: Icon(Icons.image, size: 100, color: Colors.grey),
+                      ),
+              ),
+            ),
+          ),
+          // Scrollable Content
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Product Name and Stock Status
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          product.name,
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          'In Stock',
+                          style: TextStyle(color: Colors.green),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 8),
+                  // Price and Rating
+                  Row(
+                    children: [
+                      Text(
+                        '\$${product.prix.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue,
+                        ),
+                      ),
+                      SizedBox(width: 16),
+                      _buildRatingSection(),
+                    ],
+                  ),
+                  SizedBox(height: 16),
+                  // Discount Banner
+                  Container(
+                    margin: EdgeInsets.symmetric(vertical: 16),
+                    padding: EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.pink.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.discount, color: Colors.pink),
+                        SizedBox(width: 8),
+                        Text(
+                          'Extra 5% off',
+                          style: TextStyle(
+                            color: Colors.pink,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Delivery Info
+                  Row(
+                    children: [
+                      Icon(Icons.calendar_today,
+                          size: 20, color: Colors.grey),
+                      SizedBox(width: 8),
+                      Text(
+                        'Delivery: Tomorrow',
+                        style: TextStyle(color: Colors.grey[700]),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 24),
+                  // Product Details Card
+                  _buildProductDetailsCard(),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: _buildBottomBar(),
+    );
+  }
+
+  // Product Details Card
+  Widget _buildProductDetailsCard() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Product Details',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 12),
+            _buildDetailRow('Description', product.description),
+            _buildDetailRow('Category', product.category),
+            _buildDetailRow('Marque', product.marque),
+            _buildDetailRow('Type de Verre', product.typeVerre),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Helper method to build a detail row
+  Widget _buildDetailRow(String label, String? value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '$label: ',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[700],
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value ?? 'N/A',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[700],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Rating Section
+  Widget _buildRatingSection() {
+    return GestureDetector(
+      onTap: () => Get.to(() => ReviewsScreen(product: product)),
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.amber.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.star, color: Colors.amber, size: 20),
+            SizedBox(width: 4),
+            Text(
+              '4.8',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.amber[800],
+              ),
+            ),
+            SizedBox(width: 4),
+            Text(
+              '(25 reviews)',
+              style: TextStyle(color: Colors.grey),
+            ),
+            Icon(Icons.chevron_right, color: Colors.grey, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Bottom Navigation Bar
+  Widget _buildBottomBar() {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            spreadRadius: 1,
+            blurRadius: 10,
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            icon: Icon(Icons.favorite_border),
+            onPressed: () {},
+          ),
+          SizedBox(width: 16),
+          Expanded(
+            child: ElevatedButton(
+              onPressed: () {},
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.pink[80],                padding: EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text('Ajouter au panier'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Reviews Screen with Floating Dialog
+class ReviewsScreen extends StatelessWidget {
+  final Product product;
+
+  ReviewsScreen({required this.product});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Customer Reviews'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _showReviewDialog(context),
+        child: Icon(Icons.edit),
+        backgroundColor: Colors.black,
+      ),
+      body: Column(
+        children: [
+          _buildOverallRating(),
+          Expanded(
+            child: ListView.builder(
+              padding: EdgeInsets.all(16),
+              itemCount: 25,
+              itemBuilder: (context, index) => _buildReviewItem(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+void _showReviewDialog(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text("Write a Review"),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              decoration: InputDecoration(
+                hintText: 'Share your experience...',
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.all(12),
+              ),
+              maxLines: 5,
+            ),
+            SizedBox(height: 16),
+            // Wrap the Row in a SingleChildScrollView
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal, // Enable horizontal scrolling
+              child: Row(
+                children: [
+                  Text('Rating:'),
+                  SizedBox(width: 12),
+                  ...List.generate(5, (index) => IconButton(
+                    icon: Icon(
+                      Icons.star_border,
+                      color: Colors.amber,
+                      size: 32,
+                    ),
+                    onPressed: () {
+                      // Handle star rating selection
+                    },
+                  )),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            // Submit logic
+            Navigator.pop(context);
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.black,
+          ),
+          child: Text('Submit'),
+        ),
+      ],
+    ),
+  );
+}
+
+  Widget _buildOverallRating() {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
+      ),
+      child: Row(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '4.8',
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.amber[800],
+                ),
+              ),
+              Row(
+                children: List.generate(5, (index) => Icon(
+                  Icons.star,
+                  color: Colors.amber,
+                  size: 20,
+                )),
+              ),
+              Text(
+                '25 reviews',
+                style: TextStyle(color: Colors.grey),
+              ),
+            ],
+          ),
+          SizedBox(width: 20),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                _buildRatingProgress('5', 0.8),
+                _buildRatingProgress('4', 0.15),
+                _buildRatingProgress('3', 0.05),
+                _buildRatingProgress('2', 0.0),
+                _buildRatingProgress('1', 0.0),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRatingProgress(String stars, double percentage) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Text(stars),
+          Icon(Icons.star, size: 16, color: Colors.amber),
+          SizedBox(width: 8),
+          Expanded(
+            child: LinearProgressIndicator(
+              value: percentage,
+              backgroundColor: Colors.grey[200],
+              color: Colors.amber,
+              minHeight: 6,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReviewItem() {
+    return Card(
+      margin: EdgeInsets.only(bottom: 16),
+      elevation: 1,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: CircleAvatar(
+                backgroundImage: NetworkImage("https://i.pravatar.cc/50"),
+              ),
+              title: Text("John Doe"),
+              subtitle: Text("2 days ago"),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: List.generate(5, (index) => Icon(
+                  Icons.star,
+                  color: Colors.amber,
+                  size: 16,
+                )),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                "Excellent product! The glasses are very comfortable and the quality is top-notch. Highly recommended!",
+                style: TextStyle(color: Colors.grey[700]),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

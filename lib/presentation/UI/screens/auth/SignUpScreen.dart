@@ -61,27 +61,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          "Inscription",
-          style: AppTextStyles.titleStyle.copyWith(
-            color: AppColors.whiteColor,
-            fontSize: 20,
-          ),
-        ),
-        backgroundColor: AppColors.primaryColor,
-        centerTitle: true,
-      ),
       body: Obx(() => Stack(
             children: [
-              Container(
-                decoration: const BoxDecoration(
-                  image: DecorationImage(
-                    image: AssetImage("assets/images/b4.jpeg"),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
               SingleChildScrollView(
                 child: Padding(
                   padding: const EdgeInsets.all(20.0),

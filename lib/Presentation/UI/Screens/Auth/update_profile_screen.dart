@@ -237,7 +237,6 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
                   if (!value.contains('@')) {
                     return 'Veuillez entrer un email valide';
                   }
-                  return null;
                 },
               ),
               const SizedBox(height: 16),

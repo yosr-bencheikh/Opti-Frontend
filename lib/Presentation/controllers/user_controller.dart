@@ -1,17 +1,17 @@
 import 'package:get/get.dart';
 import 'package:opti_app/data/data_sources/user_datasource.dart';
-import 'package:opti_app/domain/usecases/user_usecases.dart';
 import 'package:opti_app/domain/entities/user.dart';
-
-import 'package:get/get.dart';
 
 class UserController extends GetxController {
   final UserDataSource _dataSource;
   
-  // Observable variables
+  // Liste des utilisateurs
   final _users = <User>[].obs;
   final _isLoading = false.obs;
   final _error = Rxn<String>();
+
+  // Utilisateur actuellement connecté
+  final Rxn<User> _currentUser = Rxn<User>();
 
   UserController(this._dataSource);
 
@@ -19,6 +19,7 @@ class UserController extends GetxController {
   List<User> get users => _users;
   bool get isLoading => _isLoading.value;
   String? get error => _error.value;
+  User? get currentUser => _currentUser.value; // Getter pour l'utilisateur actuel
 
   @override
   void onInit() {
@@ -26,8 +27,13 @@ class UserController extends GetxController {
     fetchUsers();
   }
 
-  // Fetch all users
-Future<void> fetchUsers() async {
+  /// Définir l'utilisateur actuellement connecté
+  void setCurrentUser(User user) {
+    _currentUser.value = user;
+  }
+
+  /// Récupérer les utilisateurs depuis le backend
+  Future<void> fetchUsers() async {
     try {
       _isLoading.value = true;
       _error.value = null;
@@ -41,14 +47,27 @@ Future<void> fetchUsers() async {
     }
   }
 
-  // Update user
+  /// Récupérer un utilisateur spécifique par email
+  Future<void> fetchCurrentUser(String email) async {
+    try {
+      _isLoading.value = true;
+      final user = await _dataSource.getUserByEmail(email);
+      _currentUser.value = user;
+    } catch (e) {
+      _error.value = e.toString();
+    } finally {
+      _isLoading.value = false;
+    }
+  }
+
+  /// Mettre à jour un utilisateur
   Future<void> updateUser(User user) async {
     try {
       _isLoading.value = true;
       _error.value = null;
       
       await _dataSource.updateUser(user);
-      await fetchUsers(); // Refresh the list
+      await fetchUsers(); // Rafraîchir la liste des utilisateurs
       
       Get.snackbar(
         'Success',
@@ -68,14 +87,14 @@ Future<void> fetchUsers() async {
     }
   }
 
-  // Delete user
+  /// Supprimer un utilisateur
   Future<void> deleteUser(String email) async {
     try {
       _isLoading.value = true;
       _error.value = null;
       
       await _dataSource.deleteUser(email);
-      await fetchUsers(); // Refresh the list
+      await fetchUsers(); // Rafraîchir la liste
       
       Get.snackbar(
         'Success',
@@ -95,7 +114,7 @@ Future<void> fetchUsers() async {
     }
   }
 
-  // Search users
+  /// Rechercher des utilisateurs
   void searchUsers(String query) {
     if (query.isEmpty) {
       fetchUsers();
@@ -111,7 +130,7 @@ Future<void> fetchUsers() async {
     _users.assignAll(searchResults);
   }
 
-  // Sort users
+  /// Trier les utilisateurs
   void sortUsers(String field, bool ascending) {
     _users.sort((a, b) {
       switch (field) {

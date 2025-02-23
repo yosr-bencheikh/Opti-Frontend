@@ -16,7 +16,7 @@ class User extends Equatable {
   User({
     required this.nom,
     required this.prenom,
-    required this.email,
+     required this.email,
     required this.date,
     required this.region,
     required this.genre,
