@@ -66,7 +66,6 @@ class WishlistUseCasesImpl implements WishlistUseCases {
           product: product,
           userId: userId,
           productId: productId,
-          createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         );
       } else {
