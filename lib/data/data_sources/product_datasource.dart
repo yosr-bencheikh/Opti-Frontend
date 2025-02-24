@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart' as client;
 import 'package:http_parser/http_parser.dart';
+import 'package:opti_app/domain/entities/Opticien.dart';
 import 'package:opti_app/domain/entities/product_entity.dart';
 
 class ProductDatasource {
@@ -26,7 +27,7 @@ class ProductDatasource {
   Future<Product> createProduct(Product product) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl'), // Ensure this matches the server route
+        Uri.parse('$baseUrl/add'), // Ensure this matches the server route
         headers: {'Content-Type': 'application/json'},
         body: json.encode(product.toJson()),
       );
@@ -50,7 +51,7 @@ class ProductDatasource {
 
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('http://192.168.0.104:3000/upload'),
+        Uri.parse('http://localhost:3000/upload'),
       );
 
       var multipartFile = await http.MultipartFile.fromPath(
@@ -121,6 +122,20 @@ class ProductDatasource {
       return Product.fromJson(json.decode(response.body));
     } else {
       throw Exception('Failed to load product');
+    }
+  }
+   Future<List<Opticien>> getOpticiens() async {
+    try {
+      final response = await http.get(Uri.parse('http://localhost:3000/opticiens'));
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return data.map((json) => Opticien.fromJson(json)).toList();
+      } else {
+        throw Exception('Échec du chargement des opticiens');
+      }
+    } catch (e) {
+      throw Exception('Erreur lors de la récupération des opticiens: $e');
     }
   }
 }

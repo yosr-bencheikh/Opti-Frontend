@@ -5,6 +5,7 @@ import 'package:opti_app/AuthBinding.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/cart_screen.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/favourite_screen.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/home_screen.dart';
+import 'package:opti_app/Presentation/UI/Screens/Auth/product_details_screen';
 import 'package:opti_app/Presentation/UI/Screens/Auth/splash_screen.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/stores_screen.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/WelcomePage.dart';
@@ -18,6 +19,7 @@ import 'package:opti_app/data/data_sources/opticien_remote_datasource.dart';
 import 'package:opti_app/data/data_sources/product_datasource.dart';
 import 'package:opti_app/data/repositories/opticien_repository_impl.dart';
 import 'package:opti_app/data/repositories/product_repository_impl.dart';
+import 'package:opti_app/domain/entities/product_entity.dart';
 import 'package:opti_app/domain/repositories/opticien_repository.dart';
 import 'package:opti_app/domain/repositories/product_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -175,6 +177,15 @@ class MyApp extends StatelessWidget {
         GetPage(
           name: '/cart',
           page: () => CartScreen(),
+          binding: AuthBinding(),
+        ),
+                  GetPage(
+          name: '/ProductDetailsScreen',
+          page: () {
+            // Récupérer l'objet Product passé en argument
+            final product = Get.arguments as Product;
+            return ProductDetailsScreen(product: product);
+          },
           binding: AuthBinding(),
         ),
       ],

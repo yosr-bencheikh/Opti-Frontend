@@ -13,49 +13,49 @@ class WishlistRemoteDataSourceImpl implements WishlistRemoteDataSource {
 
   WishlistRemoteDataSourceImpl(this.dio);
 
- @override
-  Future<List<WishlistItem>> getWishlistItems(String userEmail) async {
-    try {
-      print('Fetching wishlist for user: $userEmail');
-      
-      final response = await dio.get(
-        '$baseUrl/user/$userEmail',
-        options: Options(
-          headers: {'Content-Type': 'application/json'},
-          validateStatus: (status) => status! < 500,
-        ),
-      );
+@override
+Future<List<WishlistItem>> getWishlistItems(String userEmail) async {
+  try {
+    print('Fetching wishlist for user: $userEmail');
+    
+    final response = await dio.get(
+      '$baseUrl/user/$userEmail',
+      options: Options(
+        headers: {'Content-Type': 'application/json'},
+        validateStatus: (status) => status! < 500,
+      ),
+    );
 
-      print('Response status: ${response.statusCode}');
-      print('Response data: ${response.data}');
+    print('Response status: ${response.statusCode}');
+    print('Response data: ${response.data}'); // Ajoutez ce log pour voir les données reçues
 
-      if (response.statusCode == 404) {
-        return [];
-      }
-
-      if (response.statusCode != 200) {
-        throw DioException(
-          requestOptions: response.requestOptions,
-          response: response,
-          message: 'Failed to get wishlist items: ${response.statusMessage}',
-        );
-      }
-
-      final List<dynamic> data = response.data as List<dynamic>;
-      return data.map((item) {
-        try {
-          return WishlistItem.fromJson(item as Map<String, dynamic>);
-        } catch (e) {
-          print('Error parsing item: $item');
-          print('Error details: $e');
-          rethrow;
-        }
-      }).toList();
-    } catch (e) {
-      print('Error in getWishlistItems: $e');
-      rethrow;
+    if (response.statusCode == 404) {
+      return [];
     }
+
+    if (response.statusCode != 200) {
+      throw DioException(
+        requestOptions: response.requestOptions,
+        response: response,
+        message: 'Failed to get wishlist items: ${response.statusMessage}',
+      );
+    }
+
+    final List<dynamic> data = response.data as List<dynamic>;
+    return data.map((item) {
+      try {
+        return WishlistItem.fromJson(item as Map<String, dynamic>);
+      } catch (e) {
+        print('Error parsing item: $item');
+        print('Error details: $e');
+        rethrow;
+      }
+    }).toList();
+  } catch (e) {
+    print('Error in getWishlistItems: $e');
+    rethrow;
   }
+}
  @override
 Future<void> addToWishlist(WishlistItem item) async {
   try {

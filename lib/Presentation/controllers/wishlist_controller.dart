@@ -7,6 +7,7 @@ class WishlistController extends GetxController {
   final WishlistRemoteDataSource wishlistRemoteDataSource;
   final RxList<WishlistItem> wishlistItems = <WishlistItem>[].obs;
   final RxBool isLoading = false.obs;
+  final RxList<String> _wishlistProductIds = <String>[].obs;
 
   String? currentUserEmail;
 
@@ -17,35 +18,37 @@ class WishlistController extends GetxController {
     loadWishlistItems();
   }
 
-  Future<void> loadWishlistItems() async {
-    if (currentUserEmail == null || currentUserEmail!.isEmpty) {
-      Get.snackbar('Error', 'User not initialized');
-      return;
-    }
-
-    isLoading.value = true;
-    try {
-      print('Loading wishlist for user: $currentUserEmail'); // Debug log
-      final items = await wishlistRemoteDataSource.getWishlistItems(currentUserEmail!);
-      wishlistItems.value = items;
-      print('Loaded ${items.length} wishlist items'); // Debug log
-    } catch (e) {
-      print('Error loading wishlist: $e'); // Debug log
-      Get.snackbar(
-        'Error',
-        'Unable to load wishlist items. Please try again later.',
-        backgroundColor: Colors.red[100],
-        colorText: Colors.red[900],
-      );
-    } finally {
-      isLoading.value = false;
-    }
+Future<void> loadWishlistItems() async {
+  if (currentUserEmail == null || currentUserEmail!.isEmpty) {
+    Get.snackbar('Error', 'User not initialized');
+    return;
   }
-
+    
+  isLoading.value = true;
+  try {
+    final items = await wishlistRemoteDataSource.getWishlistItems(currentUserEmail!);
+    wishlistItems.value = items;
+    
+    // Mettre à jour la liste des IDs de produits
+    _wishlistProductIds.value = items.map((item) => item.productId).toList();
+    
+  } catch (e) {
+    print('Error loading wishlist: $e');
+    Get.snackbar(
+      'Error',
+      'Unable to load wishlist items. Please try again later.',
+      backgroundColor: Colors.red[100],
+      colorText: Colors.red[900],
+    );
+  } finally {
+    isLoading.value = false;
+  }
+}
   Future<void> removeFromWishlist(String productId) async {
     try {
       await wishlistRemoteDataSource.removeFromWishlist(productId);
       await loadWishlistItems(); // Reload after successful removal
+      updateWishlistState();
       Get.snackbar(
         'Success',
         'Item removed from wishlist',
@@ -74,11 +77,14 @@ class WishlistController extends GetxController {
       return null;
     }
   }
-
+void updateWishlistState() {
+  update(); // Notifier tous les widgets dépendants que l'état a changé
+}
   Future<void> addToWishlist(WishlistItem item) async {
     try {
       await wishlistRemoteDataSource.addToWishlist(item);
       await loadWishlistItems(); // Reload to get updated list
+       updateWishlistState(); 
       Get.snackbar(
         'Success',
         'Item added to wishlist',
@@ -90,5 +96,31 @@ class WishlistController extends GetxController {
       throw Exception('Failed to add item to wishlist');
     }
   }
-
+// Add this to your WishlistController class
+void synchronizeWishlist() async {
+  if (currentUserEmail != null && currentUserEmail!.isNotEmpty) {
+    // Only reload if we're not already loading
+    if (!isLoading.value) {
+      await loadWishlistItems();
+    }
+  }
+}
+Future<bool> checkProductInWishlistRealtime(String productId) async {
+  if (currentUserEmail == null || currentUserEmail!.isEmpty) {
+    return false;
+  }
+  
+  try {
+    // Try to get the latest data from server first
+    final items = await wishlistRemoteDataSource.getWishlistItems(currentUserEmail!);
+    // Update our local copy
+    wishlistItems.value = items;
+    // Return if product is in wishlist
+    return items.any((item) => item.productId == productId);
+  } catch (e) {
+    print('Error checking product in wishlist: $e');
+    // Fall back to local cache if server check fails
+    return wishlistItems.any((item) => item.productId == productId);
+  }
+}
 }
