@@ -213,7 +213,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<void> sendCodeToEmail(String email) async {
     // Use your server's IP address here instead of localhost.
-    final url = Uri.parse('$baseUrl/api/forgot-password');
+    final url = Uri.parse('$baseUrl/forgot-password');
     final response = await client.post(
       url,
       headers: {'Content-Type': 'application/json'},
