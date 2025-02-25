@@ -11,7 +11,7 @@ abstract class CartItemDataSource {
 
 class CartItemDataSourceImpl implements CartItemDataSource {
   final http.Client client;
-  final String baseUrl = 'http://192.168.0.104:3000/api';
+  final String baseUrl = 'http://192.168.142.9:3000/api';
 
   CartItemDataSourceImpl({required this.client});
 
@@ -37,12 +37,13 @@ class CartItemDataSourceImpl implements CartItemDataSource {
   Future<List<CartItem>> getCartItems(String userId) async {
     try {
       final response = await client.get(
-        Uri.parse('$baseUrl/cart-items?userId=$userId'),
+        Uri.parse('$baseUrl/cart?userId=$userId'),
       );
       if (response.statusCode == 200) {
-        return (json.decode(response.body) as List)
-            .map((item) => CartItem.fromJson(item))
-            .toList();
+        final Map<String, dynamic> data = json.decode(response.body);
+        // Access the 'items' key to get the list of cart items
+        final List<dynamic> items = data['items']; // Change this line
+        return items.map((item) => CartItem.fromJson(item)).toList();
       } else {
         throw Exception('Failed to get cart items');
       }
@@ -56,7 +57,7 @@ class CartItemDataSourceImpl implements CartItemDataSource {
       String id, int quantity, double totalPrice) async {
     try {
       final response = await client.put(
-        Uri.parse('$baseUrl/cart-items/$id'),
+        Uri.parse('$baseUrl/cart/$id'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'quantity': quantity,
@@ -77,7 +78,7 @@ class CartItemDataSourceImpl implements CartItemDataSource {
   Future<void> deleteCartItem(String id) async {
     try {
       final response = await client.delete(
-        Uri.parse('$baseUrl/cart-items/$id'),
+        Uri.parse('$baseUrl/cart/$id'),
       );
       if (response.statusCode != 204) {
         throw Exception('Failed to delete cart item');

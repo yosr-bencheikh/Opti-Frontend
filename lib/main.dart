@@ -10,6 +10,7 @@ import 'package:opti_app/Presentation/UI/Screens/Auth/stores_screen.dart';
 
 import 'package:opti_app/Presentation/UI/Screens/Auth/wishList.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/WelcomePage.dart';
+import 'package:opti_app/Presentation/controllers/auth_controller.dart';
 import 'package:opti_app/data/repositories/cart_item_repository_impl.dart';
 import 'package:opti_app/Presentation/controllers/cart_item_controller.dart';
 import 'package:opti_app/Presentation/controllers/navigation_controller.dart';
@@ -49,6 +50,8 @@ Future<void> main() async {
 
   final authRepository = AuthRepositoryImpl(authRemoteDataSource);
   Get.put<AuthRepository>(authRepository);
+  Get.put<AuthController>(
+      AuthController(authRepository: authRepository, prefs: prefs));
 
   final opticienRemoteDataSource = OpticienRemoteDataSourceImpl(client: client);
   Get.put<OpticienRemoteDataSource>(opticienRemoteDataSource);

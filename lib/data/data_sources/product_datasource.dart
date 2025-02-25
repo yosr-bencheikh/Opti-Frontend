@@ -6,7 +6,7 @@ import 'package:http_parser/http_parser.dart';
 import 'package:opti_app/domain/entities/product_entity.dart';
 
 class ProductDatasource {
-  final String baseUrl = 'http://192.168.0.104:3000/api/products';
+  final String baseUrl = 'http://192.168.142.9:3000/api/products';
 
   Future<List<Product>> getProducts() async {
     try {
@@ -50,7 +50,7 @@ class ProductDatasource {
 
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('http://192.168.0.104:3000/upload'),
+        Uri.parse('http://192.168.1.22:3000/upload'),
       );
 
       var multipartFile = await http.MultipartFile.fromPath(

@@ -14,6 +14,12 @@ class CartItemController extends GetxController {
     required this.repository,
     required this.productRepository,
   });
+  @override
+  void onInit() {
+    super.onInit();
+    print('CartItemController initialized');
+    // Debug log
+  }
 
   /// Création d'un article dans le panier
   Future<void> createCartItem({
@@ -52,13 +58,25 @@ class CartItemController extends GetxController {
 
   Future<void> loadCartItems(String userId) async {
     try {
+      print('Loading cart items for user: $userId'); // Debug log
       isLoading(true);
+
       final items = await repository.getCartItems(userId);
+      print('Received ${items.length} items from repository'); // Debug log
+
       cartItems.assignAll(items);
+      print('Cart items assigned to controller'); // Debug log
     } catch (e) {
-      Get.snackbar('Error', 'Failed to load cart items');
+      print('Error in loadCartItems: $e'); // Debug log
+      Get.snackbar(
+        'Error',
+        'Failed to load cart items: ${e.toString()}',
+        duration: Duration(seconds: 3),
+        snackPosition: SnackPosition.BOTTOM,
+      );
     } finally {
       isLoading(false);
+      print('Loading state set to false'); // Debug log
     }
   }
 
@@ -74,7 +92,7 @@ class CartItemController extends GetxController {
   Future<String?> getProductImage(String productId) async {
     try {
       final product = await productRepository.getProductById(productId);
-      return product.imageUrl;
+      return product.image;
     } catch (e) {
       return null;
     }
@@ -86,13 +104,20 @@ class CartItemController extends GetxController {
       isLoading(true);
       final updatedItem =
           await repository.updateCartItem(id, quantity, totalPrice);
+
+      // If no exception is thrown, update the local list
       final index = cartItems.indexWhere((item) => item.id == id);
       if (index != -1) {
         cartItems[index] = updatedItem;
         cartItems.refresh();
+        // Show success message if everything went well
+        Get.snackbar('Success', 'Item updated successfully');
       }
     } catch (e) {
-      Get.snackbar('Error', 'Failed to update item');
+      // Print/log the real error
+      print('Error in updateCartItem: $e');
+      // Show the real error in the UI if desired
+      Get.snackbar('Error', 'Failed to update item: $e');
     } finally {
       isLoading(false);
     }
@@ -103,9 +128,13 @@ class CartItemController extends GetxController {
       isLoading(true);
       await repository.deleteCartItem(id);
       cartItems.removeWhere((item) => item.id == id);
+
+      // If we get here, no exception was thrown
       Get.snackbar('Success', 'Item removed from cart');
     } catch (e) {
-      Get.snackbar('Error', 'Failed to remove item');
+      // Print/log the real error
+      print('Error in deleteCartItem: $e');
+      Get.snackbar('Error', 'Failed to remove item: $e');
     } finally {
       isLoading(false);
     }

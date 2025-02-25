@@ -25,7 +25,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   final http.Client client;
 
   // Use your server's IP and port (make sure this is accessible from your phone)
-  final String baseUrl = 'http://192.168.0.104:3000/api';
+  final String baseUrl = 'http://192.168.142.9:3000/api';
 
   static String? verifiedEmail; // Made static
   static String? verificationCode;
@@ -213,7 +213,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<void> sendCodeToEmail(String email) async {
     // Use your server's IP address here instead of localhost.
-    final url = Uri.parse('$baseUrl/api/forgot-password');
+    final url = Uri.parse('$baseUrl/forgot-password');
     final response = await client.post(
       url,
       headers: {'Content-Type': 'application/json'},

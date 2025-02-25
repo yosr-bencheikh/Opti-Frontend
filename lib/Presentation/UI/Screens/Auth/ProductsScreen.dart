@@ -234,10 +234,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     DataCell(
                       ClipRRect(
                         borderRadius: BorderRadius.circular(6),
-                        child: product.imageUrl != null &&
-                                product.imageUrl!.isNotEmpty
+                        child: product.image != null &&
+                                product.image!.isNotEmpty
                             ? Image.network(
-                                product.imageUrl!,
+                                product.image!,
                                 width: 50,
                                 height: 50,
                                 fit: BoxFit.cover,
@@ -343,7 +343,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
       couleur: '',
       prix: 0,
       quantiteStock: 0,
-      imageUrl: '',
+      image: '',
       typeVerre: '',
     );
 
@@ -485,10 +485,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
                               _imageFile!,
                               fit: BoxFit.cover,
                             )
-                          : (product.imageUrl != null &&
-                                  product.imageUrl!.isNotEmpty
+                          : (product.image != null &&
+                                  product.image!.isNotEmpty
                               ? Image.network(
-                                  product.imageUrl!,
+                                  product.image!,
                                   fit: BoxFit.cover,
                                   errorBuilder: (context, error, stackTrace) {
                                     return const Icon(Icons.error);
@@ -508,10 +508,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
                             setState(() {
                               _imageFile = File(pickedFile.path);
                             });
-                            final imageUrl = await productController
+                            final image = await productController
                                 .uploadImage(_imageFile!);
-                            if (imageUrl != null) {
-                              product.imageUrl = imageUrl;
+                            if (image != null) {
+                              product.image = image;
                             }
                           }
                         },

@@ -1,5 +1,5 @@
 class Product {
-   String? id;
+  String? id;
   String name;
   String description;
   String category;
@@ -7,7 +7,7 @@ class Product {
   String couleur;
   double prix;
   int quantiteStock;
-  String? imageUrl;
+  String image;
   String? typeVerre;
 
   Product({
@@ -19,7 +19,7 @@ class Product {
     required this.couleur,
     required this.prix,
     required this.quantiteStock,
-    this.imageUrl,
+    this.image = "",
     this.typeVerre,
   });
 
@@ -33,7 +33,7 @@ class Product {
       couleur: json['couleur'],
       prix: json['prix'].toDouble(),
       quantiteStock: json['quantite_stock'],
-      imageUrl: json['image'],
+      image: json['image'],
       typeVerre: json['type_verre'],
     );
   }
@@ -47,7 +47,7 @@ class Product {
       'couleur': couleur,
       'prix': prix,
       'quantite_stock': quantiteStock,
-      'image': imageUrl,
+      'image': image,
       'type_verre': typeVerre,
     };
   }
@@ -61,7 +61,7 @@ class Product {
     String? couleur,
     double? prix,
     int? quantiteStock,
-    String? imageUrl,
+    String? image,
     String? typeVerre,
   }) {
     return Product(
@@ -73,7 +73,7 @@ class Product {
       couleur: couleur ?? this.couleur,
       prix: prix ?? this.prix,
       quantiteStock: quantiteStock ?? this.quantiteStock,
-      imageUrl: imageUrl ?? this.imageUrl,
+      image: image ?? this.image,
       typeVerre: typeVerre ?? this.typeVerre,
     );
   }

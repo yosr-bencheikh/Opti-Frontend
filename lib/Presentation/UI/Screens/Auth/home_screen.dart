@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:opti_app/Presentation/UI/Screens/Auth/cart_screen.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/favourite_screen.dart';
-import 'package:opti_app/Presentation/UI/Screens/Auth/product_details_screen';
+import 'package:opti_app/Presentation/UI/Screens/Auth/optician_product_screen.dart';
+import 'package:opti_app/Presentation/UI/Screens/Auth/product_details_screen.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/wishList.dart';
 import 'package:opti_app/Presentation/controllers/auth_controller.dart';
+import 'package:opti_app/Presentation/controllers/cart_item_controller.dart';
 import 'package:opti_app/Presentation/controllers/navigation_controller.dart';
 import 'package:opti_app/Presentation/controllers/opticien_controller.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
+import 'package:opti_app/domain/entities/product_entity.dart';
 import 'package:opti_app/domain/entities/user.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:opti_app/presentation/widgets/product_dialog.dart';
 
 class HomeScreen extends GetView<AuthController> {
   final PageController _pageController = PageController(viewportFraction: 0.9);
@@ -115,7 +118,7 @@ class HomeScreen extends GetView<AuthController> {
                   icon: const Icon(Icons.shopping_cart_outlined,
                       color: Colors.black87),
                   onPressed: () {
-                    Get.to(() => Wishlist());
+                    Get.to(() => CartScreen());
                   },
                 ),
               ],
@@ -258,6 +261,7 @@ class HomeScreen extends GetView<AuthController> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Image section remains the same
                         Container(
                           height: 98,
                           decoration: BoxDecoration(
@@ -265,13 +269,13 @@ class HomeScreen extends GetView<AuthController> {
                                 top: Radius.circular(12)),
                             color: Colors.grey[200],
                           ),
-                          child: product.imageUrl != null &&
-                                  product.imageUrl!.isNotEmpty
+                          child: product.image != null &&
+                                  product.image!.isNotEmpty
                               ? ClipRRect(
                                   borderRadius: const BorderRadius.vertical(
                                       top: Radius.circular(12)),
                                   child: Image.network(
-                                    product.imageUrl!,
+                                    product.image!,
                                     fit: BoxFit.cover,
                                   ),
                                 )
@@ -337,6 +341,7 @@ class HomeScreen extends GetView<AuthController> {
                                   ),
                                 ],
                               ),
+                              // Fixed shopping cart button
                               Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
@@ -346,12 +351,13 @@ class HomeScreen extends GetView<AuthController> {
                                         Icons.shopping_cart_outlined,
                                         color: Colors.black87),
                                     onPressed: () {
-                                      // Show the product dialog
-                                      showDialog(
-                                        context: context,
-                                        builder: (context) =>
-                                            ProductDialog(product: product),
-                                      );
+                                      if (product.id == null ||
+                                          product.id!.isEmpty) {
+                                        Get.snackbar(
+                                            'Error', 'Invalid product data');
+                                        return;
+                                      }
+                                      showProductDialog(context, product);
                                     },
                                   ),
                                 ],
@@ -433,7 +439,9 @@ class HomeScreen extends GetView<AuthController> {
                   ), // Assuming a description property
                   trailing: ElevatedButton(
                     onPressed: () {
-                      // Navigate to the optician's products or details
+                      // Navigate to the OpticianProductsScreen and pass the optician ID
+                      Get.to(() =>
+                          OpticianProductsScreen(opticianId: optician.id));
                     },
                     child: const Text('View Products'),
                   ),
@@ -462,4 +470,134 @@ class HomeScreen extends GetView<AuthController> {
           onTap: navigationController.changePage,
         ));
   }
+}
+
+Future<void> showProductDialog(BuildContext context, Product product) async {
+  // Reactive quantity variable
+  final RxInt quantity = 1.obs;
+  final CartItemController cartController = Get.find<CartItemController>();
+  final AuthController authController = Get.find<AuthController>();
+
+  // Function to add the product to the cart
+  Future<void> _addToCart() async {
+    final userId = authController.currentUserId.value;
+    if (userId.isEmpty) {
+      Get.snackbar('Error', 'Please log in to add items to cart',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white);
+      return;
+    }
+
+    if (product.id?.isEmpty ?? true) {
+      Get.snackbar('Error', 'Invalid product information',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white);
+      return;
+    }
+
+    final totalPrice = quantity.value * product.prix;
+
+    try {
+      await cartController.createCartItem(
+        userId: userId,
+        productId: product.id!,
+        quantity: quantity.value,
+        totalPrice: totalPrice,
+      );
+      Navigator.of(context).pop(); // Close the dialog
+      Get.snackbar('Success', '${product.name} added to cart',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white);
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to add item to cart: ${e.toString()}',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white);
+    }
+  }
+
+  // Show the dialog
+  showDialog(
+    context: context,
+    builder: (BuildContext dialogContext) {
+      return AlertDialog(
+        title: Text(product.name),
+        content: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.8,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    product.image ?? '',
+                    height: 100,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      height: 100,
+                      color: Colors.grey[200],
+                      child: const Icon(Icons.image),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Price: \$${product.prix.toStringAsFixed(2)}',
+                  style: const TextStyle(fontSize: 16),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.remove),
+                      onPressed: () {
+                        if (quantity.value > 1) {
+                          quantity.value--; // Decrease quantity
+                        }
+                      },
+                    ),
+                    Obx(() => Text(
+                          '${quantity.value}',
+                          style: const TextStyle(fontSize: 20),
+                        )),
+                    IconButton(
+                      icon: const Icon(Icons.add),
+                      onPressed: () {
+                        quantity.value++; // Increase quantity
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Obx(() => Text(
+                      'Total: \$${(quantity.value * product.prix).toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    )),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: _addToCart,
+            child: const Text('Add to Cart'),
+          ),
+        ],
+      );
+    },
+  );
 }

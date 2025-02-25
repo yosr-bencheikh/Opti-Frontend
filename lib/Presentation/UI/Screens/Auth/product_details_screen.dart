@@ -22,12 +22,12 @@ class ProductDetailsScreen extends GetView<ProductController> {
                 decoration: BoxDecoration(
                   color: Colors.grey[200],
                 ),
-                child: product.imageUrl != null && product.imageUrl!.isNotEmpty
+                child: product.image != null && product.image!.isNotEmpty
                     ? Container(
                         width: 50, // Full width
                         height: 50, // Fixed height
                         child: Image.network(
-                          product.imageUrl!,
+                          product.image!,
                           fit: BoxFit.cover,
                         ),
                       )
@@ -257,7 +257,8 @@ class ProductDetailsScreen extends GetView<ProductController> {
             child: ElevatedButton(
               onPressed: () {},
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.pink[80],                padding: EdgeInsets.symmetric(vertical: 16),
+                backgroundColor: Colors.pink[80],               
+                 padding: EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
