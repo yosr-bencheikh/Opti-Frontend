@@ -4,14 +4,17 @@ import 'package:opti_app/Presentation/UI/Screens/Auth/cart_screen.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/favourite_screen.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/optician_product_screen.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/product_details_screen.dart';
-import 'package:opti_app/Presentation/UI/Screens/Auth/wishList.dart';
+
+import 'package:opti_app/Presentation/UI/screens/auth/wishlist_page.dart';
 import 'package:opti_app/Presentation/controllers/auth_controller.dart';
 import 'package:opti_app/Presentation/controllers/cart_item_controller.dart';
 import 'package:opti_app/Presentation/controllers/navigation_controller.dart';
 import 'package:opti_app/Presentation/controllers/opticien_controller.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
 import 'package:opti_app/domain/entities/product_entity.dart';
+import 'package:opti_app/Presentation/controllers/wishlist_controller.dart';
 import 'package:opti_app/domain/entities/user.dart';
+import 'package:opti_app/domain/entities/wishlist_item.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeScreen extends GetView<AuthController> {
@@ -20,15 +23,13 @@ class HomeScreen extends GetView<AuthController> {
   final NavigationController navigationController = Get.find();
   final OpticienController opticienController = Get.find();
   final ProductController productController = Get.find();
-
+  final RxMap<String, bool> _favorites = <String, bool>{}.obs;
+  final WishlistController wishlistController = Get.find();
   @override
   Widget build(BuildContext context) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (controller.currentUser == null) {
-        final userEmail = Get.find<SharedPreferences>().getString('userEmail');
-        if (userEmail != null && userEmail.isNotEmpty) {
-          controller.loadUserData(userEmail);
-        }
+      if (controller.currentUser?.email != null) {
+        wishlistController.initUser(controller.currentUser!.email);
       }
     });
 
@@ -107,18 +108,24 @@ class HomeScreen extends GetView<AuthController> {
                     ],
                   ),
                 ),
-                IconButton(
-                  icon:
-                      const Icon(Icons.favorite_border, color: Colors.black87),
-                  onPressed: () {
-                    Get.to(() => FavouriteScreen());
-                  },
-                ),
+                
                 IconButton(
                   icon: const Icon(Icons.shopping_cart_outlined,
                       color: Colors.black87),
                   onPressed: () {
                     Get.to(() => CartScreen());
+                  },
+                ),
+                IconButton(
+                  icon:
+                      const Icon(Icons.favorite_border, color: Colors.black87),
+                  onPressed: () {
+                    final userEmail = controller.currentUser?.email;
+                    if (userEmail != null) {
+                      Get.to(() => WishlistPage(userEmail: userEmail));
+                    } else {
+                      Get.snackbar('Error', 'Please log in first');
+                    }
                   },
                 ),
               ],
@@ -360,6 +367,59 @@ class HomeScreen extends GetView<AuthController> {
                                       showProductDialog(context, product);
                                     },
                                   ),
+                                    Obx(() {
+                                  final isInWishlist = wishlistController
+                                      .isProductInWishlist(product.id!);
+                                  return IconButton(
+                                    icon: Icon(
+                                      isInWishlist
+                                          ? Icons.favorite
+                                          : Icons.favorite_border,
+                                      color: isInWishlist
+                                          ? const Color.fromARGB(255, 112, 66, 62)
+                                          : Colors.black87,
+                                    ),
+                                    onPressed: () async {
+                                      final userEmail =
+                                          controller.currentUser?.email;
+                                      if (userEmail == null) {
+                                        Get.snackbar(
+                                            'Error', 'Please log in first');
+                                        return;
+                                      }
+
+                                      try {
+                                        if (isInWishlist) {
+                                          final wishlistItem =
+                                              wishlistController
+                                                  .getWishlistItemByProductId(
+                                                      product.id!);
+                                          if (wishlistItem != null) {
+                                            await wishlistController
+                                                .removeFromWishlist(
+                                                    wishlistItem.id);
+                                          }
+                                        } else {
+                                          final wishlistItem = WishlistItem(
+                                            id: '', // Générer un ID unique si nécessaire
+                                            product: product,
+                                            userId: userEmail,
+                                            productId: product.id!,
+                                          );
+                                          await wishlistController
+                                              .addToWishlist(wishlistItem);
+                                        }
+                                      } catch (e) {
+                                        Get.snackbar(
+                                          'Error',
+                                          'Failed to update wishlist',
+                                          backgroundColor: Colors.red[100],
+                                          colorText: Colors.red[900],
+                                        );
+                                      }
+                                    },
+                                  );
+                                })
                                 ],
                               ),
                             ],
@@ -368,6 +428,7 @@ class HomeScreen extends GetView<AuthController> {
                       ],
                     ),
                   ),
+                  
                 );
               },
             );

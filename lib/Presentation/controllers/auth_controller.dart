@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:opti_app/Presentation/controllers/product_controller.dart';
 import 'package:opti_app/Presentation/utils/SecureStorage.dart';
 import 'package:opti_app/Presentation/utils/jwt_utils.dart';
 import 'package:opti_app/data/models/user_model.dart';
@@ -20,6 +21,8 @@ import 'package:http/http.dart' as http;
 class AuthController extends GetxController {
   final AuthRepository authRepository;
   final SharedPreferences prefs;
+  final ProductController productController = Get.find();
+  List<bool> favorites = [];
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: ['email', 'profile'],
     serverClientId:
@@ -32,6 +35,7 @@ class AuthController extends GetxController {
   var currentUserId = ''.obs;
   final Rx<User?> _currentUser = Rx<User?>(null);
   var authToken = ''.obs;
+  final RxString error = ''.obs;
 
   User? get currentUser => _currentUser.value;
   set currentUser(User? value) => _currentUser.value = value;
@@ -46,6 +50,10 @@ class AuthController extends GetxController {
   void onInit() {
     super.onInit();
     loadUserFromPrefs();
+    favorites = List.generate(productController.products.length, (index) => false);
+  }
+   void toggleFavorite(int index) {
+    favorites[index] = !favorites[index];
   }
 
   void handleAuthenticationChanged(bool loggedIn) {

@@ -1,4 +1,5 @@
 import 'package:opti_app/data/data_sources/product_datasource.dart';
+import 'package:opti_app/domain/entities/Opticien.dart';
 import 'package:opti_app/domain/entities/product_entity.dart';
 import 'dart:io';
 import 'package:opti_app/domain/repositories/product_repository.dart';
@@ -29,5 +30,9 @@ class ProductRepositoryImpl implements ProductRepository {
 
   Future<Product> getProductById(String productId) async {
     return await dataSource.getProductById(productId);
+  }
+
+  Future<List<Opticien>> getOpticiens() async {
+    return await dataSource.getOpticiens();
   }
 }

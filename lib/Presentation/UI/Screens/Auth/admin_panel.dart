@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/ProductsScreen.dart';
+import 'package:opti_app/Presentation/UI/screens/auth/UsersScreen.dart';
 
 class AdminPanelApp extends StatelessWidget {
   const AdminPanelApp({super.key});
@@ -385,85 +386,6 @@ class NavigationDrawer extends StatelessWidget {
   }
 }
 
-class UsersScreen extends StatelessWidget {
-  final List<Map<String, dynamic>> users = List.generate(
-    10,
-    (index) => {
-      'id': index + 1,
-      'name': 'User ${index + 1}',
-      'email': 'user${index + 1}@example.com',
-      'role': index % 2 == 0 ? 'Admin' : 'User',
-      'status': index % 3 == 0 ? 'Active' : 'Inactive',
-    },
-  );
-
-  UsersScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: EdgeInsets.symmetric(vertical: 20, horizontal: 100),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Users',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          SizedBox(height: 20),
-          Card(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: DataTable(
-                columns: [
-                  DataColumn(label: Text('ID')),
-                  DataColumn(label: Text('Name')),
-                  DataColumn(label: Text('Email')),
-                  DataColumn(label: Text('Role')),
-                  DataColumn(label: Text('Status')),
-                  DataColumn(label: Text('Actions')),
-                ],
-                rows: users.map((user) {
-                  return DataRow(cells: [
-                    DataCell(Text('#${user['id']}')),
-                    DataCell(Text(user['name'])),
-                    DataCell(Text(user['email'])),
-                    DataCell(Text(user['role'])),
-                    DataCell(
-                      Chip(
-                        label: Text(user['status']),
-                        backgroundColor: user['status'] == 'Active'
-                            ? Colors.green[100]
-                            : Colors.grey[300],
-                      ),
-                    ),
-                    DataCell(Row(
-                      children: [
-                        IconButton(
-                          icon: Icon(Icons.edit),
-                          onPressed: () {
-                            showDialog(
-                              context: context,
-                              builder: (context) => EditUserDialog(user: {}),
-                            );
-                          },
-                        ),
-                        IconButton(
-                          icon: Icon(Icons.delete),
-                          onPressed: () {},
-                        ),
-                      ],
-                    )),
-                  ]);
-                }).toList(),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 
 

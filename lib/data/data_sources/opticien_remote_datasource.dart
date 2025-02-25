@@ -13,7 +13,7 @@ class OpticienRemoteDataSourceImpl implements OpticienRemoteDataSource {
   OpticienRemoteDataSourceImpl({
     required this.client,
     // Make sure this matches your actual server URL and port
-    this.baseUrl = 'http://192.168.142.9:3000',
+    this.baseUrl = 'http://localhost:3000',
   });
 
   @override
