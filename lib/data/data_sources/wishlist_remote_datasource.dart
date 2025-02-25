@@ -84,12 +84,21 @@ Future<void> addToWishlist(WishlistItem item) async {
   }
 }
 
-  @override
-  Future<void> removeFromWishlist(String itemId) async {
-    try {
-      await dio.delete('$baseUrl/$itemId');
-    } catch (e) {
-      throw Exception('Failed to remove item from wishlist: $e');
+@override
+Future<void> removeFromWishlist(String itemId) async {
+  try {
+    final response = await dio.delete('$baseUrl/$itemId');
+    
+    if (response.statusCode == 404) {
+      throw Exception('Item not found in wishlist');
     }
+    
+    if (response.statusCode != 200) {
+      throw Exception('Failed to remove item from wishlist: ${response.statusMessage}');
+    }
+  } catch (e) {
+    print('Error in removeFromWishlist: $e');
+    throw Exception('Failed to remove item from wishlist: $e');
   }
+}
 }

@@ -17,29 +17,61 @@ import 'package:opti_app/domain/entities/user.dart';
 import 'package:opti_app/domain/entities/wishlist_item.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class HomeScreen extends GetView<AuthController> {
+class HomeScreen extends StatefulWidget {
+  @override
+  _HomeScreenState createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
   final PageController _pageController = PageController(viewportFraction: 0.9);
   final RxInt _currentPage = 0.obs;
-  final NavigationController navigationController = Get.find();
-  final OpticienController opticienController = Get.find();
-  final ProductController productController = Get.find();
+  
+  // Controllers
+  late NavigationController navigationController;
+  late OpticienController opticienController;
+  late ProductController productController;
+  late WishlistController wishlistController;
+  late AuthController authController;
+  
   final RxMap<String, bool> _favorites = <String, bool>{}.obs;
-  final WishlistController wishlistController = Get.find();
+
+  @override
+void initState() {
+  super.initState();
+  // Initialize controllers
+  navigationController = Get.find<NavigationController>();
+  opticienController = Get.find<OpticienController>();
+  productController = Get.find<ProductController>();
+  wishlistController = Get.find<WishlistController>();
+  authController = Get.find<AuthController>();
+  
+  // Use a post-frame callback to ensure everything is initialized
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    // Reset and load all products
+    productController.showAllProducts();
+    
+    // Initialize user for wishlist if logged in
+    if (authController.currentUser?.email != null) {
+      wishlistController.initUser(authController.currentUser!.email);
+    }
+  });
+}
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (controller.currentUser?.email != null) {
-        wishlistController.initUser(controller.currentUser!.email);
-      }
-    });
-
     return Scaffold(
       body: Obx(() {
-        if (controller.isLoading.value) {
+        if (authController.isLoading.value) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final user = controller.currentUser;
+        final user = authController.currentUser;
         if (user == null) {
           return const Center(child: Text('Loading user data...'));
         }
@@ -78,7 +110,7 @@ class HomeScreen extends GetView<AuthController> {
             child: Row(
               children: [
                 Obx(() {
-                  final imageUrl = controller.currentUser?.imageUrl ?? '';
+                  final imageUrl = authController.currentUser?.imageUrl ?? '';
                   return CircleAvatar(
                     radius: 30,
                     backgroundColor: Colors.grey[200],
@@ -120,7 +152,7 @@ class HomeScreen extends GetView<AuthController> {
                   icon:
                       const Icon(Icons.favorite_border, color: Colors.black87),
                   onPressed: () {
-                    final userEmail = controller.currentUser?.email;
+                    final userEmail = authController.currentUser?.email;
                     if (userEmail != null) {
                       Get.to(() => WishlistPage(userEmail: userEmail));
                     } else {
@@ -367,59 +399,59 @@ class HomeScreen extends GetView<AuthController> {
                                       showProductDialog(context, product);
                                     },
                                   ),
-                                    Obx(() {
-                                  final isInWishlist = wishlistController
-                                      .isProductInWishlist(product.id!);
-                                  return IconButton(
-                                    icon: Icon(
-                                      isInWishlist
-                                          ? Icons.favorite
-                                          : Icons.favorite_border,
-                                      color: isInWishlist
-                                          ? const Color.fromARGB(255, 112, 66, 62)
-                                          : Colors.black87,
-                                    ),
-                                    onPressed: () async {
-                                      final userEmail =
-                                          controller.currentUser?.email;
-                                      if (userEmail == null) {
-                                        Get.snackbar(
-                                            'Error', 'Please log in first');
-                                        return;
-                                      }
-
-                                      try {
-                                        if (isInWishlist) {
-                                          final wishlistItem =
-                                              wishlistController
-                                                  .getWishlistItemByProductId(
-                                                      product.id!);
-                                          if (wishlistItem != null) {
-                                            await wishlistController
-                                                .removeFromWishlist(
-                                                    wishlistItem.id);
-                                          }
-                                        } else {
-                                          final wishlistItem = WishlistItem(
-                                            id: '', // Générer un ID unique si nécessaire
-                                            product: product,
-                                            userId: userEmail,
-                                            productId: product.id!,
-                                          );
-                                          await wishlistController
-                                              .addToWishlist(wishlistItem);
+                                  Obx(() {
+                                    final isInWishlist = wishlistController
+                                        .isProductInWishlist(product.id!);
+                                    return IconButton(
+                                      icon: Icon(
+                                        isInWishlist
+                                            ? Icons.favorite
+                                            : Icons.favorite_border,
+                                        color: isInWishlist
+                                            ? const Color.fromARGB(255, 112, 66, 62)
+                                            : Colors.black87,
+                                      ),
+                                      onPressed: () async {
+                                        final userEmail =
+                                            authController.currentUser?.email;
+                                        if (userEmail == null) {
+                                          Get.snackbar(
+                                              'Error', 'Please log in first');
+                                          return;
                                         }
-                                      } catch (e) {
-                                        Get.snackbar(
-                                          'Error',
-                                          'Failed to update wishlist',
-                                          backgroundColor: Colors.red[100],
-                                          colorText: Colors.red[900],
-                                        );
-                                      }
-                                    },
-                                  );
-                                })
+
+                                        try {
+                                          if (isInWishlist) {
+                                            final wishlistItem =
+                                                wishlistController
+                                                    .getWishlistItemByProductId(
+                                                        product.id!);
+                                            if (wishlistItem != null) {
+                                              await wishlistController
+                                                  .removeFromWishlist(
+                                                      wishlistItem.id);
+                                            }
+                                          } else {
+                                            final wishlistItem = WishlistItem(
+                                              id: '', // Générer un ID unique si nécessaire
+                                              product: product,
+                                              userId: userEmail,
+                                              productId: product.id!,
+                                            );
+                                            await wishlistController
+                                                .addToWishlist(wishlistItem);
+                                          }
+                                        } catch (e) {
+                                          Get.snackbar(
+                                            'Error',
+                                            'Failed to update wishlist',
+                                            backgroundColor: Colors.red[100],
+                                            colorText: Colors.red[900],
+                                          );
+                                        }
+                                      },
+                                    );
+                                  })
                                 ],
                               ),
                             ],
@@ -428,7 +460,6 @@ class HomeScreen extends GetView<AuthController> {
                       ],
                     ),
                   ),
-                  
                 );
               },
             );
@@ -491,13 +522,12 @@ class HomeScreen extends GetView<AuthController> {
                     child: const Icon(Icons.store, color: Colors.grey),
                   ),
                   title: Text(
-                    optician
-                        .nom, // Assuming the Optician entity has a name property
+                    optician.nom,
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   subtitle: Text(
                     optician.email,
-                  ), // Assuming a description property
+                  ),
                   trailing: ElevatedButton(
                     onPressed: () {
                       // Navigate to the OpticianProductsScreen and pass the optician ID

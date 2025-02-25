@@ -4,43 +4,67 @@ import 'package:opti_app/Presentation/controllers/product_controller.dart';
 import 'package:opti_app/domain/entities/product_entity.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class OpticianProductsScreen extends StatelessWidget {
+class OpticianProductsScreen extends StatefulWidget {
   final String opticianId;
-  final ProductController productController = Get.find();
 
   OpticianProductsScreen({required this.opticianId});
 
+  @override
+  _OpticianProductsScreenState createState() => _OpticianProductsScreenState();
+}
+
+class _OpticianProductsScreenState extends State<OpticianProductsScreen> {
+  final ProductController productController = Get.find();
+
+@override
+void initState() {
+  super.initState();
+  // Use a post-frame callback to ensure the widget is fully built before updating state
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    // Load products for THIS optician (not all products)
+    productController.loadProductsByOptician(widget.opticianId);
+  });
+}
+  
   @override
   Widget build(BuildContext context) {
     // Load products for the selected optician
     // productController.loadProductsByOptician(opticianId);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Eyewear Collection',
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF2A2A2A),
-          ),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search, color: Color(0xFF2A2A2A)),
-            onPressed: () {
-              // Implement search functionality
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.filter_list, color: Color(0xFF2A2A2A)),
-            onPressed: () {
-              // Implement filter functionality
-            },
-          ),
-        ],
-      ),
+    appBar: AppBar(
+  leading: IconButton(
+    icon: const Icon(Icons.arrow_back, color: Color(0xFF2A2A2A)),
+    onPressed: () {
+      // Reset product list to show all products
+      Get.find<ProductController>().showAllProducts();
+      Get.back();
+    },
+  ),
+  title: Text(
+    'Eyewear Collection',
+    style: GoogleFonts.poppins(
+      fontWeight: FontWeight.w600,
+      color: const Color(0xFF2A2A2A),
+    ),
+  ),
+  backgroundColor: Colors.white,
+  elevation: 0,
+  actions: [
+    IconButton(
+      icon: const Icon(Icons.search, color: Color(0xFF2A2A2A)),
+      onPressed: () {
+        // Implement search functionality
+      },
+    ),
+    IconButton(
+      icon: const Icon(Icons.filter_list, color: Color(0xFF2A2A2A)),
+      onPressed: () {
+        // Implement filter functionality
+      },
+    ),
+  ],
+),
       body: Column(
         children: [
           _buildCategorySelector(),
@@ -167,32 +191,37 @@ class OpticianProductsScreen extends StatelessWidget {
         ));
   }
 
-  Widget _buildProductList() {
-    return Obx(() {
-      final products = productController.products;
-
-      if (products.isEmpty) {
-        return Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.shopping_bag_outlined,
-                size: 60,
-                color: Colors.grey.shade400,
+Widget _buildProductList() {
+  return Obx(() {
+    // Check loading state first
+    if (productController.isLoading) {
+      return Center(child: CircularProgressIndicator());
+    }
+    
+    final products = productController.products;
+    
+    if (products.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.shopping_bag_outlined,
+              size: 60,
+              color: Colors.grey.shade400,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No products available',
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                color: Colors.grey.shade600,
               ),
-              const SizedBox(height: 16),
-              Text(
-                'No products available',
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  color: Colors.grey.shade600,
-                ),
-              ),
-            ],
-          ),
-        );
-      }
+            ),
+          ],
+        ),
+      );
+    }
 
       return GridView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 16),
