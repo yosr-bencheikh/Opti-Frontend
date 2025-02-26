@@ -49,6 +49,9 @@ dependencies:
   google_fonts: ^6.1.0
   animate_do: ^4.1.1
   dio: ^5.4.0
+  model_viewer_plus: ^1.7.0
+  intl: ^0.17.0
+
   cached_network_image: ^3.3.1
 
 dev_dependencies:
@@ -80,6 +83,8 @@ flutter:
     - assets/images/b1.jpeg
     - assets/images/b2.jpeg
     - assets/images/
+    - assets/models/scene.gltf
+    - assets/models/scene.bin
 
 
   #   - images/a_dot_ham.jpeg

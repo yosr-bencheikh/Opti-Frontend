@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:model_viewer_plus/model_viewer_plus.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/cart_screen.dart';
-import 'package:opti_app/Presentation/UI/Screens/Auth/favourite_screen.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/optician_product_screen.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/product_details_screen.dart';
 
@@ -15,7 +15,6 @@ import 'package:opti_app/domain/entities/product_entity.dart';
 import 'package:opti_app/Presentation/controllers/wishlist_controller.dart';
 import 'package:opti_app/domain/entities/user.dart';
 import 'package:opti_app/domain/entities/wishlist_item.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -34,28 +33,31 @@ class _HomeScreenState extends State<HomeScreen> {
   late AuthController authController;
   
   final RxMap<String, bool> _favorites = <String, bool>{}.obs;
+  
+  // Track which products should display 3D models
+  final RxMap<String, bool> _show3DModel = <String, bool>{}.obs;
 
   @override
-void initState() {
-  super.initState();
-  // Initialize controllers
-  navigationController = Get.find<NavigationController>();
-  opticienController = Get.find<OpticienController>();
-  productController = Get.find<ProductController>();
-  wishlistController = Get.find<WishlistController>();
-  authController = Get.find<AuthController>();
-  
-  // Use a post-frame callback to ensure everything is initialized
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    // Reset and load all products
-    productController.showAllProducts();
+  void initState() {
+    super.initState();
+    // Initialize controllers
+    navigationController = Get.find<NavigationController>();
+    opticienController = Get.find<OpticienController>();
+    productController = Get.find<ProductController>();
+    wishlistController = Get.find<WishlistController>();
+    authController = Get.find<AuthController>();
     
-    // Initialize user for wishlist if logged in
-    if (authController.currentUser?.email != null) {
-      wishlistController.initUser(authController.currentUser!.email);
-    }
-  });
-}
+    // Use a post-frame callback to ensure everything is initialized
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Reset and load all products
+      productController.showAllProducts();
+      
+      // Initialize user for wishlist if logged in
+      if (authController.currentUser?.email != null) {
+        wishlistController.initUser(authController.currentUser!.email);
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -196,15 +198,17 @@ void initState() {
   }
 
   Widget _buildPromotionalBanner() {
-    return Column(
-      children: [
-        SizedBox(
-          height: 180,
-          child: PageView.builder(
-            controller: _pageController,
-            onPageChanged: (index) => _currentPage.value = index,
-            itemCount: 3,
-            itemBuilder: (context, index) {
+  return Column(
+    children: [
+      SizedBox(
+        height: 180,
+        child: PageView.builder(
+          controller: _pageController,
+          onPageChanged: (index) => _currentPage.value = index,
+          itemCount: 3,
+          itemBuilder: (context, index) {
+            if (index == 1) {
+              // Display 3D model for the second promotional banner
               return Container(
                 margin: const EdgeInsets.symmetric(horizontal: 5.0),
                 decoration: BoxDecoration(
@@ -212,36 +216,52 @@ void initState() {
                   color: Colors.blue[100 * (index + 1)],
                 ),
                 child: Center(
+                  child: ModelViewer(
+                    src: 'assets/models/scene.gltf', // Path to your 3D model
+                    alt: 'A 3D model of glasses',
+                    ar: true,
+                    autoRotate: true,
+                    cameraControls: true,
+                  ),
+                ),
+              );
+            } else {
+              // Regular promotional banners
+              return Container(
+                margin: const EdgeInsets.symmetric(horizontal: 5.0),
+              
+                child: Center(
                   child: Text(
                     'Promotion ${index + 1}',
                     style: const TextStyle(fontSize: 24.0),
                   ),
                 ),
               );
-            },
-          ),
+            }
+          },
         ),
-        const SizedBox(height: 8),
-        Obx(() => Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                3,
-                (index) => Container(
-                  width: 8,
-                  height: 8,
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: _currentPage.value == index
-                        ? Colors.blue
-                        : Colors.grey[300],
-                  ),
+      ),
+      const SizedBox(height: 8),
+      Obx(() => Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(
+              3,
+              (index) => Container(
+                width: 8,
+                height: 8,
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _currentPage.value == index
+                      ? Colors.blue
+                      : Colors.grey[300],
                 ),
               ),
-            )),
-      ],
-    );
-  }
+            ),
+          )),
+    ],
+  );
+}
 
   Widget _buildPopularProducts() {
     return Column(
@@ -278,6 +298,11 @@ void initState() {
               itemCount: productController.products.length,
               itemBuilder: (context, index) {
                 final product = productController.products[index];
+                // Check if product is glasses (you might want to add a category field to your product model)
+                final bool isGlasses = product.name.toLowerCase().contains('glasses') || 
+                                      product.name.toLowerCase().contains('lunettes') ||
+                                      (product.category?.toLowerCase() == 'glasses');
+                
                 return GestureDetector(
                   onTap: () {
                     Get.to(() => ProductDetailsScreen(product: product));
@@ -300,26 +325,91 @@ void initState() {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Image section remains the same
-                        Container(
-                          height: 98,
-                          decoration: BoxDecoration(
-                            borderRadius: const BorderRadius.vertical(
-                                top: Radius.circular(12)),
-                            color: Colors.grey[200],
-                          ),
-                          child: product.image != null &&
-                                  product.image!.isNotEmpty
-                              ? ClipRRect(
-                                  borderRadius: const BorderRadius.vertical(
-                                      top: Radius.circular(12)),
-                                  child: Image.network(
-                                    product.image!,
-                                    fit: BoxFit.cover,
+                        // Product image or 3D model
+                        Stack(
+                          children: [
+                            Container(
+                              height: 98,
+                              decoration: BoxDecoration(
+                                borderRadius: const BorderRadius.vertical(
+                                    top: Radius.circular(12)),
+                                color: Colors.grey[200],
+                              ),
+                              // Standard image display if not showing 3D model
+                              child: Obx(() => _show3DModel[product.id] != true
+                                ? (product.image != null &&
+                                        product.image!.isNotEmpty
+                                    ? ClipRRect(
+                                        borderRadius: const BorderRadius.vertical(
+                                            top: Radius.circular(12)),
+                                        child: Image.network(
+                                          product.image!,
+                                          fit: BoxFit.cover,
+                                          width: double.infinity,
+                                          height: 98,
+                                        ),
+                                      )
+                                    : const Center(
+                                        child: Icon(Icons.shopping_bag, size: 40)))
+                                : isGlasses 
+                                  ? ClipRRect(
+                                      borderRadius: const BorderRadius.vertical(
+                                          top: Radius.circular(12)),
+                                      child: SizedBox(
+                                        width: double.infinity,
+                                        height: 98,
+                                        child: ModelViewer(
+                                          src: 'assets/models/scene.gltf',
+                                          autoRotate: true,
+                                          cameraControls: false,
+                                          ar: false,
+                                          disableZoom: true,
+                                          backgroundColor: Colors.grey[200]!.withOpacity(0.5),
+                                        ),
+                                      ),
+                                    )
+                                  : ClipRRect(
+                                      borderRadius: const BorderRadius.vertical(
+                                          top: Radius.circular(12)),
+                                      child: Image.network(
+                                        product.image!,
+                                        fit: BoxFit.cover,
+                                        width: double.infinity,
+                                        height: 98,
+                                      ),
+                                    ),
+                              ),
+                            ),
+                            // 3D button overlay (only for glasses products)
+                            if (isGlasses)
+                              Positioned(
+                                top: 5,
+                                right: 5,
+                                child: GestureDetector(
+                                // Before trying to use product.id as a key, check if it's null
+onTap: () {
+  if (product.id != null) {
+    final currentValue = _show3DModel[product.id!] ?? false;
+    _show3DModel[product.id!] = !currentValue;
+  }
+},
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.5),
+                                      borderRadius: BorderRadius.circular(5),
+                                    ),
+                                    child: Obx(() => Icon(
+                                      _show3DModel[product.id] == true
+                                          ? Icons.view_in_ar_outlined
+                                          : Icons.view_in_ar,
+                                      color: Colors.white,
+                                      size: 18,
+                                    )),
                                   ),
-                                )
-                              : const Center(
-                                  child: Icon(Icons.shopping_bag, size: 40)),
+                                ),
+                              ),
+                          ],
                         ),
                         Padding(
                           padding: const EdgeInsets.all(8),
@@ -380,7 +470,7 @@ void initState() {
                                   ),
                                 ],
                               ),
-                              // Fixed shopping cart button
+                              // Shopping cart and favorite buttons
                               Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
@@ -563,6 +653,7 @@ void initState() {
   }
 }
 
+// Product dialog implementation remains unchanged
 Future<void> showProductDialog(BuildContext context, Product product) async {
   // Reactive quantity variable
   final RxInt quantity = 1.obs;
@@ -624,19 +715,32 @@ Future<void> showProductDialog(BuildContext context, Product product) async {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.network(
-                    product.image ?? '',
-                    height: 100,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
+                // Check if product is glasses to show 3D model in dialog
+                product.name.toLowerCase().contains('glasses') || 
+                product.name.toLowerCase().contains('lunettes') ||
+                (product.category?.toLowerCase() == 'glasses')
+                ? SizedBox(
+                    height: 150,
+                    child: ModelViewer(
+                      src: 'assets/models/scene.gltf',
+                      ar: false,
+                      autoRotate: true,
+                      cameraControls: true,
+                    ),
+                  )
+                : ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      product.image ?? '',
                       height: 100,
-                      color: Colors.grey[200],
-                      child: const Icon(Icons.image),
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        height: 100,
+                        color: Colors.grey[200],
+                        child: const Icon(Icons.image),
+                      ),
                     ),
                   ),
-                ),
                 const SizedBox(height: 16),
                 Text(
                   'Price: \$${product.prix.toStringAsFixed(2)}',
@@ -691,4 +795,28 @@ Future<void> showProductDialog(BuildContext context, Product product) async {
       );
     },
   );
+}
+
+// 3D Glasses Page - Separate page for full screen view
+
+
+class Glasses3DPage extends StatelessWidget {
+  final String modelPath;
+
+  const Glasses3DPage({Key? key, this.modelPath = 'assets/models/scene.gltf'}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("3D Glasses View")),
+      body: Center(
+        child: ModelViewer(
+          src: modelPath,
+          ar: true,
+          autoRotate: true,
+          cameraControls: true,
+        ),
+      ),
+    );
+  }
 }

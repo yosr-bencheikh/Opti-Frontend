@@ -1,22 +1,22 @@
 import 'package:equatable/equatable.dart';
 
 class User extends Equatable {
-   String nom;
+  String nom;
   final String prenom;
-   String email;
+  String email;
   final String date;
   final String region;
   final String genre;
   final String password;
   final String phone;
-  String imageUrl; // Changed from final to non-final
+  String imageUrl;
   final String refreshTokens;
-  final String status; // Add status property
+  String status;
 
   User({
     required this.nom,
     required this.prenom,
-     required this.email,
+    required this.email,
     required this.date,
     required this.region,
     required this.genre,
@@ -24,39 +24,39 @@ class User extends Equatable {
     required this.phone,
     this.imageUrl = '',
     this.refreshTokens = '',
-    this.status = 'Inactive', // Default value for status
+    this.status = 'Inactive',
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      nom: json['nom'],
-      prenom: json['prenom'],
-      email: json['email'],
-      date: json['date'],
-      region: json['region'],
-      genre: json['genre'],
+      nom: json['nom'] ?? '',
+      prenom: json['prenom'] ?? '',
+      email: json['email'] ?? '',
+      date: json['date'] ?? '',
+      region: json['region'] ?? '',
+      genre: json['genre'] ?? '',
       password: json['password'] ?? '',
-      phone: json['phone'],
+      phone: json['phone'] ?? '',
       imageUrl: json['imageUrl'] ?? '',
-      refreshTokens: json['refreshTokens'] ?? '',
-      status: json['status'] ?? 'Inactive', // Include status in the factory
+      refreshTokens: json['refreshToken'] ?? '',
+      status: json['status'] ?? 'Inactive',
     );
   }
 
   @override
   List<Object?> get props => [
-        nom,
-        prenom,
-        email,
-        date,
-        region,
-        genre,
-        password,
-        phone,
-        imageUrl,
-        refreshTokens,
-        status, // Include status in props
-      ];
+    nom,
+    prenom,
+    email,
+    date,
+    region,
+    genre,
+    password,
+    phone,
+    imageUrl,
+    refreshTokens,
+    status,
+  ];
 
   Map<String, dynamic> toJson() {
     return {
@@ -69,8 +69,8 @@ class User extends Equatable {
       'password': password,
       'phone': phone,
       'imageUrl': imageUrl,
-      'refreshTokens': refreshTokens,
-      'status': status, // Include status in toJson
+      'refreshToken': refreshTokens,
+      'status': status,
     };
   }
 }
