@@ -2,7 +2,7 @@ import 'dart:convert';
 
 class Cart {
   final String userId;
-  final List<String> items; // List of CartItem IDs
+  final List<String> items; 
   final DateTime createdAt;
   final DateTime updatedAt;
 
