@@ -7,10 +7,14 @@ import 'package:opti_app/Presentation/UI/Screens/Auth/favourite_screen.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/home_screen.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/splash_screen.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/stores_screen.dart';
+import 'package:opti_app/Presentation/UI/screens/auth/CheckoutScreen.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/WelcomePage.dart';
+import 'package:opti_app/Presentation/controllers/OrderController.dart';
 import 'package:opti_app/Presentation/controllers/auth_controller.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/wishlist_page.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
+import 'package:opti_app/data/data_sources/OrderDataSource.dart';
+import 'package:opti_app/data/repositories/OrderRepositoryImpl.dart';
 import 'package:opti_app/data/repositories/cart_item_repository_impl.dart';
 import 'package:opti_app/Presentation/controllers/cart_item_controller.dart';
 import 'package:opti_app/Presentation/controllers/navigation_controller.dart';
@@ -20,9 +24,11 @@ import 'package:opti_app/data/data_sources/opticien_remote_datasource.dart';
 import 'package:opti_app/data/data_sources/product_datasource.dart';
 import 'package:opti_app/data/repositories/opticien_repository_impl.dart';
 import 'package:opti_app/data/repositories/product_repository_impl.dart';
+import 'package:opti_app/domain/repositories/OrderRepository.dart';
 
 import 'package:opti_app/domain/repositories/opticien_repository.dart';
 import 'package:opti_app/domain/repositories/product_repository.dart';
+import 'package:opti_app/domain/usecases/OrderUseCase.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/SignUpScreen.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/admin_panel.dart';
@@ -44,65 +50,84 @@ Future<void> main() async {
   final prefs = await SharedPreferences.getInstance();
   Get.put<SharedPreferences>(prefs);
 
-  // Register dependencies
+  // Register HTTP Client
   final client = http.Client();
   Get.put<http.Client>(client);
-    final productRemoteDataSource = ProductDatasource(); // Use the correct class name
-  Get.put<ProductDatasource>(productRemoteDataSource); // Register the correct type
+
+  // Initialize Dio for Wishlist
+  final dio = Dio();
+  Get.put<Dio>(dio);
+
+  // ✅ Register NavigationController before running the app
+  Get.put<NavigationController>(NavigationController());
+
+  // Product Repository & Controller
+  final productRemoteDataSource = ProductDatasource();
+  Get.put<ProductDatasource>(productRemoteDataSource);
+
   final productRepository = ProductRepositoryImpl(dataSource: productRemoteDataSource);
-  Get.put<ProductRepository>(productRepository);
   Get.put<ProductRepositoryImpl>(productRepository);
-Get.put<ProductController>( ProductController(productRepository ));
+  Get.put<ProductRepository>(productRepository);
+
+  Get.put<ProductController>(ProductController(productRepository));
+
+  // Auth Repository & Controller
   final authRemoteDataSource = AuthRemoteDataSourceImpl(client: client);
   Get.put<AuthRemoteDataSource>(authRemoteDataSource);
 
   final authRepository = AuthRepositoryImpl(authRemoteDataSource);
   Get.put<AuthRepository>(authRepository);
-  Get.put<AuthController>(
-      AuthController(authRepository: authRepository, prefs: prefs));
 
+  Get.put<AuthController>(AuthController(authRepository: authRepository, prefs: prefs));
+
+  // Opticien Repository & Controller
   final opticienRemoteDataSource = OpticienRemoteDataSourceImpl(client: client);
   Get.put<OpticienRemoteDataSource>(opticienRemoteDataSource);
 
   final opticienRepository = OpticienRepositoryImpl(opticienRemoteDataSource);
   Get.put<OpticienRepository>(opticienRepository);
 
-  // Register the OpticienController
-  Get.put<OpticienController>(
-      OpticienController(opticienRepository: opticienRepository));
+  Get.put<OpticienController>(OpticienController(opticienRepository: opticienRepository));
 
-  // Product Repository
-
-
-  // Cart Item Repository
+  // Cart Item Repository & Controller
   final cartItemRemoteDataSource = CartItemDataSourceImpl(client: client);
   Get.put<CartItemDataSource>(cartItemRemoteDataSource);
+
   final cartItemRepository = CartItemRepositoryImpl(dataSource: cartItemRemoteDataSource);
   Get.put<CartItemRepository>(cartItemRepository);
 
-  // Cart Item Controller
-  Get.put<CartItemController>(CartItemController(
-      repository: cartItemRepository, productRepository: productRepository));
+  Get.put<CartItemController>(CartItemController(repository: cartItemRepository, productRepository: productRepository));
 
-  // Wishlist Remote DataSource
-  final dio = Dio(); // Initialisez Dio
+  // Wishlist Repository & Controller
   final wishlistRemoteDataSource = WishlistRemoteDataSourceImpl(dio);
   Get.put<WishlistRemoteDataSource>(wishlistRemoteDataSource);
 
-  // ignore: non_constant_identifier_names
-
-
-
-  // Wishlist Controller
   Get.put<WishlistController>(WishlistController(wishlistRemoteDataSource));
 
-  final sendCodeToEmail = SendCodeToEmail(Get.find());
-  Get.put(sendCodeToEmail);
-  Get.put(NavigationController(), permanent: true);
+  // Order Use Cases & Repository
+  final orderDataSource = OrderDataSourceImpl(client: http.Client());
+  Get.put<OrderDataSource>(orderDataSource);
+
+  final orderRepository = OrderRepositoryImpl(dataSource: orderDataSource);
+  Get.put<OrderRepository>(orderRepository);
+
+  Get.put<CreateOrderUseCase>(CreateOrderUseCase(orderRepository));
+  Get.put<GetUserOrdersUseCase>(GetUserOrdersUseCase(orderRepository));
+  Get.put<GetOrderByIdUseCase>(GetOrderByIdUseCase(orderRepository));
+  Get.put<UpdateOrderStatusUseCase>(UpdateOrderStatusUseCase(orderRepository));
+  Get.put<CancelOrderUseCase>(CancelOrderUseCase(orderRepository));
+
+  // Register OrderController using lazyPut
+Get.put<OrderController>(OrderController(
+  createOrderUseCase: Get.find<CreateOrderUseCase>(),
+  getUserOrdersUseCase: Get.find<GetUserOrdersUseCase>(),
+  getOrderByIdUseCase: Get.find<GetOrderByIdUseCase>(),
+  updateOrderStatusUseCase: Get.find<UpdateOrderStatusUseCase>(),
+  cancelOrderUseCase: Get.find<CancelOrderUseCase>(),
+));
 
   runApp(const MyApp());
 }
-
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -186,6 +211,11 @@ class MyApp extends StatelessWidget {
         GetPage(
           name: '/cart',
           page: () => CartScreen(),
+          binding: AuthBinding(),
+        ),
+        GetPage(
+          name: '/order',
+          page: () => CheckoutScreen(),
           binding: AuthBinding(),
         ),
                   
