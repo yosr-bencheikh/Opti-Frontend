@@ -1,5 +1,8 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:opti_app/Presentation/controllers/OrderController.dart';
 import 'package:opti_app/Presentation/controllers/cart_item_controller.dart';
 import 'package:opti_app/Presentation/controllers/auth_controller.dart';
@@ -10,7 +13,7 @@ class CheckoutScreen extends StatelessWidget {
   final AuthController authController = Get.find();
   final OrderController orderController = Get.find();
   final ProductController productController = Get.find();
-
+  late final GoogleMapController? mapController;
   // Variables pour les adresses et méthodes de paiement
   final List<String> addresses = [
     '12 Rue de Paris, 75001 Paris',
@@ -69,10 +72,12 @@ Widget build(BuildContext context) {
             const SizedBox(height: 8),
             _buildCartItemsList(),
             const SizedBox(height: 24),
-            _buildSectionTitle('Adresse de livraison'),
-            const SizedBox(height: 8),
-            _buildAddressSelector(context), // Pass context here
-            const SizedBox(height: 24),
+              _buildSectionTitle('Adresse de livraison'),
+              const SizedBox(height: 8),
+              _buildAddressSelector(context),
+              const SizedBox(height: 16),
+              _buildMap(), // Ajoutez la carte ici
+              const SizedBox(height: 24),
             _buildSectionTitle('Méthode de paiement'),
             const SizedBox(height: 8),
             _buildPaymentMethodSelector(),
@@ -107,6 +112,84 @@ Widget build(BuildContext context) {
     }),
   );
 }
+ Widget _buildMap() {
+    return Container(
+      height: 200, // Hauteur de la carte
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: FutureBuilder<Set<Marker>>(
+          future: _buildMarkers(), // Appel asynchrone pour obtenir les marqueurs
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            } else if (snapshot.hasError) {
+              return Center(child: Text('Erreur: ${snapshot.error}'));
+            } else {
+              return GoogleMap(
+                initialCameraPosition: const CameraPosition(
+                  target: LatLng(48.8566, 2.3522), // Paris par défaut
+                  zoom: 12,
+                ),
+                markers: snapshot.data ?? {}, // Utilisez les marqueurs récupérés
+                onMapCreated: (controller) {
+                  // Vous pouvez stocker le contrôleur si nécessaire
+                },
+              );
+            }
+          },
+        ),
+      ),
+    );
+  }
+
+  // Méthode pour créer des marqueurs de manière asynchrone
+  Future<Set<Marker>> _buildMarkers() async {
+    final selectedAddress = orderController.selectedAddress.value;
+    if (selectedAddress.isEmpty) {
+      return {};
+    }
+
+    // Convertir l'adresse en coordonnées (latitude, longitude)
+    final coordinates = await geocodeAddress(selectedAddress);
+    if (coordinates == null) {
+      return {};
+    }
+
+    return {
+      Marker(
+        markerId: const MarkerId('selectedAddress'),
+        position: coordinates,
+        infoWindow: InfoWindow(title: selectedAddress),
+      ),
+    };
+  }
+Future<LatLng?> geocodeAddress(String address) async {
+  final String apiKey = 'VOTRE_CLE_API';
+  final String url =
+      'https://maps.googleapis.com/maps/api/geocode/json?address=$address&key=$apiKey';
+
+  final response = await http.get(Uri.parse(url));
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    if (data['results'].isNotEmpty) {
+      final location = data['results'][0]['geometry']['location'];
+      return LatLng(location['lat'], location['lng']);
+    }
+  }
+  return null;
+}
+  // Méthode pour créer des marqueurs
+  
 
   Widget _buildSectionTitle(String title) {
     return Text(

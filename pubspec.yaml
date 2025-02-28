@@ -51,6 +51,7 @@ dependencies:
   dio: ^5.4.0
   model_viewer_plus: ^1.7.0
   intl: ^0.17.0
+  google_maps_flutter: ^2.2.0
 
   cached_network_image: ^3.3.1
 
