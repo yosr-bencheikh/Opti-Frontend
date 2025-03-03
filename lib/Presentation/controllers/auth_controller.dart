@@ -8,7 +8,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
-import 'package:opti_app/Presentation/utils/SecureStorage.dart';
+
 import 'package:opti_app/Presentation/utils/jwt_utils.dart';
 import 'package:opti_app/data/models/user_model.dart';
 import 'package:opti_app/domain/entities/user.dart';

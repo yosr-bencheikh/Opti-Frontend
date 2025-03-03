@@ -1,34 +1,112 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:opti_app/Presentation/UI/Screens/Auth/camera_screen.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/home_screen.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
 import 'package:opti_app/domain/entities/product_entity.dart';
 import 'package:opti_app/domain/entities/wishlist_item.dart';
 import 'package:opti_app/Presentation/controllers/auth_controller.dart';
 import 'package:opti_app/Presentation/controllers/wishlist_controller.dart';
-import 'package:opti_app/presentation/widgets/product_dialog.dart';
+import 'package:opti_app/Presentation/UI/Screens/Auth/reviews_screen.dart';
 
 class ProductDetailsScreen extends GetView<ProductController> {
   final Product product;
 
   ProductDetailsScreen({Key? key, required this.product}) : super(key: key);
 
+  // These should be moved to a controller or initialized properly
   final RxBool isInWishlist = false.obs;
   final RxBool isCheckingWishlist = true.obs;
+  final RxBool showArAnimation =
+      true.obs; // Pour contrôler l'animation du bouton AR
 
   @override
-  void initState() {
-    _checkWishlistStatus();
+  Widget build(BuildContext context) {
+    // Move initialization logic to initState or onInit of a StatefulWidget
+    // or to a controller's onInit
+    _initializeData();
 
-    final AuthController authController = Get.find<AuthController>();
-    final WishlistController wishlistController =
-        Get.find<WishlistController>();
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: CustomScrollView(
+        slivers: [
+          // Sticky Image Section avec bouton AR superposé
+          SliverAppBar(
+            expandedHeight: 300, // Height of the image when expanded
+            pinned: true, // Make the image stick to the top
+            flexibleSpace: Stack(
+              children: [
+                FlexibleSpaceBar(
+                  background: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                    ),
+                    child: product.image.isNotEmpty
+                        ? Container(
+                            width: double.infinity,
+                            height: 300,
+                            child: Image.network(
+                              product.image,
+                              fit: BoxFit.cover,
+                            ),
+                          )
+                        : Container(
+                            width: double.infinity,
+                            height: 300,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[200],
+                            ),
+                            child: Icon(Icons.image,
+                                size: 100, color: Colors.grey),
+                          ),
+                  ),
+                ),
+                // Bouton AR en superposition
+                Positioned(
+                  right: 16,
+                  bottom: 16,
+                  child: _buildARButton(context),
+                ),
+              ],
+            ),
+          ),
+          // Scrollable Content
+          SliverToBoxAdapter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildProductInfo(),
+                _buildProductDescription(),
+                _buildProductSpecs(),
+              ],
+            ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: _buildBottomBar(),
+    );
+  }
 
-    if (authController.currentUser?.email != null) {
-      if (wishlistController.currentUserEmail !=
-          authController.currentUser!.email) {
-        wishlistController.initUser(authController.currentUser!.email);
+  void _initializeData() {
+    // Check if this has already been initialized to prevent multiple calls
+    if (isCheckingWishlist.value) {
+      _checkWishlistStatus();
+
+      final AuthController authController = Get.find<AuthController>();
+      final WishlistController wishlistController =
+          Get.find<WishlistController>();
+
+      if (authController.currentUser?.email != null) {
+        if (wishlistController.currentUserEmail !=
+            authController.currentUser!.email) {
+          wishlistController.initUser(authController.currentUser!.email);
+        }
       }
+
+      // Pour arrêter l'animation après quelques secondes
+      Future.delayed(const Duration(seconds: 5), () {
+        showArAnimation.value = false;
+      });
     }
   }
 
@@ -65,80 +143,64 @@ class ProductDetailsScreen extends GetView<ProductController> {
     isCheckingWishlist.value = false;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: CustomScrollView(
-        slivers: [
-          // Sticky Image Section
-          SliverAppBar(
-            expandedHeight: 300, // Height of the image when expanded
-            pinned: true, // Make the image stick to the top
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                ),
-                child: product.image != null && product.image!.isNotEmpty
-                    ? Container(
-                        width: 50, // Full width
-                        height: 50, // Fixed height
-                        child: Image.network(
-                          product.image!,
-                          fit: BoxFit.cover,
-                        ),
-                      )
-                    : Container(
-                        width: double.infinity, // Full width for placeholder
-                        height: 300, // Fixed height for placeholder
-                        decoration: BoxDecoration(
-                          color: Colors.grey[200],
-                        ),
-                        child: Icon(Icons.image, size: 100, color: Colors.grey),
-                      ),
+  // Nouveau widget pour le bouton AR avec animation
+  Widget _buildARButton(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 500),
+      transform: showArAnimation.value
+          ? Matrix4.identity()
+          : Matrix4.translationValues(0, -5, 0),
+      child: GestureDetector(
+        onTap: () {
+          _launchARExperience(context);
+        },
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.blue[600],
+            borderRadius: BorderRadius.circular(50),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.3),
+                blurRadius: 10,
+                spreadRadius: 2,
               ),
-            ),
+            ],
+            border: showArAnimation.value
+                ? Border.all(color: Colors.white, width: 2)
+                : null,
           ),
-          // Scrollable Content
-          SliverToBoxAdapter(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-              
-                _buildProductInfo(),
-                _buildProductDescription(),
-                _buildProductSpecs(),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.view_in_ar_rounded,
+                color: Colors.white,
+                size: 24,
+              ),
+              if (showArAnimation.value) ...[
+                const SizedBox(width: 8),
+                Text(
+                  "Essayez en AR",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ],
-            ),
+            ],
           ),
-        ],
-      ),
-      bottomNavigationBar: _buildBottomBar(),
-    );
-  }
-
-  Widget _buildAppBar(BuildContext context) {
-    return SliverAppBar(
-      expandedHeight: 50,
-      floating: false,
-      pinned: true,
-      backgroundColor: Colors.white,
-      elevation: 0,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back_rounded, color: Colors.black87),
-        onPressed: () => Get.back(),
-      ),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.share_outlined, color: Colors.black87),
-          onPressed: () {},
         ),
-      ],
+      ),
     );
   }
 
-
+  void _launchARExperience(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => CameraScreen()),
+    );
+  }
 
   Widget _buildProductInfo() {
     return Padding(
@@ -157,10 +219,10 @@ class ProductDetailsScreen extends GetView<ProductController> {
           const SizedBox(height: 8),
           Row(
             children: [
-              
               const SizedBox(width: 8),
-            _buildRatingSection(),
-              
+              _buildRatingSection(),
+            ],
+          ),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -192,7 +254,7 @@ class ProductDetailsScreen extends GetView<ProductController> {
           ),
         ],
       ),
-      ]));
+    );
   }
 
   Widget _buildProductDescription() {
@@ -211,7 +273,7 @@ class ProductDetailsScreen extends GetView<ProductController> {
           ),
           const SizedBox(height: 8),
           Text(
-            product.description ?? 'Aucune description disponible.',
+            product.description,
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey[700],
@@ -247,9 +309,9 @@ class ProductDetailsScreen extends GetView<ProductController> {
             ),
             child: Column(
               children: [
-                _buildSpecRow('Marque', product.marque ?? 'Non spécifié'),
+                _buildSpecRow('Marque', product.marque),
                 const Divider(),
-                _buildSpecRow('Catégorie', product.category ?? 'Non spécifié'),
+                _buildSpecRow('Catégorie', product.category),
                 const Divider(),
                 _buildSpecRow('Référence', product.id ?? 'Non spécifié'),
               ],
@@ -285,7 +347,8 @@ class ProductDetailsScreen extends GetView<ProductController> {
       ),
     );
   }
- // Rating Section
+
+  // Rating Section
   Widget _buildRatingSection() {
     return GestureDetector(
       onTap: () => Get.to(() => ReviewsScreen(product: product)),
@@ -300,7 +363,7 @@ class ProductDetailsScreen extends GetView<ProductController> {
             Icon(Icons.star, color: Colors.amber, size: 20),
             SizedBox(width: 4),
             Text(
-              '4.8',
+              ' ${product.averageRating.toStringAsFixed(1)}',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.amber[800],
@@ -308,7 +371,7 @@ class ProductDetailsScreen extends GetView<ProductController> {
             ),
             SizedBox(width: 4),
             Text(
-              '(25 reviews)',
+              ' (${product.totalReviews} reviews)',
               style: TextStyle(color: Colors.grey),
             ),
             Icon(Icons.chevron_right, color: Colors.grey, size: 20),
@@ -317,6 +380,7 @@ class ProductDetailsScreen extends GetView<ProductController> {
       ),
     );
   }
+
   Widget _buildBottomBar() {
     final WishlistController wishlistController =
         Get.find<WishlistController>();
@@ -360,15 +424,15 @@ class ProductDetailsScreen extends GetView<ProductController> {
                           .getWishlistItemByProductId(product.id!);
                       if (wishlistItem != null) {
                         await wishlistController
-                            .removeFromWishlist(wishlistItem.id);
+                            .removeFromWishlist(product.id!);
                         isInWishlist.value =
                             false; // Mettre à jour l'état local immédiatement
                       }
                     } else {
                       // Si produit n'est pas dans la liste de souhaits, l'ajouter
                       final wishlistItem = WishlistItem(
-                        id: '', // ID sera généré côté serveur
-                        product: product,
+                        // ID sera généré côté serveur
+
                         userId: userEmail,
                         productId: product.id!,
                       );
@@ -420,218 +484,5 @@ class ProductDetailsScreen extends GetView<ProductController> {
         ),
       );
     });
-  }
-}
-
-// Reviews Screen with Floating Dialog
-class ReviewsScreen extends StatelessWidget {
-  final Product product;
-
-  ReviewsScreen({required this.product});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Customer Reviews'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showReviewDialog(context),
-        child: Icon(Icons.edit),
-        backgroundColor: Colors.black,
-      ),
-      body: Column(
-        children: [
-          _buildOverallRating(),
-          Expanded(
-            child: ListView.builder(
-              padding: EdgeInsets.all(16),
-              itemCount: 25,
-              itemBuilder: (context, index) => _buildReviewItem(),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showReviewDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text("Write a Review"),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                decoration: InputDecoration(
-                  hintText: 'Share your experience...',
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.all(12),
-                ),
-                maxLines: 5,
-              ),
-              SizedBox(height: 16),
-              // Wrap the Row in a SingleChildScrollView
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal, // Enable horizontal scrolling
-                child: Row(
-                  children: [
-                    Text('Rating:'),
-                    SizedBox(width: 12),
-                    ...List.generate(
-                        5,
-                        (index) => IconButton(
-                              icon: Icon(
-                                Icons.star_border,
-                                color: Colors.amber,
-                                size: 32,
-                              ),
-                              onPressed: () {
-                                // Handle star rating selection
-                              },
-                            )),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              // Submit logic
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.black,
-            ),
-            child: Text('Submit'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOverallRating() {
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
-      ),
-      child: Row(
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '4.8',
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.amber[800],
-                ),
-              ),
-              Row(
-                children: List.generate(
-                    5,
-                    (index) => Icon(
-                          Icons.star,
-                          color: Colors.amber,
-                          size: 20,
-                        )),
-              ),
-              Text(
-                '25 reviews',
-                style: TextStyle(color: Colors.grey),
-              ),
-            ],
-          ),
-          SizedBox(width: 20),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                _buildRatingProgress('5', 0.8),
-                _buildRatingProgress('4', 0.15),
-                _buildRatingProgress('3', 0.05),
-                _buildRatingProgress('2', 0.0),
-                _buildRatingProgress('1', 0.0),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRatingProgress(String stars, double percentage) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Text(stars),
-          Icon(Icons.star, size: 16, color: Colors.amber),
-          SizedBox(width: 8),
-          Expanded(
-            child: LinearProgressIndicator(
-              value: percentage,
-              backgroundColor: Colors.grey[200],
-              color: Colors.amber,
-              minHeight: 6,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildReviewItem() {
-    return Card(
-      margin: EdgeInsets.only(bottom: 16),
-      elevation: 1,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: CircleAvatar(
-                backgroundImage: NetworkImage("https://i.pravatar.cc/50"),
-              ),
-              title: Text("John Doe"),
-              subtitle: Text("2 days ago"),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: List.generate(
-                    5,
-                    (index) => Icon(
-                          Icons.star,
-                          color: Colors.amber,
-                          size: 16,
-                        )),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                "Excellent product! The glasses are very comfortable and the quality is top-notch. Highly recommended!",
-                style: TextStyle(color: Colors.grey[700]),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }

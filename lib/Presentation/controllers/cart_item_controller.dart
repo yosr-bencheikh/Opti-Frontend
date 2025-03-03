@@ -2,7 +2,7 @@ import 'package:get/get.dart';
 import 'package:opti_app/data/repositories/cart_item_repository_impl.dart';
 import '../../domain/entities/Cart_item.dart';
 import '../../domain/repositories/product_repository.dart';
-import 'auth_controller.dart'; // Par exemple pour récupérer l'userId
+ 
 
 class CartItemController extends GetxController {
   final CartItemRepositoryImpl repository;

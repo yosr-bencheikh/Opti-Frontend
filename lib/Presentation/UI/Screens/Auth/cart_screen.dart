@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:http/http.dart';
+
 import 'package:opti_app/Presentation/UI/Screens/Auth/home_screen.dart';
 import 'package:opti_app/Presentation/controllers/navigation_controller.dart';
 import 'package:opti_app/Presentation/controllers/cart_item_controller.dart';
@@ -65,10 +65,8 @@ class CartScreen extends StatelessWidget {
 
   void _loadCartItems() {
     final userId = authController.currentUserId.value;
-    if (userId != null) {
-      cartController.loadCartItems(userId);
+    cartController.loadCartItems(userId);
     }
-  }
 
   Widget _buildCartItem(
     String id,
@@ -94,7 +92,7 @@ class CartScreen extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(8) ,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),

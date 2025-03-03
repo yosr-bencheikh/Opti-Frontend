@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:opti_app/Presentation/controllers/auth_controller.dart';
-import 'package:opti_app/core/constants/regions.dart';
 import 'package:opti_app/data/models/user_model.dart';
 import 'package:opti_app/domain/entities/user.dart';
 
@@ -237,6 +236,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
                   if (!value.contains('@')) {
                     return 'Veuillez entrer un email valide';
                   }
+                  return null;
                 },
               ),
               const SizedBox(height: 16),

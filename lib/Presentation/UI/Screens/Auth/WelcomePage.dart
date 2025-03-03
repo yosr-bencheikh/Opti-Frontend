@@ -16,9 +16,6 @@ class _WelcomePageState extends State<WelcomePage>
   late final AnimationController _buttonController;
   late final Animation<double> _fadeInAnimation;
   late final Animation<double> _buttonFadeAnimation;
-  late final Animation<Offset> _slideInTextAnimation;
-  late final Animation<double> _scaleButtonAnimation;
-  late final Animation<double> _zoomImageAnimation;
 
   late int _currentImageIndex;
   late PageController _pageController;
@@ -81,20 +78,8 @@ class _WelcomePageState extends State<WelcomePage>
       ),
     );
 
-    _slideInTextAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.5),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
 
-    _scaleButtonAnimation = Tween<double>(begin: 0.85, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.elasticOut),
-    );
 
-    _zoomImageAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
 
     // Start initial animations
     _controller.forward();

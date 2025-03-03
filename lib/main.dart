@@ -47,12 +47,15 @@ Future<void> main() async {
   // Register dependencies
   final client = http.Client();
   Get.put<http.Client>(client);
-    final productRemoteDataSource = ProductDatasource(); // Use the correct class name
-  Get.put<ProductDatasource>(productRemoteDataSource); // Register the correct type
-  final productRepository = ProductRepositoryImpl(dataSource: productRemoteDataSource);
+  final productRemoteDataSource =
+      ProductDatasource(); // Use the correct class name
+  Get.put<ProductDatasource>(
+      productRemoteDataSource); // Register the correct type
+  final productRepository =
+      ProductRepositoryImpl(dataSource: productRemoteDataSource);
   Get.put<ProductRepository>(productRepository);
   Get.put<ProductRepositoryImpl>(productRepository);
-Get.put<ProductController>( ProductController(productRepository ));
+  Get.put<ProductController>(ProductController(productRepository));
   final authRemoteDataSource = AuthRemoteDataSourceImpl(client: client);
   Get.put<AuthRemoteDataSource>(authRemoteDataSource);
 
@@ -73,11 +76,11 @@ Get.put<ProductController>( ProductController(productRepository ));
 
   // Product Repository
 
-
   // Cart Item Repository
   final cartItemRemoteDataSource = CartItemDataSourceImpl(client: client);
   Get.put<CartItemDataSource>(cartItemRemoteDataSource);
-  final cartItemRepository = CartItemRepositoryImpl(dataSource: cartItemRemoteDataSource);
+  final cartItemRepository =
+      CartItemRepositoryImpl(dataSource: cartItemRemoteDataSource);
   Get.put<CartItemRepository>(cartItemRepository);
 
   // Cart Item Controller
@@ -91,8 +94,6 @@ Get.put<ProductController>( ProductController(productRepository ));
 
   // ignore: non_constant_identifier_names
 
-
-
   // Wishlist Controller
   Get.put<WishlistController>(WishlistController(wishlistRemoteDataSource));
 
@@ -103,12 +104,14 @@ Get.put<ProductController>( ProductController(productRepository ));
   runApp(const MyApp());
 }
 
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
+      
       debugShowCheckedModeBanner: false,
       title: 'Opti App',
       theme: ThemeData(
@@ -178,17 +181,18 @@ class MyApp extends StatelessWidget {
           binding: AuthBinding(),
         ),
         GetPage(
-  name: '/wishlist',
-  page: () {
-    final userEmail = Get.arguments as String; // Récupérer l'email des arguments
-    return WishlistPage(userEmail: userEmail);
-  },),
+          name: '/wishlist',
+          page: () {
+            final userEmail =
+                Get.arguments as String; // Récupérer l'email des arguments
+            return WishlistPage(userEmail: userEmail);
+          },
+        ),
         GetPage(
           name: '/cart',
           page: () => CartScreen(),
           binding: AuthBinding(),
         ),
-                  
       ],
     );
   }

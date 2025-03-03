@@ -7,15 +7,20 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
-<<<<<<< HEAD
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.CALL_PHONE" />
     <queries>
       <provider android:authorities="com.facebook.katana.provider.PlatformProvider" />
+         <intent>
+            <action android:name="android.intent.action.DIAL" />
+            <data android:scheme="tel" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
 
     </queries>
-=======
-
->>>>>>> e9687c7217bee968b49f1992c6eef2008007e820
     <application
         android:usesCleartextTraffic="true"
         android:label="opti_app"

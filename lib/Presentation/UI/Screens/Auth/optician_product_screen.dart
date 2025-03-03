@@ -1,291 +1,517 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:opti_app/Presentation/UI/Screens/Auth/product_details_screen.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
-import 'package:opti_app/domain/entities/product_entity.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class OpticianProductsScreen extends StatelessWidget {
+class OpticianProductsScreen extends StatefulWidget {
   final String opticianId;
   final ProductController productController = Get.find();
 
   OpticianProductsScreen({required this.opticianId});
 
   @override
-  Widget build(BuildContext context) {
-    // Load products for the selected optician
-    // productController.loadProductsByOptician(opticianId);
+  _OpticianProductsScreenState createState() => _OpticianProductsScreenState();
+}
 
+class _OpticianProductsScreenState extends State<OpticianProductsScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  RangeValues _priceRange = RangeValues(0, 1000);
+  String? _selectedCategory;
+  String? _selectedTypeVerre;
+  String? _selectedMarque;
+
+  final List<String> categories = ['All', 'Sunglasses', 'Lenses', 'Frames'];
+  final List<String> typeVerres = [
+    'All',
+    'Single Vision',
+    'Bifocal',
+    'Progressive'
+  ];
+  final List<String> marques = [
+    'All',
+    'Ray-Ban',
+    'Oakley',
+    'Gucci',
+    'Prada',
+    'Versace'
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Load products for this optician
+    //widget.productController.fetchProductsByOptician(widget.opticianId);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<dynamic> _getFilteredProducts() {
+    return widget.productController.products.where((product) {
+      // Search filter
+      final searchMatch = _searchController.text.isEmpty ||
+          product.name
+              .toLowerCase()
+              .contains(_searchController.text.toLowerCase()) ||
+          product.marque
+              .toLowerCase()
+              .contains(_searchController.text.toLowerCase());
+
+      // Category filter
+      final categoryMatch = _selectedCategory == null ||
+          _selectedCategory == 'All' ||
+          product.category == _selectedCategory;
+
+      // Type verre filter
+      final typeVerreMatch = _selectedTypeVerre == null ||
+          _selectedTypeVerre == 'All' ||
+          product.typeVerre == _selectedTypeVerre;
+
+      // Marque filter
+      final marqueMatch = _selectedMarque == null ||
+          _selectedMarque == 'All' ||
+          product.marque == _selectedMarque;
+
+      // Price filter
+      final priceMatch =
+          product.prix >= _priceRange.start && product.prix <= _priceRange.end;
+
+      return searchMatch &&
+          categoryMatch &&
+          typeVerreMatch &&
+          marqueMatch &&
+          priceMatch;
+    }).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Eyewear Collection',
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF2A2A2A),
+          'Products Catalog',
+          style: GoogleFonts.montserrat(
+            fontWeight: FontWeight.bold,
           ),
         ),
         backgroundColor: Colors.white,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search, color: Color(0xFF2A2A2A)),
-            onPressed: () {
-              // Implement search functionality
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.filter_list, color: Color(0xFF2A2A2A)),
-            onPressed: () {
-              // Implement filter functionality
-            },
-          ),
-        ],
+        centerTitle: true,
+        iconTheme: IconThemeData(color: Colors.black87),
       ),
       body: Column(
         children: [
-          _buildCategorySelector(),
-          _buildFeaturedBanner(),
-          Expanded(child: _buildProductList()),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCategorySelector() {
-    final categories = [
-      {'name': 'Prescription', 'icon': Icons.visibility},
-      {'name': 'Sunglasses', 'icon': Icons.wb_sunny},
-      {'name': 'On Sale', 'icon': Icons.local_offer},
-    ];
-
-    return Container(
-      height: 100,
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: categories.length,
-        itemBuilder: (context, index) {
-          final category = categories[index];
-          return Container(
-            width: 100,
-            margin: const EdgeInsets.only(right: 12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF5F7FA),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
+          // Search bar
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Search by name or brand...',
+                prefixIcon: Icon(Icons.search, color: Colors.blue.shade700),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: Icon(Icons.clear),
+                        onPressed: () {
+                          setState(() {
+                            _searchController.clear();
+                          });
+                        },
+                      )
+                    : null,
+                filled: true,
+                fillColor: Colors.grey.shade100,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
                 ),
-              ],
-            ),
-            child: InkWell(
-              onTap: () {
-                // Handle category selection
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.blue.shade700, width: 1),
+                ),
+              ),
+              onChanged: (value) {
+                setState(() {});
               },
-              borderRadius: BorderRadius.circular(12),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    category['icon'] as IconData,
-                    color: const Color(0xFF4A80F0),
-                    size: 28,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    category['name'] as String,
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: const Color(0xFF2A2A2A),
-                    ),
-                  ),
-                ],
+            ),
+          ),
+
+          // Filters section
+          ExpansionTile(
+            title: Text(
+              'Filters',
+              style: GoogleFonts.montserrat(
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
               ),
             ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildFeaturedBanner() {
-    return Container(
-        height: 120,
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: const LinearGradient(
-            colors: [Color(0xFF4A80F0), Color(0xFF8A63E8)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: Stack(
-          children: [
-            Image.asset(
-              'assets/images/glasses_banner.avif', // Add this image to your assets
-              fit: BoxFit.cover,
-              width: double.infinity, // Ensure the image takes full width
-            ),
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'NEW COLLECTION',
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white.withOpacity(0.8),
-                      letterSpacing: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  const SizedBox(width: 20),
-                  Container(
-                    // Wrap the text in a Container for alignment
-                    alignment: Alignment.centerRight, // Align text to the left
-                    child: Text(
-                      'Up to 30% Off',
-                      style: GoogleFonts.poppins(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
+            leading: Icon(Icons.filter_list, color: Colors.blue.shade700),
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Price Range Slider
+                    Text(
+                      'Price Range',
+                      style: GoogleFonts.montserrat(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ));
-  }
+                    SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Text('\$${_priceRange.start.toInt()}'),
+                        Expanded(
+                          child: RangeSlider(
+                            values: _priceRange,
+                            min: 0,
+                            max: 1000,
+                            divisions: 20,
+                            activeColor: Colors.blue.shade700,
+                            inactiveColor: Colors.blue.shade100,
+                            labels: RangeLabels(
+                              '\$${_priceRange.start.toInt()}',
+                              '\$${_priceRange.end.toInt()}',
+                            ),
+                            onChanged: (values) {
+                              setState(() {
+                                _priceRange = values;
+                              });
+                            },
+                          ),
+                        ),
+                        Text('\$${_priceRange.end.toInt()}'),
+                      ],
+                    ),
+                    SizedBox(height: 16),
 
-  Widget _buildProductList() {
-    return Obx(() {
-      final products = productController.products;
+                    // Filter dropdowns
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildDropdown(
+                            'Category',
+                            categories,
+                            _selectedCategory,
+                            (value) {
+                              setState(() {
+                                _selectedCategory = value;
+                              });
+                            },
+                          ),
+                        ),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: _buildDropdown(
+                            'Lens Type',
+                            typeVerres,
+                            _selectedTypeVerre,
+                            (value) {
+                              setState(() {
+                                _selectedTypeVerre = value;
+                              });
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 12),
+                    _buildDropdown(
+                      'Brand',
+                      marques,
+                      _selectedMarque,
+                      (value) {
+                        setState(() {
+                          _selectedMarque = value;
+                        });
+                      },
+                    ),
+                    SizedBox(height: 16),
 
-      if (products.isEmpty) {
-        return Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.shopping_bag_outlined,
-                size: 60,
-                color: Colors.grey.shade400,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'No products available',
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  color: Colors.grey.shade600,
+                    // Reset filters button
+                    Center(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          setState(() {
+                            _searchController.clear();
+                            _selectedCategory = null;
+                            _selectedTypeVerre = null;
+                            _selectedMarque = null;
+                            _priceRange = RangeValues(0, 1000);
+                          });
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue.shade700,
+                          foregroundColor: Colors.white,
+                          minimumSize: Size(120, 36),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: Text('Reset Filters'),
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                  ],
                 ),
               ),
             ],
           ),
-        );
-      }
 
-      return GridView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          childAspectRatio: 0.75,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-        ),
-        itemCount: products.length,
-        itemBuilder: (context, index) {
-          final product = products[index];
-          return GestureDetector(
-            onTap: () {
-              // Navigate to product details
-            },
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    height: 140,
-                    decoration: BoxDecoration(
-                      borderRadius:
-                          const BorderRadius.vertical(top: Radius.circular(16)),
-                      image: DecorationImage(
-                        image: NetworkImage(product.image),
-                        fit: BoxFit.cover,
+          // Products List
+          Expanded(
+            child: Obx(() {
+              if (widget.productController.isLoading) {
+                return Center(child: CircularProgressIndicator());
+              } else if (widget.productController.products.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.inventory_2_outlined,
+                          size: 64, color: Colors.grey),
+                      SizedBox(height: 16),
+                      Text(
+                        'No products available',
+                        style: GoogleFonts.montserrat(
+                          fontSize: 16,
+                          color: Colors.grey.shade700,
+                        ),
                       ),
-                    ),
+                    ],
                   ),
-                  Padding(
-                    padding: const EdgeInsets.all(12),
+                );
+              } else {
+                final filteredProducts = _getFilteredProducts();
+                if (filteredProducts.isEmpty) {
+                  return Center(
                     child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.filter_list_off,
+                            size: 64, color: Colors.grey),
+                        SizedBox(height: 16),
+                        Text(
+                          'No products match your filters',
+                          style: GoogleFonts.montserrat(
+                            fontSize: 16,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return GridView.builder(
+                  padding: EdgeInsets.all(16),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 0.75,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                  ),
+                  itemCount: filteredProducts.length,
+                  itemBuilder: (context, index) {
+                    final product = filteredProducts[index];
+                    return _buildProductCard(product);
+                  },
+                );
+              }
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDropdown(String title, List<String> items, String? selectedValue,
+      Function(String?) onChanged) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: GoogleFonts.montserrat(
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+          ),
+        ),
+        SizedBox(height: 4),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: DropdownButtonFormField<String>(
+            decoration: InputDecoration(
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide.none,
+              ),
+            ),
+            value: selectedValue,
+            isExpanded: true,
+            hint: Text('Select ${title.toLowerCase()}'),
+            items: items.map((item) {
+              return DropdownMenuItem(
+                value: item,
+                child: Text(item),
+              );
+            }).toList(),
+            onChanged: onChanged,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProductCard(dynamic product) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          // Navigate to product details
+          Get.to(() => ProductDetailsScreen(product: product));
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Product Image
+            Expanded(
+              flex: 3,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    topRight: Radius.circular(12),
+                  ),
+                ),
+                width: double.infinity,
+                child: product.image != null
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(12),
+                          topRight: Radius.circular(12),
+                        ),
+                        child: Image.network(
+                          product.image,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Icon(
+                              Icons.image_not_supported_outlined,
+                              size: 40,
+                              color: Colors.grey.shade400,
+                            );
+                          },
+                        ),
+                      )
+                    : Icon(
+                        Icons.inventory_2_outlined,
+                        size: 40,
+                        color: Colors.grey.shade400,
+                      ),
+              ),
+            ),
+
+            // Product Info
+            Expanded(
+              flex: 2,
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          product.name,
-                          style: GoogleFonts.poppins(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                            color: const Color(0xFF2A2A2A),
+                          product.marque,
+                          style: GoogleFonts.montserrat(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.blue.shade700,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 4),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              '${product.prix.toStringAsFixed(2)} €',
-                              style: GoogleFonts.poppins(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 16,
-                                color: const Color(0xFF4A80F0),
-                              ),
-                            ),
-                            Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF4A80F0),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: const Icon(
-                                Icons.add,
-                                color: Colors.white,
-                                size: 20,
-                              ),
-                            ),
-                          ],
+                        SizedBox(height: 2),
+                        Text(
+                          product.name,
+                          style: GoogleFonts.montserrat(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
-                  ),
-                ],
+                    // Fix for overflow - Wrap Row in Flexible widget
+                    Flexible(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          // Price with overflow protection
+                          Flexible(
+                            child: Text(
+                              '\$${product.prix.toStringAsFixed(2)}',
+                              style: GoogleFonts.montserrat(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          // Small gap to ensure separation
+                          SizedBox(width: 4),
+                          // Category tag with fixed width
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade50,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              product.category,
+                              style: GoogleFonts.montserrat(
+                                fontSize: 9,
+                                color: Colors.blue.shade700,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          );
-        },
-      );
-    });
+          ],
+        ),
+      ),
+    );
   }
 }

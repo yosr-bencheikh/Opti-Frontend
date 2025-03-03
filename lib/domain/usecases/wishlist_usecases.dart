@@ -62,8 +62,8 @@ class WishlistUseCasesImpl implements WishlistUseCases {
       if (response.statusCode == 201) {
         // Create WishlistItem with the response data
         return WishlistItem(
-          id: response.data['_id'],
-          product: product,
+        
+      
           userId: userId,
           productId: productId,
           updatedAt: DateTime.now(),

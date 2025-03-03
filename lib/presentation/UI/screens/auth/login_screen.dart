@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+
 import 'package:opti_app/Presentation/controllers/auth_controller.dart';
 import 'package:opti_app/core/styles/colors.dart';
 import 'package:opti_app/core/styles/text_styles.dart';
@@ -15,7 +15,6 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
   bool _obscurePassword = true;
 
   // Get the AuthController instance
@@ -28,19 +27,6 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  bool _validateInputs() {
-    if (emailController.text.trim().isEmpty ||
-        passwordController.text.trim().isEmpty) {
-      Get.snackbar(
-        'Error',
-        'Please fill in all fields',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
-      return false;
-    }
-    return true;
-  }
 
   Future<void> loginUser() async {
     String email = emailController.text.trim();
@@ -308,12 +294,10 @@ class _LoginScreenState extends State<LoginScreen> {
                               Expanded(
                                 child: ElevatedButton.icon(
                                   onPressed: () async {
-                                    var result = Get.find<AuthController>()
+                                    Get.find<AuthController>()
                                         .loginWithGoogle();
-                                    if (result != null) {
-                                      print("Connexion Google réussie!");
-                                    }
-                                  },
+                                    print("Connexion Google réussie!");
+                                                                    },
                                   icon: Icon(Icons.g_mobiledata,
                                       size: 24, color: AppColors.primaryColor),
                                   label: Text('Google',
@@ -336,12 +320,10 @@ class _LoginScreenState extends State<LoginScreen> {
                               Expanded(
                                 child: ElevatedButton.icon(
                                   onPressed: () async {
-                                    var user = Get.find<AuthController>()
+                                    Get.find<AuthController>()
                                         .loginWithFacebook();
-                                    if (user != null) {
-                                      print("Connexion Facebook réussie!");
-                                    }
-                                  },
+                                    print("Connexion Facebook réussie!");
+                                                                    },
                                   icon: Icon(Icons.facebook,
                                       size: 24, color: AppColors.primaryColor),
                                   label: Text('Facebook',

@@ -1,6 +1,7 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:opti_app/Presentation/UI/Screens/Auth/cart_screen.dart';
+import 'package:opti_app/Presentation/UI/Screens/Auth/wishlist_page.dart';
 import 'package:opti_app/Presentation/controllers/auth_controller.dart';
 import 'package:opti_app/Presentation/controllers/navigation_controller.dart';
 import 'package:opti_app/domain/entities/user.dart';
@@ -12,8 +13,6 @@ class ProfileScreen extends GetView<AuthController> {
   final RxBool pushNotifications = true.obs;
   final RxBool faceID = false.obs;
   final RxBool pinCode = false.obs;
-  final PageController _pageController = PageController(viewportFraction: 0.9);
-  final RxInt _currentPage = 3.obs;
   final NavigationController navigationController = Get.find();
 
   @override
@@ -220,6 +219,12 @@ class ProfileScreen extends GetView<AuthController> {
             title: const Text('My favourites'),
             trailing: const Icon(Icons.arrow_forward_ios, size: 16),
             onTap: () {
+              final userEmail = controller.currentUser?.email;
+              if (userEmail != null) {
+                Get.to(() => WishlistPage(userEmail: userEmail));
+              } else {
+                Get.snackbar('Error', 'Please log in first');
+              }
               // Action pour « My stores »
             },
           ),
@@ -231,6 +236,7 @@ class ProfileScreen extends GetView<AuthController> {
             title: const Text('My cart'),
             trailing: const Icon(Icons.arrow_forward_ios, size: 16),
             onTap: () {
+              Get.to(() => CartScreen());
               // Action pour « My stores »
             },
           ),

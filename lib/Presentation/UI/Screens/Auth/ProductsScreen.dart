@@ -1,10 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
+
 import 'package:image_picker/image_picker.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
-import 'package:opti_app/data/data_sources/product_datasource.dart';
+
 import 'package:opti_app/domain/entities/product_entity.dart';
 
 class ProductsScreen extends StatefulWidget {
@@ -37,25 +37,27 @@ class _ProductsScreenState extends State<ProductsScreen> {
     }).toList();
   }
 
-@override
-Widget build(BuildContext context) {
-  return Scaffold(
-    backgroundColor: Colors.grey[100],
-    body: Obx(() => // Utiliser Obx au lieu de ListenableBuilder
-      SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(),
-            const SizedBox(height: 24),
-            _buildContent(),
-          ],
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.grey[100],
+      body: Obx(
+        () => // Utiliser Obx au lieu de ListenableBuilder
+            SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(),
+              const SizedBox(height: 24),
+              _buildContent(),
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
+
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -236,10 +238,9 @@ Widget build(BuildContext context) {
                     DataCell(
                       ClipRRect(
                         borderRadius: BorderRadius.circular(6),
-                        child: product.image != null &&
-                                product.image!.isNotEmpty
+                        child: product.image.isNotEmpty
                             ? Image.network(
-                                product.image!,
+                                product.image,
                                 width: 50,
                                 height: 50,
                                 fit: BoxFit.cover,
@@ -252,7 +253,9 @@ Widget build(BuildContext context) {
                               ),
                       ),
                     ),
-                     DataCell(Text(productController.getOpticienNom(product.opticienId) ?? 'N/A')),
+                    DataCell(Text(
+                        productController.getOpticienNom(product.opticienId) ??
+                            'N/A')),
                     DataCell(
                       Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -336,82 +339,85 @@ Widget build(BuildContext context) {
     );
   }
 
-void _showAddProductDialog(BuildContext context) {
-  final formKey = GlobalKey<FormState>();
-  Product product = Product(
-    name: '',
-    description: '',
-    category: '',
-    marque: '',
-    couleur: '',
-    prix: 0,
-    quantiteStock: 0,
-    image: '',
-    typeVerre: '',
-    opticienId: '',
-  );
+  void _showAddProductDialog(BuildContext context) {
+    final formKey = GlobalKey<FormState>();
+    Product product = Product(
+      name: '',
+      description: '',
+      category: '',
+      marque: '',
+      couleur: '',
+      prix: 0,
+      quantiteStock: 0,
+      image: '',
+      typeVerre: '',
+      opticienId: '',
+      averageRating: 0.0,
+      totalReviews: 0,
+    );
 
-  showDialog(
-    context: context,
-    barrierDismissible: false, // Empêcher la fermeture en cliquant à l'extérieur
-    builder: (context) => AlertDialog(
-      title: const Text('Ajouter un produit'),
-      content: _buildProductForm(formKey, product, isEditing: false),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Annuler'),
-        ),
-        ElevatedButton(
-          onPressed: () async {
-            if (formKey.currentState?.validate() ?? false) {
-              formKey.currentState?.save();
-              
-              // Afficher un indicateur de chargement
-              showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (BuildContext context) {
-                  return const Center(
-                    child: CircularProgressIndicator(),
-                  );
-                },
-              );
+    showDialog(
+      context: context,
+      barrierDismissible:
+          false, // Empêcher la fermeture en cliquant à l'extérieur
+      builder: (context) => AlertDialog(
+        title: const Text('Ajouter un produit'),
+        content: _buildProductForm(formKey, product, isEditing: false),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (formKey.currentState?.validate() ?? false) {
+                formKey.currentState?.save();
 
-              // Ajouter le produit
-              final success = await productController.addProduct(product);
-              
-              // Fermer l'indicateur de chargement
-              Navigator.of(context).pop();
-              
-              if (success) {
-                // Fermer le dialogue du formulaire
+                // Afficher un indicateur de chargement
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (BuildContext context) {
+                    return const Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  },
+                );
+
+                // Ajouter le produit
+                final success = await productController.addProduct(product);
+
+                // Fermer l'indicateur de chargement
                 Navigator.of(context).pop();
-                
-                // Afficher un message de succès
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Produit ajouté avec succès'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-              } else {
-                // Afficher un message d'erreur
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Erreur: ${productController.error}'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
+
+                if (success) {
+                  // Fermer le dialogue du formulaire
+                  Navigator.of(context).pop();
+
+                  // Afficher un message de succès
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Produit ajouté avec succès'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                } else {
+                  // Afficher un message d'erreur
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Erreur: ${productController.error}'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
               }
-            }
-          },
-          child: const Text('Enregistrer'),
-        ),
-      ],
-    ),
-  );
-}
+            },
+            child: const Text('Enregistrer'),
+          ),
+        ],
+      ),
+    );
+  }
 
   void _showEditProductDialog(BuildContext context, Product product) {
     final formKey = GlobalKey<FormState>();
@@ -458,14 +464,14 @@ void _showAddProductDialog(BuildContext context) {
                   child: Text(opticien.nom),
                 );
               }).toList(),
-              validator: (value) => value?.isEmpty ?? true ? 'Champ requis' : null,
+              validator: (value) =>
+                  value?.isEmpty ?? true ? 'Champ requis' : null,
               onChanged: (value) {
                 if (value != null) {
                   product.opticienId = value;
                 }
               },
             ),
-
             TextFormField(
               initialValue: product.name,
               decoration: const InputDecoration(labelText: 'Nom'),
@@ -543,10 +549,9 @@ void _showAddProductDialog(BuildContext context) {
                               _imageFile!,
                               fit: BoxFit.cover,
                             )
-                          : (product.image != null &&
-                                  product.image!.isNotEmpty
+                          : (product.image.isNotEmpty
                               ? Image.network(
-                                  product.image!,
+                                  product.image,
                                   fit: BoxFit.cover,
                                   errorBuilder: (context, error, stackTrace) {
                                     return const Icon(Icons.error);

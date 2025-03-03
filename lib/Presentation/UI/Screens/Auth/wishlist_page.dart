@@ -3,12 +3,13 @@ import 'package:get/get.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/product_details_screen.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
 import 'package:opti_app/Presentation/controllers/wishlist_controller.dart';
+import 'package:opti_app/domain/entities/product_entity.dart';
 
 class WishlistPage extends StatelessWidget {
   final String userEmail;
-  final ProductController productController=Get.find();
+  final ProductController productController = Get.find();
 
-   WishlistPage({Key? key, required this.userEmail}) : super(key: key);
+  WishlistPage({Key? key, required this.userEmail}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -118,20 +119,28 @@ class WishlistPage extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       itemCount: controller.wishlistItems.length,
       itemBuilder: (context, index) {
-        final product = productController.products[index];
+        // Get the wishlist item first
+        final wishlistItem = controller.wishlistItems[index];
+
+        // Find the corresponding product using the productId from wishlist
+        final product = productController.products.firstWhere(
+          (p) => p.id == wishlistItem.productId,
+          // orElse: () => Product(), // Fallback for deleted products
+        );
+
+        // Skip rendering if product not found
+        if (product.id == null) return const SizedBox.shrink();
+
         return GestureDetector(
-          onTap: () {
-            // Naviguer vers ProductDetailsScreen avec l'objet Product
-            Get.to(() => ProductDetailsScreen(product: product));
-          },
+          onTap: () => Get.to(() => ProductDetailsScreen(product: product)),
           child: Card(
             margin: const EdgeInsets.only(bottom: 12),
-            elevation: 2, // Ajout d'une ombre subtile
+            elevation: 2,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
             child: Dismissible(
-              key: Key(product.id!),
+              key: Key('${wishlistItem.productId}_${product.id}'),
               direction: DismissDirection.endToStart,
               background: Container(
                 margin: const EdgeInsets.only(bottom: 12),
@@ -171,7 +180,7 @@ class WishlistPage extends StatelessWidget {
                         width: 80,
                         height: 80,
                         child: Image.network(
-                          product.image ?? '',
+                          product.image,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) =>
                               Container(

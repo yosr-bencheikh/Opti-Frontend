@@ -25,7 +25,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final genreController = TextEditingController();
   final phoneController = TextEditingController();
 
-  bool _obscurePassword = true;
   final _formKey = GlobalKey<FormState>();
   final AuthController _authController = Get.find<AuthController>();
 

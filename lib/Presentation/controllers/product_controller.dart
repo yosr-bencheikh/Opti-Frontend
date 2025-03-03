@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:opti_app/data/repositories/product_repository_impl.dart';
 import 'package:opti_app/domain/entities/Opticien.dart';
 import 'package:opti_app/domain/entities/product_entity.dart';
-import 'package:opti_app/domain/repositories/product_repository.dart';
+
 
 class ProductController extends GetxController {
   final ProductRepositoryImpl _repository;

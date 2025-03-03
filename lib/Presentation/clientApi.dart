@@ -26,7 +26,7 @@ class ApiClient {
         body: jsonEncode(body), // Encode the body as JSON string
         headers: {
           'Content-Type': 'application/json',
-          ...?headers ?? {},
+          ...headers ?? {},
         },
       );
 

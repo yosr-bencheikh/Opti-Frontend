@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:opti_app/domain/entities/user.dart';
 
 class UserDataSource {
-  final String baseUrl = 'http://localhost:3000/api';
+  final String baseUrl = 'http://192.168.1.22:3000/api';
 Future<User> getUserByEmail(String email) async {
   try {
     print('Fetching user by email: $email');

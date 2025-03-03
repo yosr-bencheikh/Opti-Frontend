@@ -7,7 +7,7 @@ import 'package:opti_app/domain/entities/Opticien.dart';
 import 'package:opti_app/domain/entities/product_entity.dart';
 
 class ProductDatasource {
-  final String baseUrl = 'http://localhost:3000/api/products';
+  final String baseUrl = 'http://192.168.1.22:3000/api/products';
 
   Future<List<Product>> getProducts() async {
     try {
@@ -124,9 +124,11 @@ class ProductDatasource {
       throw Exception('Failed to load product');
     }
   }
-   Future<List<Opticien>> getOpticiens() async {
+
+  Future<List<Opticien>> getOpticiens() async {
     try {
-      final response = await http.get(Uri.parse('http://localhost:3000/opticiens'));
+      final response =
+          await http.get(Uri.parse('http://192.168.1.22:3000/opticiens'));
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
