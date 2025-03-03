@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'package:opti_app/Presentation/UI/Screens/Auth/home_screen.dart';
+import 'package:opti_app/Presentation/UI/screens/auth/CheckoutScreen.dart';
 import 'package:opti_app/Presentation/controllers/navigation_controller.dart';
 import 'package:opti_app/Presentation/controllers/cart_item_controller.dart';
 import 'package:opti_app/Presentation/controllers/auth_controller.dart';
@@ -226,89 +227,88 @@ class CartScreen extends StatelessWidget {
       ),
     );
   }
+Widget _buildCheckoutSection() {
+  final total = cartController.cartItems.fold<double>(
+    0,
+    (sum, item) => sum + item.totalPrice,
+  );
+  final deliveryFee = 5.50;
+  final totalWithDelivery = total + deliveryFee;
 
-  Widget _buildCheckoutSection() {
-    final total = cartController.cartItems.fold<double>(
-      0,
-      (sum, item) => sum + item.totalPrice,
-    );
-    final deliveryFee = 5.50;
-    final totalWithDelivery = total + deliveryFee;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, -2),
+  return Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 4,
+          offset: const Offset(0, -2),
+        ),
+      ],
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text(
+          'Facture',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const Text(
-            'Facture',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
+        ),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('Total panier'),
+            Text('${total.toStringAsFixed(2)} €'),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('Frais de livraison'),
+            Text('${deliveryFee.toStringAsFixed(2)} €'),
+          ],
+        ),
+        const Divider(height: 24),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Total',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            Text(
+              '${totalWithDelivery.toStringAsFixed(2)} €',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        ElevatedButton(
+          onPressed: cartController.cartItems.isEmpty
+              ? null
+              : () {
+                  // Navigate to the checkout screen
+                  Get.toNamed('/order');
+                },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.black,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
             ),
           ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Total panier'),
-              Text('${total.toStringAsFixed(2)} €'),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Frais de livraison'),
-              Text('${deliveryFee.toStringAsFixed(2)} €'),
-            ],
-          ),
-          const Divider(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Total',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-              Text(
-                '${totalWithDelivery.toStringAsFixed(2)} €',
-                style: const TextStyle(fontWeight: FontWeight.w600),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: cartController.cartItems.isEmpty
-                ? null
-                : () {
-                    // Implement checkout logic here
-                  },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.black,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: const Text('Confirmer la commande'),
-          ),
-        ],
-      ),
-    );
-  }
-
+          child: const Text('Confirmer la commande'),
+        ),
+      ],
+    ),
+  );
+}
   Widget _buildBottomNavBar() {
     return Obx(() => BottomNavigationBar(
           type: BottomNavigationBarType.fixed,

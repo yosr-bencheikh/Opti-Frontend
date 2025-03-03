@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:opti_app/core/error/failures.dart';
 import 'package:opti_app/domain/entities/user.dart';
 
 /// The abstract class defining all authentication-related API calls.

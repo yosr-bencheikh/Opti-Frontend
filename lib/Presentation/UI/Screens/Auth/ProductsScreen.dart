@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
 import 'package:image_picker/image_picker.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
 
@@ -19,31 +18,89 @@ class _ProductsScreenState extends State<ProductsScreen> {
   final ImagePicker _picker = ImagePicker();
   File? _imageFile;
   TextEditingController _searchController = TextEditingController();
-
+  
+  // Pagination variables
+  int _currentPage = 0;
+  final int _itemsPerPage = 10;
+  
+  // Filter variables
+  String? _selectedCategory;
+  String? _selectedOpticien;
+  double? _minPrice;
+  double? _maxPrice;
+  
   @override
   void initState() {
     super.initState();
   }
 
   List<Product> get _filteredProducts {
-    if (_searchController.text.isEmpty) {
-      return productController.products;
-    }
-    return productController.products.where((product) {
+    List<Product> filteredList = productController.products;
+    
+    // Apply search filter
+    if (_searchController.text.isNotEmpty) {
       final query = _searchController.text.toLowerCase();
-      return product.name.toLowerCase().contains(query) ||
-          product.category.toLowerCase().contains(query) ||
-          product.description.toLowerCase().contains(query);
-    }).toList();
+      filteredList = filteredList.where((product) {
+        final opticienNom = productController.getOpticienNom(product.opticienId) ?? '';
+        return product.name.toLowerCase().contains(query) ||
+            product.category.toLowerCase().contains(query) ||
+            product.description.toLowerCase().contains(query) ||
+            opticienNom.toLowerCase().contains(query);
+      }).toList();
+    }
+    
+    // Apply category filter
+    if (_selectedCategory != null && _selectedCategory!.isNotEmpty) {
+      filteredList = filteredList.where((product) => 
+        product.category == _selectedCategory).toList();
+    }
+    
+    // Apply shop filter
+    if (_selectedOpticien != null && _selectedOpticien!.isNotEmpty) {
+      filteredList = filteredList.where((product) => 
+        product.opticienId == _selectedOpticien).toList();
+    }
+    
+    // Apply price filters
+    if (_minPrice != null) {
+      filteredList = filteredList.where((product) => 
+        product.prix >= _minPrice!).toList();
+    }
+    
+    if (_maxPrice != null) {
+      filteredList = filteredList.where((product) => 
+        product.prix <= _maxPrice!).toList();
+    }
+    
+    return filteredList;
+  }
+  
+  // Get paginated data
+  List<Product> get _paginatedProducts {
+    final filteredList = _filteredProducts;
+    final startIndex = _currentPage * _itemsPerPage;
+    
+    if (startIndex >= filteredList.length) {
+      return [];
+    }
+    
+    final endIndex = (startIndex + _itemsPerPage < filteredList.length) 
+        ? startIndex + _itemsPerPage 
+        : filteredList.length;
+        
+    return filteredList.sublist(startIndex, endIndex);
+  }
+  
+  int get _pageCount {
+    return (_filteredProducts.length / _itemsPerPage).ceil();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      body: Obx(
-        () => // Utiliser Obx au lieu de ListenableBuilder
-            SingleChildScrollView(
+      body: Obx(() =>
+        SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -75,8 +132,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
           Row(
             children: [
               FilledButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.file_download),
+                onPressed: () => _showFilterDialog(),
+                icon: const Icon(Icons.filter_list),
                 label: const Text('Filtrer'),
                 style: FilledButton.styleFrom(
                   backgroundColor: Colors.white,
@@ -140,10 +197,13 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 Expanded(
                   child: TextField(
                     controller: _searchController,
-                    onChanged: (value) => setState(
-                        () {}), // Met à jour l'affichage des produits filtrés
+                    onChanged: (value) {
+                      setState(() {
+                        _currentPage = 0; // Reset to first page on search
+                      });
+                    },
                     decoration: InputDecoration(
-                      hintText: 'Rechercher un produit...',
+                      hintText: 'Rechercher un produit ou une boutique...',
                       prefixIcon: const Icon(Icons.search),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -157,11 +217,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
               ],
             ),
           ),
+          _buildFilterChips(),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            child: // ... previous imports and code remain the same ...
-
-                DataTable(
+            child: DataTable(
               headingRowColor: MaterialStateProperty.all(Colors.grey[50]),
               dataRowMaxHeight: 80,
               columns: const [
@@ -173,7 +232,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 ),
                 DataColumn(
                   label: Text(
-                    'Opticien',
+                    'Boutique',
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -232,7 +291,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   ),
                 ),
               ],
-              rows: _filteredProducts.map((product) {
+              rows: _paginatedProducts.map((product) {
                 return DataRow(
                   cells: [
                     DataCell(
@@ -308,6 +367,97 @@ class _ProductsScreenState extends State<ProductsScreen> {
               }).toList(),
             ),
           ),
+          _buildPagination(),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildFilterChips() {
+    if (_selectedCategory == null && _selectedOpticien == null && 
+        _minPrice == null && _maxPrice == null) {
+      return Container();
+    }
+    
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Wrap(
+        spacing: 8,
+        children: [
+          if (_selectedCategory != null)
+            Chip(
+              label: Text('Catégorie: $_selectedCategory'),
+              onDeleted: () => setState(() {
+                _selectedCategory = null;
+              }),
+            ),
+          if (_selectedOpticien != null)
+            Chip(
+              label: Text('Boutique: ${productController.getOpticienNom(_selectedOpticien!) ?? ''}'),
+              onDeleted: () => setState(() {
+                _selectedOpticien = null;
+              }),
+            ),
+          if (_minPrice != null)
+            Chip(
+              label: Text('Prix min: ${_minPrice!.toStringAsFixed(2)} €'),
+              onDeleted: () => setState(() {
+                _minPrice = null;
+              }),
+            ),
+          if (_maxPrice != null)
+            Chip(
+              label: Text('Prix max: ${_maxPrice!.toStringAsFixed(2)} €'),
+              onDeleted: () => setState(() {
+                _maxPrice = null;
+              }),
+            ),
+          TextButton(
+            onPressed: () => setState(() {
+              _selectedCategory = null;
+              _selectedOpticien = null;
+              _minPrice = null;
+              _maxPrice = null;
+              _currentPage = 0;
+            }),
+            child: const Text('Effacer tous les filtres'),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildPagination() {
+    final totalPages = _pageCount;
+    
+    if (totalPages <= 1) {
+      return Container();
+    }
+    
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          IconButton(
+            onPressed: _currentPage > 0
+                ? () => setState(() {
+                      _currentPage--;
+                    })
+                : null,
+            icon: const Icon(Icons.chevron_left),
+          ),
+          const SizedBox(width: 8),
+          Text('${_currentPage + 1} / $totalPages'),
+          const SizedBox(width: 8),
+          IconButton(
+            onPressed: _currentPage < totalPages - 1
+                ? () => setState(() {
+                      _currentPage++;
+                    })
+                : null,
+            icon: const Icon(Icons.chevron_right),
+          ),
         ],
       ),
     );
@@ -336,6 +486,148 @@ class _ProductsScreenState extends State<ProductsScreen> {
           color: Colors.red[400],
         ),
       ],
+    );
+  }
+  
+  void _showFilterDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        // Create local state variables for the dialog
+        String? categoryFilter = _selectedCategory;
+        String? opticienFilter = _selectedOpticien;
+        double? minPriceFilter = _minPrice;
+        double? maxPriceFilter = _maxPrice;
+        
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Filtrer les produits'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Category filter
+                    DropdownButtonFormField<String?>(
+                      value: categoryFilter,
+                      decoration: const InputDecoration(labelText: 'Catégorie'),
+                      items: [
+                        const DropdownMenuItem<String?>(
+                          value: null,
+                          child: Text('Toutes les catégories'),
+                        ),
+                        ...productController.products
+                            .map((product) => product.category)
+                            .toSet() // Remove duplicates
+                            .map((category) => DropdownMenuItem<String?>(
+                                  value: category,
+                                  child: Text(category),
+                                )),
+                      ],
+                      onChanged: (value) {
+                        setState(() {
+                          categoryFilter = value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    // Opticien filter
+                    DropdownButtonFormField<String?>(
+                      value: opticienFilter,
+                      decoration: const InputDecoration(labelText: 'Boutique'),
+                      items: [
+                        const DropdownMenuItem<String?>(
+                          value: null,
+                          child: Text('Toutes les boutiques'),
+                        ),
+                        ...productController.opticiens
+                            .map((opticien) => DropdownMenuItem<String?>(
+                                  value: opticien.id,
+                                  child: Text(opticien.nom),
+                                )),
+                      ],
+                      onChanged: (value) {
+                        setState(() {
+                          opticienFilter = value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    // Price range filter
+                    const Text('Plage de prix', style: TextStyle(fontWeight: FontWeight.bold)),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            initialValue: minPriceFilter?.toString() ?? '',
+                            decoration: const InputDecoration(labelText: 'Min €'),
+                            keyboardType: TextInputType.number,
+                            onChanged: (value) {
+                              setState(() {
+                                minPriceFilter = double.tryParse(value);
+                              });
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: TextFormField(
+                            initialValue: maxPriceFilter?.toString() ?? '',
+                            decoration: const InputDecoration(labelText: 'Max €'),
+                            keyboardType: TextInputType.number,
+                            onChanged: (value) {
+                              setState(() {
+                                maxPriceFilter = double.tryParse(value);
+                              });
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Annuler'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    // Reset all filters
+                    this.setState(() {
+                      _selectedCategory = null;
+                      _selectedOpticien = null;
+                      _minPrice = null;
+                      _maxPrice = null;
+                      _currentPage = 0;
+                    });
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Réinitialiser'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    // Apply filters
+                    this.setState(() {
+                      _selectedCategory = categoryFilter;
+                      _selectedOpticien = opticienFilter;
+                      _minPrice = minPriceFilter;
+                      _maxPrice = maxPriceFilter;
+                      _currentPage = 0; // Reset to first page when applying filters
+                    });
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Appliquer'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
@@ -457,7 +749,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
           children: [
             DropdownButtonFormField<String>(
               value: product.opticienId.isEmpty ? null : product.opticienId,
-              decoration: const InputDecoration(labelText: 'Opticien'),
+              decoration: const InputDecoration(labelText: 'Boutique'),
               items: productController.opticiens.map((opticien) {
                 return DropdownMenuItem<String>(
                   value: opticien.id,

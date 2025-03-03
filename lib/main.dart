@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:opti_app/AuthBinding.dart';
+import 'package:opti_app/Presentation/UI/Screens/Auth/CheckoutScreen.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/cart_screen.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/favourite_screen.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/home_screen.dart';
@@ -92,7 +93,7 @@ Future<void> main() async {
   final wishlistRemoteDataSource = WishlistRemoteDataSourceImpl(dio);
   Get.put<WishlistRemoteDataSource>(wishlistRemoteDataSource);
 
-  // ignore: non_constant_identifier_names
+  
 
   // Wishlist Controller
   Get.put<WishlistController>(WishlistController(wishlistRemoteDataSource));
@@ -191,6 +192,11 @@ class MyApp extends StatelessWidget {
         GetPage(
           name: '/cart',
           page: () => CartScreen(),
+          binding: AuthBinding(),
+        ),
+         GetPage(
+          name: '/order',
+          page: () => CheckoutScreen(),
           binding: AuthBinding(),
         ),
       ],

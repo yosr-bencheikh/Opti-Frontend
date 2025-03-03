@@ -1,7 +1,10 @@
-import 'package:opti_app/data/models/user_model.dart';
+import 'package:opti_app/domain/entities/user.dart';
 
 abstract class UserRepository {
-  Future<List<UserModel>> getUsers();
-  Future<void> updateUser(UserModel user);
-  Future<void> deleteUser(String userId);
+  Future<List<User>> getUsers();
+  Future<User> getUserByEmail(String email);
+  Future<void> updateUser(User user);
+  Future<void> deleteUser(String email);
+    Future<String> uploadImage(String filePath, String userId);
+
 }

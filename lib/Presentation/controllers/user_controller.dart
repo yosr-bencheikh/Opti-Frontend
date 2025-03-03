@@ -1,6 +1,11 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:get/get.dart';
 import 'package:opti_app/data/data_sources/user_datasource.dart';
+import 'package:opti_app/data/models/user_model.dart';
 import 'package:opti_app/domain/entities/user.dart';
+import 'package:opti_app/domain/repositories/user_repository.dart';
 
 class UserController extends GetxController {
   final UserDataSource _dataSource;
@@ -42,6 +47,34 @@ class UserController extends GetxController {
       _users.assignAll(results);
     } catch (e) {
       _error.value = e.toString();
+    } finally {
+      _isLoading.value = false;
+    }
+  }
+
+  /// Ajouter un nouvel utilisateur
+  Future<void> addUser(User user) async {
+    try {
+      _isLoading.value = true;
+      _error.value = null;
+      
+      await _dataSource.addUser(user);
+      await fetchUsers(); // Rafraîchir la liste des utilisateurs
+      
+      Get.snackbar(
+        'Succès',
+        'Utilisateur ajouté avec succès',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      
+    } catch (e) {
+      _error.value = e.toString();
+      Get.snackbar(
+        'Erreur',
+        'Échec de l\'ajout de l\'utilisateur: ${e.toString()}',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      throw e; // Re-throw l'exception pour la gérer dans l'UI
     } finally {
       _isLoading.value = false;
     }
@@ -146,4 +179,59 @@ class UserController extends GetxController {
     });
     _users.refresh();
   }
+
+  /// Upload a user profile image
+Future<String> uploadImage(File imageFile, String email) async {
+  try {
+    _isLoading.value = true;
+    _error.value = null;
+
+    // Upload the image and get the URL
+    final imageUrl = await _dataSource.uploadImage(imageFile.path, email);
+
+    // Check if the user exists
+    try {
+      final user = await _dataSource.getUserByEmail(email);
+      user.imageUrl = imageUrl;
+      await _dataSource.updateUser(user);
+    } catch (e) {
+      // If the user doesn't exist, create a new user
+      final newUser = User(
+        nom: '', // Provide default values or handle accordingly
+        prenom: '',
+        email: email,
+        date: '',
+        region: '',
+        genre: '',
+        password: '',
+        phone: '',
+        status: 'Active',
+        imageUrl: imageUrl,
+      );
+      await _dataSource.addUser(newUser);
+    }
+
+    // Refresh the user list
+    await fetchUsers();
+
+    Get.snackbar(
+      'Success',
+      'Image uploaded successfully!',
+      snackPosition: SnackPosition.BOTTOM,
+    );
+
+    return imageUrl; // Return the uploaded image URL
+  } catch (e) {
+    _error.value = e.toString();
+    Get.snackbar(
+      'Error',
+      'Failed to upload image: ${e.toString()}',
+      snackPosition: SnackPosition.BOTTOM,
+    );
+    throw e; // Re-throw the exception to handle it in the UI
+  } finally {
+    _isLoading.value = false;
+  }
+}
+  
 }

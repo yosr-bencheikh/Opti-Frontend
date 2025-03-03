@@ -21,7 +21,8 @@ class ProductController extends GetxController {
   List<Opticien> get opticiens => _opticiens;
   bool get isLoading => _isLoading.value;
   String? get error => _error.value;
-
+  final RxMap<String, List<Product>> _productsByOptician = <String, List<Product>>{}.obs;
+final RxList<Product> _allProducts = <Product>[].obs;
   @override
   void onInit() {
     super.onInit();
@@ -44,21 +45,61 @@ class ProductController extends GetxController {
     final opticien = _opticiens.firstWhereOrNull((o) => o.id == opticienId);
     return opticien?.nom;
   }
-
-  Future<void> loadProducts() async {
-    _isLoading.value = true;
-    _error.value = null;
-
-    try {
+Future<void> loadProductsByOptician(String opticianId) async {
+  // Set loading state
+  _isLoading.value = true;
+  
+  try {
+    // First, make sure we have all products loaded
+    if (_allProducts.isEmpty) {
       final products = await _repository.getProducts();
-      _products.assignAll(products); // Use assignAll for RxList
-    } catch (e) {
-      _error.value = e.toString();
-    } finally {
-      _isLoading.value = false;
+      _allProducts.assignAll(products);
     }
+    
+    // Filter the products by optician ID
+    final opticianProducts = _allProducts.where((p) => p.opticienId == opticianId).toList();
+    
+    // After all processing is done, update the UI state
+    _products.assignAll(opticianProducts);
+  } catch (e) {
+    _error.value = e.toString();
+  } finally {
+    _isLoading.value = false;
   }
+}
+  Future<void> loadProducts() async {
+  _isLoading.value = true;
+  _error.value = null;
 
+  try {
+    final products = await _repository.getProducts();
+    _allProducts.assignAll(products); // Store all products in _allProducts
+    _products.assignAll(products);    // Also update current display list
+  } catch (e) {
+    _error.value = e.toString();
+  } finally {
+    _isLoading.value = false;
+  }
+}
+
+void showAllProducts() {
+  _isLoading.value = true;
+  try {
+    // Make sure to use the complete list of products
+    if (_allProducts.isNotEmpty) {
+      _products.assignAll(_allProducts);
+    } else {
+      // If _allProducts is empty, reload all products from repository
+      loadProducts();
+    }
+  } finally {
+    _isLoading.value = false;
+  }
+}
+
+void resetProductList() {
+  _products.assignAll(_allProducts);
+}
   Future<bool> addProduct(Product product) async {
     try {
       _isLoading.value = true;
