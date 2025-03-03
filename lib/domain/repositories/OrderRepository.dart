@@ -1,4 +1,5 @@
-import 'package:opti_app/Domain/Entities/order.dart';
+
+import 'package:opti_app/domain/entities/Order.dart';
 
 abstract class OrderRepository {
   Future<Order> createOrder(Order order);

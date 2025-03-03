@@ -1,4 +1,4 @@
-import 'package:opti_app/Domain/Entities/order.dart';
+import 'package:opti_app/domain/entities/Order.dart';
 import 'package:opti_app/domain/repositories/OrderRepository.dart';
 
 class CreateOrderUseCase {

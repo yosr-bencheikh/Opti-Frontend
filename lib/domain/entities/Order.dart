@@ -7,72 +7,114 @@ class Order extends Equatable {
   final double subtotal;
   final double deliveryFee;
   final double total;
+  final String address;
+  final String paymentMethod;
   final String status;
-  final String? address;
-  final String? paymentMethod;
   final DateTime createdAt;
   final DateTime updatedAt;
 
-  Order({
+  const Order({
     this.id,
     required this.userId,
     required this.items,
     required this.subtotal,
     required this.deliveryFee,
     required this.total,
+    required this.address,
+    required this.paymentMethod,
     this.status = 'En attente',
-    this.address,
-    this.paymentMethod,
     required this.createdAt,
     required this.updatedAt,
   });
 
-  factory Order.fromJson(Map json) {
+  @override
+  List<Object?> get props => [
+    id,
+    userId,
+    items,
+    subtotal,
+    deliveryFee,
+    total,
+    address,
+    paymentMethod,
+    status,
+    createdAt,
+    updatedAt,
+  ];
+
+  // Factory method to create Order from JSON
+  factory Order.fromJson(Map<String, dynamic> json) {
+    // Parse items from JSON
+    List<OrderItem> items = [];
+    if (json['items'] != null) {
+      if (json['items'] is List) {
+        items = (json['items'] as List)
+            .map((item) => OrderItem.fromJson(item))
+            .toList();
+      }
+    }
+
+    // Parse dates
+    DateTime createdAt;
+    DateTime updatedAt;
+    
+    try {
+      createdAt = json['createdAt'] != null
+          ? json['createdAt'] is String
+              ? DateTime.parse(json['createdAt'])
+              : DateTime.fromMillisecondsSinceEpoch(json['createdAt'])
+          : DateTime.now();
+      
+      updatedAt = json['updatedAt'] != null
+          ? json['updatedAt'] is String
+              ? DateTime.parse(json['updatedAt'])
+              : DateTime.fromMillisecondsSinceEpoch(json['updatedAt'])
+          : DateTime.now();
+    } catch (e) {
+      print('Error parsing dates: $e');
+      createdAt = DateTime.now();
+      updatedAt = DateTime.now();
+    }
+
     return Order(
       id: json['_id'] ?? json['id'],
       userId: json['userId'],
-      items: (json['items'] as List).map((item) => OrderItem.fromJson(item)).toList(),
-      subtotal: json['subtotal'].toDouble(),
-      deliveryFee: json['deliveryFee'].toDouble(),
-      total: json['total'].toDouble(),
-      status: json['status'] ?? 'En attente',
+      items: items,
+      subtotal: (json['subtotal'] is int) 
+          ? (json['subtotal'] as int).toDouble() 
+          : json['subtotal'],
+      deliveryFee: (json['deliveryFee'] is int) 
+          ? (json['deliveryFee'] as int).toDouble() 
+          : json['deliveryFee'],
+      total: (json['total'] is int) 
+          ? (json['total'] as int).toDouble() 
+          : json['total'],
       address: json['address'],
       paymentMethod: json['paymentMethod'],
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
+      status: json['status'] ?? 'En attente',
+      createdAt: createdAt,
+      updatedAt: updatedAt,
     );
   }
 
-  Map toJson() {
+  // Convert Order to JSON
+  Map<String, dynamic> toJson() {
     return {
+      if (id != null) 'id': id,
       'userId': userId,
       'items': items.map((item) => item.toJson()).toList(),
       'subtotal': subtotal,
       'deliveryFee': deliveryFee,
       'total': total,
-      'status': status,
       'address': address,
       'paymentMethod': paymentMethod,
+      'status': status,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
   }
 
-  @override
-  List<Object?> get props => [
-    id, 
-    userId, 
-    items, 
-    subtotal, 
-    deliveryFee, 
-    total, 
-    status, 
-    address, 
-    paymentMethod, 
-    createdAt, 
-    updatedAt
-  ];
-
+  // Create a copy of Order with some fields replaced
   Order copyWith({
     String? id,
     String? userId,
@@ -80,9 +122,9 @@ class Order extends Equatable {
     double? subtotal,
     double? deliveryFee,
     double? total,
-    String? status,
     String? address,
     String? paymentMethod,
+    String? status,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -93,16 +135,16 @@ class Order extends Equatable {
       subtotal: subtotal ?? this.subtotal,
       deliveryFee: deliveryFee ?? this.deliveryFee,
       total: total ?? this.total,
-      status: status ?? this.status,
       address: address ?? this.address,
       paymentMethod: paymentMethod ?? this.paymentMethod,
+      status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 }
 
-class OrderItem {
+class OrderItem extends Equatable {
   final String productId;
   final String productName;
   final String productImage;
@@ -110,7 +152,7 @@ class OrderItem {
   final double unitPrice;
   final double totalPrice;
 
-  OrderItem({
+  const OrderItem({
     required this.productId,
     required this.productName,
     required this.productImage,
@@ -119,18 +161,34 @@ class OrderItem {
     required this.totalPrice,
   });
 
-  factory OrderItem.fromJson(Map json) {
+  @override
+  List<Object?> get props => [
+    productId,
+    productName,
+    productImage,
+    quantity,
+    unitPrice,
+    totalPrice,
+  ];
+
+  // Factory method to create OrderItem from JSON
+  factory OrderItem.fromJson(Map<String, dynamic> json) {
     return OrderItem(
       productId: json['productId'],
       productName: json['productName'],
       productImage: json['productImage'],
       quantity: json['quantity'],
-      unitPrice: json['unitPrice'].toDouble(),
-      totalPrice: json['totalPrice'].toDouble(),
+      unitPrice: (json['unitPrice'] is int) 
+          ? (json['unitPrice'] as int).toDouble() 
+          : json['unitPrice'],
+      totalPrice: (json['totalPrice'] is int) 
+          ? (json['totalPrice'] as int).toDouble() 
+          : json['totalPrice'],
     );
   }
 
-  Map toJson() {
+  // Convert OrderItem to JSON
+  Map<String, dynamic> toJson() {
     return {
       'productId': productId,
       'productName': productName,

@@ -45,7 +45,7 @@ import 'package:opti_app/Presentation/controllers/wishlist_controller.dart'; // 
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
+  
   // Initialize SharedPreferences
   final prefs = await SharedPreferences.getInstance();
   Get.put<SharedPreferences>(prefs);
@@ -104,27 +104,22 @@ Future<void> main() async {
 
   Get.put<WishlistController>(WishlistController(wishlistRemoteDataSource));
 
-  // Order Use Cases & Repository
-  final orderDataSource = OrderDataSourceImpl(client: http.Client());
+  // Order Repository & Controller
+  final orderDataSource = OrderDataSourceImpl.create(client: client);
   Get.put<OrderDataSource>(orderDataSource);
 
   final orderRepository = OrderRepositoryImpl(dataSource: orderDataSource);
   Get.put<OrderRepository>(orderRepository);
 
+  // Register the OrderController directly with the repository
+  Get.put<OrderController>(OrderController(orderRepository: orderRepository));
+
+  // Keep use cases registered for other components that might still use them
   Get.put<CreateOrderUseCase>(CreateOrderUseCase(orderRepository));
   Get.put<GetUserOrdersUseCase>(GetUserOrdersUseCase(orderRepository));
   Get.put<GetOrderByIdUseCase>(GetOrderByIdUseCase(orderRepository));
   Get.put<UpdateOrderStatusUseCase>(UpdateOrderStatusUseCase(orderRepository));
   Get.put<CancelOrderUseCase>(CancelOrderUseCase(orderRepository));
-
-  // Register OrderController using lazyPut
-Get.put<OrderController>(OrderController(
-  createOrderUseCase: Get.find<CreateOrderUseCase>(),
-  getUserOrdersUseCase: Get.find<GetUserOrdersUseCase>(),
-  getOrderByIdUseCase: Get.find<GetOrderByIdUseCase>(),
-  updateOrderStatusUseCase: Get.find<UpdateOrderStatusUseCase>(),
-  cancelOrderUseCase: Get.find<CancelOrderUseCase>(),
-));
 
   runApp(const MyApp());
 }

@@ -20,7 +20,7 @@ class OpticienRemoteDataSourceImpl implements OpticienRemoteDataSource {
   Future<List<Opticien>> getOpticiens() async {
     try {
       // Add logging to verify the URL
-      final url = '$baseUrl/opticiens';
+      final url = 'http://localhost:3000/opticiens';
       print('Attempting to fetch opticians from: $url');
 
       final response = await client.get(

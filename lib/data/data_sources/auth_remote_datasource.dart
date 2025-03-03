@@ -92,7 +92,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       debugPrint('Inside loginWithEmail: Sending request...');
 
       final response = await client.post(
-        Uri.parse('$baseUrl/login'),
+        Uri.parse('http://localhost:3000/api/login'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'email': email, 'password': password}),
       );

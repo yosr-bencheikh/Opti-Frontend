@@ -139,4 +139,23 @@ class CartItemController extends GetxController {
       isLoading(false);
     }
   }
+
+   Future<void> clearCart(String userId) async {
+    try {
+      // Clear the local cart items
+      cartItems.value = [];
+
+      // If you're storing cart items in a database or remote service,
+      // add the code to clear those items here
+      // Example: await cartRepository.clearCart(userId);
+
+      update(); // Update the UI
+    } catch (e) {
+      Get.snackbar(
+        'Erreur',
+        'Une erreur est survenue lors de la suppression du panier: $e',
+        duration: const Duration(seconds: 3),
+      );
+    }
+  }
 }
