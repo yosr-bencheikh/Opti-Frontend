@@ -9,9 +9,12 @@ import 'package:opti_app/Presentation/UI/Screens/Auth/home_screen.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/splash_screen.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/stores_screen.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/WelcomePage.dart';
+import 'package:opti_app/Presentation/controllers/OrderController.dart';
 import 'package:opti_app/Presentation/controllers/auth_controller.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/wishlist_page.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
+import 'package:opti_app/data/data_sources/OrderDataSource.dart';
+import 'package:opti_app/data/repositories/OrderRepositoryImpl.dart';
 import 'package:opti_app/data/repositories/cart_item_repository_impl.dart';
 import 'package:opti_app/Presentation/controllers/cart_item_controller.dart';
 import 'package:opti_app/Presentation/controllers/navigation_controller.dart';
@@ -21,6 +24,7 @@ import 'package:opti_app/data/data_sources/opticien_remote_datasource.dart';
 import 'package:opti_app/data/data_sources/product_datasource.dart';
 import 'package:opti_app/data/repositories/opticien_repository_impl.dart';
 import 'package:opti_app/data/repositories/product_repository_impl.dart';
+import 'package:opti_app/domain/repositories/OrderRepository.dart';
 
 import 'package:opti_app/domain/repositories/opticien_repository.dart';
 import 'package:opti_app/domain/repositories/product_repository.dart';
@@ -93,10 +97,17 @@ Future<void> main() async {
   final wishlistRemoteDataSource = WishlistRemoteDataSourceImpl(dio);
   Get.put<WishlistRemoteDataSource>(wishlistRemoteDataSource);
 
-  
-
   // Wishlist Controller
   Get.put<WishlistController>(WishlistController(wishlistRemoteDataSource));
+
+  final orderDataSource = OrderDataSourceImpl(client: client);
+  Get.put<OrderDataSource>(orderDataSource);
+
+  final orderRepository = OrderRepositoryImpl(dataSource: orderDataSource);
+  Get.put<OrderRepository>(orderRepository);
+
+  // Register the OrderController directly with the repository
+  Get.put<OrderController>(OrderController(orderRepository: orderRepository));
 
   final sendCodeToEmail = SendCodeToEmail(Get.find());
   Get.put(sendCodeToEmail);
@@ -105,14 +116,12 @@ Future<void> main() async {
   runApp(const MyApp());
 }
 
-
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
-      
       debugShowCheckedModeBanner: false,
       title: 'Opti App',
       theme: ThemeData(
@@ -194,7 +203,7 @@ class MyApp extends StatelessWidget {
           page: () => CartScreen(),
           binding: AuthBinding(),
         ),
-         GetPage(
+        GetPage(
           name: '/order',
           page: () => CheckoutScreen(),
           binding: AuthBinding(),
