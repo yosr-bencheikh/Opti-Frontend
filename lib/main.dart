@@ -13,7 +13,9 @@ import 'package:opti_app/Presentation/controllers/OrderController.dart';
 import 'package:opti_app/Presentation/controllers/auth_controller.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/wishlist_page.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
+import 'package:opti_app/Presentation/controllers/user_controller.dart';
 import 'package:opti_app/data/data_sources/OrderDataSource.dart';
+import 'package:opti_app/data/data_sources/user_datasource.dart';
 import 'package:opti_app/data/repositories/OrderRepositoryImpl.dart';
 import 'package:opti_app/data/repositories/cart_item_repository_impl.dart';
 import 'package:opti_app/Presentation/controllers/cart_item_controller.dart';
@@ -52,61 +54,50 @@ Future<void> main() async {
   // Register dependencies
   final client = http.Client();
   Get.put<http.Client>(client);
-  final productRemoteDataSource =
-      ProductDatasource(); // Use the correct class name
-  Get.put<ProductDatasource>(
-      productRemoteDataSource); // Register the correct type
-  final productRepository =
-      ProductRepositoryImpl(dataSource: productRemoteDataSource);
+
+  // Register UserDataSource and UserController
+  final userDataSource = UserDataSourceImpl(client: client); // Assurez-vous que cette classe existe
+  Get.put<UserDataSource>(userDataSource);
+
+  final userController = UserController(userDataSource); // Initialisez UserController
+  Get.put<UserController>(userController); // Enregistrez-le dans GetX
+
+  // Register other dependencies
+  final productRemoteDataSource = ProductDatasource();
+  Get.put<ProductDatasource>(productRemoteDataSource);
+  final productRepository = ProductRepositoryImpl(dataSource: productRemoteDataSource);
   Get.put<ProductRepository>(productRepository);
   Get.put<ProductRepositoryImpl>(productRepository);
   Get.put<ProductController>(ProductController(productRepository));
+
   final authRemoteDataSource = AuthRemoteDataSourceImpl(client: client);
   Get.put<AuthRemoteDataSource>(authRemoteDataSource);
-
   final authRepository = AuthRepositoryImpl(authRemoteDataSource);
   Get.put<AuthRepository>(authRepository);
-  Get.put<AuthController>(
-      AuthController(authRepository: authRepository, prefs: prefs));
+  Get.put<AuthController>(AuthController(authRepository: authRepository, prefs: prefs));
 
   final opticienRemoteDataSource = OpticienRemoteDataSourceImpl(client: client);
   Get.put<OpticienRemoteDataSource>(opticienRemoteDataSource);
-
   final opticienRepository = OpticienRepositoryImpl(opticienRemoteDataSource);
   Get.put<OpticienRepository>(opticienRepository);
+  Get.put<OpticienController>(OpticienController(opticienRepository: opticienRepository));
 
-  // Register the OpticienController
-  Get.put<OpticienController>(
-      OpticienController(opticienRepository: opticienRepository));
-
-  // Product Repository
-
-  // Cart Item Repository
   final cartItemRemoteDataSource = CartItemDataSourceImpl(client: client);
   Get.put<CartItemDataSource>(cartItemRemoteDataSource);
-  final cartItemRepository =
-      CartItemRepositoryImpl(dataSource: cartItemRemoteDataSource);
+  final cartItemRepository = CartItemRepositoryImpl(dataSource: cartItemRemoteDataSource);
   Get.put<CartItemRepository>(cartItemRepository);
-
-  // Cart Item Controller
   Get.put<CartItemController>(CartItemController(
       repository: cartItemRepository, productRepository: productRepository));
 
-  // Wishlist Remote DataSource
-  final dio = Dio(); // Initialisez Dio
+  final dio = Dio();
   final wishlistRemoteDataSource = WishlistRemoteDataSourceImpl(dio);
   Get.put<WishlistRemoteDataSource>(wishlistRemoteDataSource);
-
-  // Wishlist Controller
   Get.put<WishlistController>(WishlistController(wishlistRemoteDataSource));
 
   final orderDataSource = OrderDataSourceImpl(client: client);
   Get.put<OrderDataSource>(orderDataSource);
-
   final orderRepository = OrderRepositoryImpl(dataSource: orderDataSource);
   Get.put<OrderRepository>(orderRepository);
-
-  // Register the OrderController directly with the repository
   Get.put<OrderController>(OrderController(orderRepository: orderRepository));
 
   final sendCodeToEmail = SendCodeToEmail(Get.find());
@@ -115,7 +106,6 @@ Future<void> main() async {
 
   runApp(const MyApp());
 }
-
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -128,7 +118,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      initialRoute: '/splash',
+      initialRoute: '/Admin_pannel',
       getPages: [
         GetPage(
           name: '/splash',

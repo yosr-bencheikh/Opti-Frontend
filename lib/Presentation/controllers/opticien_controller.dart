@@ -36,4 +36,82 @@ class OpticienController extends GetxController {
       print('Finished fetching opticians.'); // Log fetching end
     }
   }
+  
+  // Add a new optician
+Future<bool> addOpticien(Opticien opticien) async {
+  try {
+    isLoading(true);
+    error('');
+
+    // Debugging: Print the optician object
+    print('Adding optician: ${opticien.toJson()}');
+
+    // Ensure all required fields are provided
+    if (opticien.nom.isEmpty ||
+        opticien.adresse.isEmpty ||
+        opticien.phone.isEmpty ||
+        opticien.email.isEmpty ||
+        opticien.description.isEmpty ||
+        opticien.opening_hours.isEmpty) {
+      throw Exception('All fields are required');
+    }
+
+    await opticienRepository.addOpticien(opticien);
+
+    // Refresh the list after adding
+    await getOpticien();
+
+    return true;
+  } catch (e) {
+    error(e.toString());
+    print('Error adding optician: $e');
+    return false;
+  } finally {
+    isLoading(false);
+  }
+}
+  // Update an existing optician
+  Future<bool> updateOpticien(String id, Opticien opticien) async {
+    try {
+      isLoading(true);
+      error('');
+      
+      
+      await opticienRepository.updateOpticien(id, opticien);
+      
+      // Refresh the list after updating
+      await getOpticien();
+      
+      return true;
+    } catch (e) {
+      error(e.toString());
+      print('Error updating optician: $e');
+      return false;
+    } finally {
+      isLoading(false);
+    }
+  }
+  
+  // Delete an optician
+  Future<bool> deleteOpticien(String id) async {
+    try {
+      isLoading(true);
+      error('');
+      
+      // Call the repository method to delete the optician
+      // This needs to be implemented in the repository
+      await opticienRepository.deleteOpticien(id);
+      
+      // Refresh the list after deleting
+      await getOpticien();
+      
+      return true;
+    } catch (e) {
+      error(e.toString());
+      print('Error deleting optician: $e');
+      return false;
+    } finally {
+      isLoading(false);
+    }
+  }
 }

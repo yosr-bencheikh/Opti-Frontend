@@ -15,4 +15,31 @@ class OpticienRepositoryImpl implements OpticienRepository {
       throw Exception('Failed to fetch opticians: $e');
     }
   }
+  
+  @override
+  Future<void> addOpticien(Opticien opticien) async {
+    try {
+      await dataSource.addOpticien(opticien);
+    } catch (e) {
+      throw Exception('Failed to add optician: $e');
+    }
+  }
+  
+  @override
+  Future<void> updateOpticien(String id, Opticien opticien) async {
+    try {
+      await dataSource.updateOpticien(id, opticien);
+    } catch (e) {
+      throw Exception('Failed to update optician: $e');
+    }
+  }
+  
+  @override
+  Future<void> deleteOpticien(String id) async {
+    try {
+      await dataSource.deleteOpticien(id);
+    } catch (e) {
+      throw Exception('Failed to delete optician: $e');
+    }
+  }
 }

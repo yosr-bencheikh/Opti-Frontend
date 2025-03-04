@@ -1,19 +1,23 @@
 import 'package:get/get.dart';
 import 'package:opti_app/Presentation/controllers/cart_item_controller.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
+import 'package:opti_app/Presentation/controllers/user_controller.dart';
 import 'package:opti_app/domain/entities/Order.dart';
 import 'package:opti_app/domain/entities/product_entity.dart';
+import 'package:opti_app/domain/entities/user.dart';
 import 'package:opti_app/domain/repositories/OrderRepository.dart';
 import 'dart:developer' as developer;
 
 class OrderController extends GetxController {
   final OrderRepository orderRepository;
-  
+  final UserController userController = Get.find<UserController>();
+  final RxList<User> users = <User>[].obs;
   OrderController({
     required this.orderRepository,
   });
 
   final RxList<Order> userOrders = <Order>[].obs;
+  final RxList<Order> allOrders = <Order>[].obs; // Liste pour toutes les commandes
   final RxBool isLoading = false.obs;
   final RxBool isCreating = false.obs;
   final Rx<Order?> currentOrder = Rx<Order?>(null);
@@ -121,37 +125,98 @@ class OrderController extends GetxController {
       isCreating.value = false;
     }
   }
+  final RxString currentUserName = ''.obs;
+
+Future<String> getOrderUserName(String userId) async {
+  try {
+    // First, check if the user is already loaded in the controller's users list
+    final user = userController.users.firstWhere(
+      (user) => user.email == userId, 
+    );
+
+    if (user != null) {
+      currentUserName.value = '${user.nom} ${user.prenom}'.trim();
+      return currentUserName.value;
+    }
+
+    // If not found in the current list, fetch the user by ID
+    try {
+      final fetchedUser = await userController.fetchUserById(userId);
+      currentUserName.value = '${fetchedUser.nom} ${fetchedUser.prenom}'.trim();
+      return currentUserName.value;
+    } catch (fetchError) {
+      print('Error fetching user by ID: $fetchError');
+    }
+
+    // Last resort if no user is found
+    currentUserName.value = 'Utilisateur ${userId.substring(0, 8)}';
+    return currentUserName.value;
+  } catch (e) {
+    print('Error in getOrderUserName: $e');
+    currentUserName.value = 'Utilisateur Inconnu';
+    return currentUserName.value;
+  }
+}
 
   Future<void> loadUserOrders(String userId) async {
-    try {
-      isLoading.value = true;
-      developer.log('Loading orders for user: $userId');
-      
-      final orders = await orderRepository.getUserOrders(userId);
-      userOrders.value = orders;
-      
-      developer.log('Loaded ${orders.length} orders');
-    } catch (e) {
-      developer.log('Error loading orders: $e', error: e);
-      
-      String errorMessage = 'Une erreur est survenue lors du chargement des commandes.';
-      
-      if (e.toString().contains('timed out') || 
-          e.toString().contains('SocketException') ||
-          e.toString().contains('Connection refused')) {
-        errorMessage = 'Impossible de se connecter au serveur. Vérifiez votre connexion internet.';
-      }
-      
-      Get.snackbar(
-        'Erreur', 
-        errorMessage,
-        duration: const Duration(seconds: 3),
-      );
-    } finally {
-      isLoading.value = false;
+  try {
+    isLoading.value = true;
+    developer.log('Loading orders for user: $userId');
+    
+    final orders = await orderRepository.getUserOrders(userId);
+    developer.log('Orders fetched: ${orders.length}');
+    
+    userOrders.value = orders;
+    
+    developer.log('Loaded ${orders.length} orders');
+  } catch (e) {
+    developer.log('Error loading orders: $e', error: e);
+    
+    String errorMessage = 'Une erreur est survenue lors du chargement des commandes.';
+    
+    if (e.toString().contains('timed out') || 
+        e.toString().contains('SocketException') ||
+        e.toString().contains('Connection refused')) {
+      errorMessage = 'Impossible de se connecter au serveur. Vérifiez votre connexion internet.';
     }
+    
+    Get.snackbar(
+      'Erreur', 
+      errorMessage,
+      duration: const Duration(seconds: 3),
+    );
+  } finally {
+    isLoading.value = false;
   }
-  
+}
+  Future<void> loadAllOrders() async {
+  try {
+    isLoading.value = true;
+    developer.log('Loading all orders...');
+
+    final orders = await orderRepository.getAllOrders();
+    allOrders.value = orders;
+
+    developer.log('Loaded ${orders.length} orders');
+  } catch (e) {
+    developer.log('Error loading all orders: $e', error: e);
+
+    String errorMessage = 'Une erreur est survenue lors du chargement des commandes.';
+    if (e.toString().contains('timed out') || 
+        e.toString().contains('SocketException') ||
+        e.toString().contains('Connection refused')) {
+      errorMessage = 'Impossible de se connecter au serveur. Vérifiez votre connexion internet.';
+    }
+
+    Get.snackbar(
+      'Erreur', 
+      errorMessage,
+      duration: const Duration(seconds: 3),
+    );
+  } finally {
+    isLoading.value = false;
+  }
+}
   Future<void> getOrderDetails(String orderId) async {
     try {
       isLoading.value = true;

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:opti_app/Presentation/UI/screens/auth/Admin_Commande.dart';
+import 'package:opti_app/Presentation/UI/screens/auth/BoutiqueScreen.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/ProductsScreen.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/UsersScreen.dart';
 
@@ -33,7 +35,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
   final List<Widget> _screens = [
     DashboardScreen(),
     UsersScreen(),
+    BoutiqueScreen(),
     ProductsScreen(),
+    AdminOrdersPage(),
     SettingsScreen(),
   ];
 
@@ -342,7 +346,7 @@ class NavigationDrawer extends StatelessWidget {
             ),
           ),
           SizedBox(height: 40),
-          ...['Dashboard', 'Users', 'Products', 'Settings'].asMap().entries.map(
+          ...['Dashboard', 'Utilisateurs' , 'Boutiques', 'Produits','Commandes' ,'Settings'].asMap().entries.map(
             (entry) {
               final index = entry.key;
               final title = entry.value;
@@ -370,20 +374,25 @@ class NavigationDrawer extends StatelessWidget {
     );
   }
 
-  IconData _getIcon(int index) {
-    switch (index) {
-      case 0:
-        return Icons.dashboard;
-      case 1:
-        return Icons.people;
-      case 2:
-        return Icons.shopping_bag;
-      case 3:
-        return Icons.settings;
-      default:
-        return Icons.error;
-    }
+   IconData _getIcon(int index) {
+  switch (index) {
+    case 0:
+      return Icons.dashboard;
+    case 1:
+      return Icons.people;
+    case 2:
+      return Icons.store; 
+    case 3:
+      return Icons.shopping_bag;
+    case 4:
+      return Icons.receipt_long; 
+    case 5:
+      return Icons.settings;
+    default:
+      return Icons.error;
   }
+}
+
 }
 
 

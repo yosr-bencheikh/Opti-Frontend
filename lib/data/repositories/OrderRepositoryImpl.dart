@@ -34,4 +34,10 @@ class OrderRepositoryImpl implements OrderRepository {
   Future<bool> cancelOrder(String id) async {
     return await dataSource.cancelOrder(id);
   }
+@override
+Future<List<Order>> getAllOrders() async {
+  final results = await dataSource.getAllOrders();
+  return results;
+}
+
 }

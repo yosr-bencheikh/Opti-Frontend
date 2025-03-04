@@ -6,6 +6,7 @@ import 'package:opti_app/Presentation/controllers/user_controller.dart';
 import 'package:opti_app/core/constants/regions.dart';
 import 'package:opti_app/data/data_sources/user_datasource.dart';
 import 'package:opti_app/domain/entities/user.dart';
+import 'package:http/http.dart' as http;
 
 class UsersScreen extends StatefulWidget {
   const UsersScreen({Key? key}) : super(key: key);
@@ -15,7 +16,7 @@ class UsersScreen extends StatefulWidget {
 }
 
 class _UsersScreenState extends State<UsersScreen> {
-  final UserController _controller = UserController(UserDataSource());
+  final UserController _controller = UserController(UserDataSourceImpl(client: http.Client()));
   final ImagePicker _picker = ImagePicker();
   File? _selectedImage;
   
@@ -78,6 +79,7 @@ class _UsersScreenState extends State<UsersScreen> {
     _filteredUsers = _controller.users.where((user) {
       // Global search
       final matchesSearch = _currentSearchTerm.isEmpty ||
+      user.nom.toLowerCase().contains(_currentSearchTerm.toLowerCase()) ||
           user.nom.toLowerCase().contains(_currentSearchTerm.toLowerCase()) ||
           user.prenom.toLowerCase().contains(_currentSearchTerm.toLowerCase()) ||
           user.email.toLowerCase().contains(_currentSearchTerm.toLowerCase()) ||
@@ -126,6 +128,7 @@ class _UsersScreenState extends State<UsersScreen> {
   
   String _getValueForSort(User user, String column) {
     switch (column) {
+      case 'id': return user.id ?? '';
       case 'nom': return user.nom.toLowerCase();
       case 'prenom': return user.prenom.toLowerCase();
       case 'email': return user.email.toLowerCase();
@@ -532,126 +535,130 @@ class _UsersScreenState extends State<UsersScreen> {
         ? _filteredUsers 
         : _filteredUsers.sublist(_startIndex, _endIndex);
     
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+  return Container(
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.04),
+          blurRadius: 8,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    ),
+    child: SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: DataTable(
+        columnSpacing: 20,
+        dataRowHeight: 70,
+        headingRowHeight: 56,
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.blue.shade100, width: 1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        columns: [
+          DataColumn(
+            label: const Text('ID', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
+          ),
+          DataColumn(
+            label: const Text('Image', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
+          ),
+          DataColumn(
+            label: const Text('Nom', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
+            onSort: (_, __) => _sortBy('nom'),
+          ),
+          DataColumn(
+            label: const Text('Prénom', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
+            onSort: (_, __) => _sortBy('prenom'),
+          ),
+          DataColumn(
+            label: const Text('Email', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
+            onSort: (_, __) => _sortBy('email'),
+          ),
+          DataColumn(
+            label: const Text('Date', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
+            onSort: (_, __) => _sortBy('date'),
+          ),
+          DataColumn(
+            label: const Text('Téléphone', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
+            onSort: (_, __) => _sortBy('phone'),
+          ),
+          DataColumn(
+            label: const Text('Région', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
+            onSort: (_, __) => _sortBy('region'),
+          ),
+          DataColumn(
+            label: const Text('Genre', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
+            onSort: (_, __) => _sortBy('genre'),
+          ),
+          const DataColumn(
+            label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
           ),
         ],
-      ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: DataTable(
-          columnSpacing: 20,
-          dataRowHeight: 70,
-          headingRowHeight: 56,
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.blue.shade100, width: 1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          columns: [
-            DataColumn(
-              label: const Text('Image', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
+        rows: displayedUsers.map((user) {
+          return DataRow(
+            color: MaterialStateProperty.resolveWith<Color>(
+              (Set<MaterialState> states) {
+                if (displayedUsers.indexOf(user) % 2 == 0) {
+                  return Colors.blue.shade50.withOpacity(0.3);
+                }
+                return Colors.white;
+              },
             ),
-            DataColumn(
-              label: const Text('Nom', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
-              onSort: (_, __) => _sortBy('nom'),
-            ),
-            DataColumn(
-              label: const Text('Prénom', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
-              onSort: (_, __) => _sortBy('prenom'),
-            ),
-            DataColumn(
-              label: const Text('Email', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
-              onSort: (_, __) => _sortBy('email'),
-            ),
-            DataColumn(
-              label: const Text('Date', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
-              onSort: (_, __) => _sortBy('date'),
-            ),
-            DataColumn(
-              label: const Text('Téléphone', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
-              onSort: (_, __) => _sortBy('phone'),
-            ),
-            DataColumn(
-              label: const Text('Région', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
-              onSort: (_, __) => _sortBy('region'),
-            ),
-            DataColumn(
-              label: const Text('Genre', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
-              onSort: (_, __) => _sortBy('genre'),
-            ),
-            const DataColumn(
-              label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
-            ),
-          ],
-          rows: displayedUsers.map((user) {
-            return DataRow(
-              color: MaterialStateProperty.resolveWith<Color>(
-                (Set<MaterialState> states) {
-                  if (displayedUsers.indexOf(user) % 2 == 0) {
-                    return Colors.blue.shade50.withOpacity(0.3);
-                  }
-                  return Colors.white;
-                },
-              ),
-              cells: [
-                DataCell(
-                  Container(
-                    width: 50,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      image: user.imageUrl.isNotEmpty
-                        ? DecorationImage(
-                            image: NetworkImage(user.imageUrl),
-                            fit: BoxFit.cover,
-                          )
-                        : null,
-                      color: Colors.grey[200],
-                    ),
-                    child: user.imageUrl.isEmpty
-                      ? Center(
-                          child: Text(
-                            '${user.nom.isNotEmpty ? user.nom[0] : ''}${user.prenom.isNotEmpty ? user.prenom[0] : ''}',
-                            style: const TextStyle(
-                              color: Colors.blue,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+            cells: [
+              DataCell(Text(user.id ?? 'N/A', style: const TextStyle(color: Colors.blue))),  // Afficher l'ID
+              DataCell(
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    image: user.imageUrl.isNotEmpty
+                      ? DecorationImage(
+                          image: NetworkImage(user.imageUrl),
+                          fit: BoxFit.cover,
                         )
                       : null,
+                    color: Colors.grey[200],
                   ),
+                  child: user.imageUrl.isEmpty
+                    ? Center(
+                        child: Text(
+                          '${user.nom.isNotEmpty ? user.nom[0] : ''}${user.prenom.isNotEmpty ? user.prenom[0] : ''}',
+                          style: const TextStyle(
+                            color: Colors.blue,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      )
+                    : null,
                 ),
-                DataCell(Text(user.nom, style: const TextStyle(color: Colors.blue))),
-                DataCell(Text(user.prenom, style: const TextStyle(color: Colors.blue))),
-                DataCell(Text(user.email, style: const TextStyle(color: Colors.blue))),
-                DataCell(Text(user.date, style: const TextStyle(color: Colors.blue))),
-                DataCell(Text(user.phone, style: const TextStyle(color: Colors.blue))),
-                DataCell(Text(user.region, style: const TextStyle(color: Colors.blue))),
-                DataCell(Text(user.genre, style: const TextStyle(color: Colors.blue))),
-                DataCell(Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.edit, color: Colors.blue),
-                      onPressed: () => _showEditDialog(user),
-                      tooltip: 'Modifier',
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () => _showDeleteDialog(user),
-                      tooltip: 'Supprimer',
-                    ),
-                  ],
-                )),
-              ],
-            );
-          }).toList(),
+              ),
+              DataCell(Text(user.nom, style: const TextStyle(color: Colors.blue))),
+              DataCell(Text(user.prenom, style: const TextStyle(color: Colors.blue))),
+              DataCell(Text(user.email, style: const TextStyle(color: Colors.blue))),
+              DataCell(Text(user.date, style: const TextStyle(color: Colors.blue))),
+              DataCell(Text(user.phone, style: const TextStyle(color: Colors.blue))),
+              DataCell(Text(user.region, style: const TextStyle(color: Colors.blue))),
+              DataCell(Text(user.genre, style: const TextStyle(color: Colors.blue))),
+              DataCell(Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.edit, color: Colors.blue),
+                    onPressed: () => _showEditDialog(user),
+                    tooltip: 'Modifier',
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    onPressed: () => _showDeleteDialog(user),
+                    tooltip: 'Supprimer',
+                  ),
+                ],
+              )),
+            ],
+          );
+        }).toList(),
         ),
       ),
     );

@@ -4,6 +4,8 @@ import 'dart:developer' as developer;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io' show Platform;
 
+import 'package:opti_app/domain/entities/Order.dart';
+
 // Abstract class defining order data source operations
 abstract class OrderDataSource {
   Future<Map> createOrder(Map orderData);
@@ -11,12 +13,12 @@ abstract class OrderDataSource {
   Future<Map> getOrderById(String id);
   Future<bool> updateOrderStatus(String id, String status);
   Future<bool> cancelOrder(String id);
-}
+ Future<List<Order>> getAllOrders();}
 
 // Implementation of the OrderDataSource interface
 class OrderDataSourceImpl implements OrderDataSource {
   final http.Client client;
-  final String baseUrl = "http://192.168.1.22:3000";
+  final String baseUrl = "http://localhost:3000";
   OrderDataSourceImpl({required this.client});
   
   
@@ -61,26 +63,25 @@ Future<Map> createOrder(Map orderData) async {
     throw Exception('Failed to create order: $e');
   }
 }
-  @override
-  Future<List<Map>> getUserOrders(String userId) async {
-    try {
-      
-      final response = await client.get(
-        Uri.parse('$baseUrl/orders/user/$userId'),
-        headers: {'Content-Type': 'application/json'},
-      ).timeout(const Duration(seconds: 15));
-      
-      if (response.statusCode == 200) {
-        final List data = json.decode(response.body);
-        return data.map((item) => item as Map).toList();
-      } else {
-        throw Exception('Failed to fetch orders: ${response.statusCode}, ${response.body}');
-      }
-    } catch (e) {
-      developer.log('Error fetching orders: $e', error: e);
-      throw Exception('Failed to fetch orders: $e');
+@override
+Future<List<Map>> getUserOrders(String userId) async {
+  try {
+    final response = await client.get(
+      Uri.parse('$baseUrl/orders/user/$userId'),
+      headers: {'Content-Type': 'application/json'},
+    ).timeout(const Duration(seconds: 15));
+    
+    if (response.statusCode == 200) {
+      final List data = json.decode(response.body);
+      return data.map((item) => item as Map).toList();
+    } else {
+      throw Exception('Failed to fetch orders: ${response.statusCode}, ${response.body}');
     }
+  } catch (e) {
+    developer.log('Error fetching orders: $e', error: e);
+    throw Exception('Failed to fetch orders: $e');
   }
+}
   
   @override
   Future<Map> getOrderById(String id) async {
@@ -131,4 +132,23 @@ Future<Map> createOrder(Map orderData) async {
       return false;
     }
   }
+@override
+Future<List<Order>> getAllOrders() async {
+  try {
+    final response = await client.get(
+      Uri.parse('$baseUrl/orders'), // Endpoint pour toutes les commandes
+      headers: {'Content-Type': 'application/json'},
+    ).timeout(const Duration(seconds: 15));
+
+    if (response.statusCode == 200) {
+      final List data = json.decode(response.body);
+      return data.map((item) => Order.fromJson(item)).toList();
+    } else {
+      throw Exception('Failed to fetch orders: ${response.statusCode}, ${response.body}');
+    }
+  } catch (e) {
+    developer.log('Error fetching all orders: $e', error: e);
+    throw Exception('Failed to fetch all orders: $e');
+  }
+}
 }
