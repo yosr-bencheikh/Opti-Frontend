@@ -37,20 +37,23 @@ class UserController extends GetxController {
     _currentUser.value = user;
   }
 
-  /// Récupérer les utilisateurs depuis le backend
-  Future<void> fetchUsers() async {
-    try {
-      _isLoading.value = true;
-      _error.value = null;
+Future<void> fetchUsers() async {
+  try {
+    _isLoading.value = true;
+    _error.value = null;
 
-      final results = await _dataSource.getUsers();
-      _users.assignAll(results);
-    } catch (e) {
-      _error.value = e.toString();
-    } finally {
-      _isLoading.value = false;
+    final results = await _dataSource.getUsers();
+    _users.assignAll(results);
+    print('Users fetched: ${_users.length}');
+    for (var user in _users) {
+      print('User ID: ${user.id}');
     }
+  } catch (e) {
+    _error.value = e.toString();
+  } finally {
+    _isLoading.value = false;
   }
+}
 
   /// Ajouter un nouvel utilisateur
   Future<void> addUser(User user) async {
@@ -233,5 +236,36 @@ Future<String> uploadImage(File imageFile, String email) async {
     _isLoading.value = false;
   }
 }
-  
+String getUserName(String userId) {
+  // Recherchez l'utilisateur dans la liste par son ID (ou email)
+  final user = _users.firstWhere(
+    (user) => user.email == userId, 
+    orElse: () => User(
+      nom: 'Inconnu',
+      prenom: '',
+      email: '',
+      date: '',
+      region: '',
+      genre: '',
+      password: '',
+      phone: '',
+      status: 'Inactive',
+    ),
+  );
+
+  // Retournez le nom complet de l'utilisateur
+  return '${user.nom} ${user.prenom}'.trim();
+}
+Future<User> fetchUserById(String userId) async {
+  try {
+    _isLoading.value = true;
+    final user = await _dataSource.getUserById(userId); // Utilisez la méthode appropriée dans UserDataSource
+    return user;
+  } catch (e) {
+    print('Error fetching user by ID: $e');
+    throw e; // Re-lancez l'exception pour la gérer dans l'appelant
+  } finally {
+    _isLoading.value = false;
+  }
+}
 }

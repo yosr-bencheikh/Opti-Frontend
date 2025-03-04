@@ -8,20 +8,22 @@ import 'package:opti_app/domain/entities/product_entity.dart';
 
 class ProductDatasource {
   final String baseUrl = 'http://192.168.1.22:3000/api/products';
-Future<List<Product>> getProductsByOptician(String opticianId) async {
-  try {
-    final response = await http.get(Uri.parse('$baseUrl?opticianId=$opticianId'));
+  Future<List<Product>> getProductsByOptician(String opticianId) async {
+    try {
+      final response =
+          await http.get(Uri.parse('$baseUrl?opticianId=$opticianId'));
 
-    if (response.statusCode == 200) {
-      final List<dynamic> data = json.decode(response.body);
-      return data.map((json) => Product.fromJson(json)).toList();
-    } else {
-      throw Exception('Échec du chargement des produits pour cet opticien');
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return data.map((json) => Product.fromJson(json)).toList();
+      } else {
+        throw Exception('Échec du chargement des produits pour cet opticien');
+      }
+    } catch (e) {
+      throw Exception('Erreur lors de la récupération des produits: $e');
     }
-  } catch (e) {
-    throw Exception('Erreur lors de la récupération des produits: $e');
   }
-}
+
   Future<List<Product>> getProducts() async {
     try {
       final response = await http.get(Uri.parse('$baseUrl'));
