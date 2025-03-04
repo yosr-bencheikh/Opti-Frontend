@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 class User extends Equatable {
+  final String? id; // Make id optional
   String nom;
   final String prenom;
   String email;
@@ -14,6 +15,7 @@ class User extends Equatable {
   String status;
 
   User({
+    this.id, // Make id optional in the constructor
     required this.nom,
     required this.prenom,
     required this.email,
@@ -29,6 +31,7 @@ class User extends Equatable {
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
+      id: json['id'] ?? json['_id'], // Handle id from JSON, can be null
       nom: json['nom'] ?? '',
       prenom: json['prenom'] ?? '',
       email: json['email'] ?? '',
@@ -45,6 +48,7 @@ class User extends Equatable {
 
   @override
   List<Object?> get props => [
+    id, // Include id in the props, can be null
     nom,
     prenom,
     email,
@@ -60,6 +64,7 @@ class User extends Equatable {
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id, // Include id in the JSON output, can be null
       'nom': nom,
       'prenom': prenom,
       'email': email,

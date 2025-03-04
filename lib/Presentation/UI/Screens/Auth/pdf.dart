@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:opti_app/domain/entities/Order.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -7,28 +8,35 @@ import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:get/get.dart';
+import 'package:share_plus/share_plus.dart';
 
 // Fonction principale pour générer et afficher la facture
 Future<void> generateAndOpenInvoice(Order order) async {
   // Générer le PDF et obtenir le chemin du fichier
   final pdfPath = await _generateInvoice(order);
-  
-  // Afficher le PDF dans l'application
+
+  // Assurez-vous que order.id n'est pas null, sinon fournir un fallback.
+  final orderId = order.id?.toString() ?? 'inconnu';
+
+  // Afficher le PDF dans l'application en passant l'orderId
   Get.to(() => PdfViewerScreen(
-    pdfPath: pdfPath,
-    title: 'Facture #${order.id}',
-  ));
+        pdfPath: pdfPath,
+        title: 'Facture #$orderId',
+        orderId: orderId,
+      ));
 }
 
 // Écran de visualisation PDF
 class PdfViewerScreen extends StatelessWidget {
   final String pdfPath;
   final String title;
+  final String orderId; // Utilisé pour le nom du fichier
 
   const PdfViewerScreen({
     Key? key,
     required this.pdfPath,
     required this.title,
+    required this.orderId,
   }) : super(key: key);
 
   @override
@@ -39,12 +47,21 @@ class PdfViewerScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         actions: [
-          // Bouton pour partager ou télécharger le PDF
+          // Bouton pour télécharger le PDF
+          IconButton(
+            icon: const Icon(Icons.download),
+            onPressed: () {
+              print("pdfPath:{$pdfPath}");
+              print("orderId:{$orderId}");
+              downloadPdfFile(pdfPath, orderId);
+            },
+          ),
+          // Bouton pour partager le PDF
           IconButton(
             icon: const Icon(Icons.share),
             onPressed: () {
-              // Vous pouvez ajouter un code pour partager le PDF ici
-              // Exemple: Share.shareFiles([pdfPath], text: 'Votre facture');
+              Share.shareXFiles([XFile(pdfPath)],
+                  text: 'Votre facture #$orderId');
             },
           ),
         ],
@@ -59,18 +76,14 @@ class PdfViewerScreen extends StatelessWidget {
         defaultPage: 0,
         fitPolicy: FitPolicy.BOTH,
         preventLinkNavigation: false,
-        onRender: (_pages) {
-          // PDF est chargé et prêt à être affiché
-        },
+        onRender: (_pages) {},
         onError: (error) {
           print(error.toString());
         },
         onPageError: (page, error) {
           print('$page: ${error.toString()}');
         },
-        onViewCreated: (PDFViewController pdfViewController) {
-          // Contrôleur créé, vous pouvez l'utiliser pour naviguer dans le PDF
-        },
+        onViewCreated: (PDFViewController pdfViewController) {},
       ),
     );
   }
@@ -81,10 +94,10 @@ Future<String> _generateInvoice(Order order) async {
   // Format de date français
   final dateFormat = DateFormat('dd/MM/yyyy à HH:mm');
   final formattedDate = dateFormat.format(order.createdAt);
-  
+
   // Créer un document PDF
   final pdf = pw.Document();
-  
+
   // Ajouter une page au PDF avec entête et pied de page
   pdf.addPage(
     pw.MultiPage(
@@ -105,13 +118,14 @@ Future<String> _generateInvoice(Order order) async {
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
                 pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                  children: [
-                    pw.Text('COMMANDE #${order.id}', 
-                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14)),
-                    pw.Text('Date: $formattedDate', style: const pw.TextStyle(fontSize: 12)),
-                  ]
-                ),
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    children: [
+                      pw.Text('COMMANDE #${order.id}',
+                          style: pw.TextStyle(
+                              fontWeight: pw.FontWeight.bold, fontSize: 14)),
+                      pw.Text('Date: $formattedDate',
+                          style: const pw.TextStyle(fontSize: 12)),
+                    ]),
                 pw.SizedBox(height: 10),
                 pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -119,21 +133,23 @@ Future<String> _generateInvoice(Order order) async {
                     pw.Column(
                       crossAxisAlignment: pw.CrossAxisAlignment.start,
                       children: [
-                        pw.Text('ADRESSE DE LIVRAISON:', 
-                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12)),
+                        pw.Text('ADRESSE DE LIVRAISON:',
+                            style: pw.TextStyle(
+                                fontWeight: pw.FontWeight.bold, fontSize: 12)),
                         pw.SizedBox(height: 5),
-                        pw.Text(order.address ?? 'Non spécifiée', 
-                          style: const pw.TextStyle(fontSize: 11)),
+                        pw.Text(order.address ?? 'Non spécifiée',
+                            style: const pw.TextStyle(fontSize: 11)),
                       ],
                     ),
                     pw.Column(
                       crossAxisAlignment: pw.CrossAxisAlignment.start,
                       children: [
-                        pw.Text('MÉTHODE DE PAIEMENT:', 
-                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12)),
+                        pw.Text('MÉTHODE DE PAIEMENT:',
+                            style: pw.TextStyle(
+                                fontWeight: pw.FontWeight.bold, fontSize: 12)),
                         pw.SizedBox(height: 5),
-                        pw.Text(order.paymentMethod ?? 'Non spécifiée', 
-                          style: const pw.TextStyle(fontSize: 11)),
+                        pw.Text(order.paymentMethod ?? 'Non spécifiée',
+                            style: const pw.TextStyle(fontSize: 11)),
                       ],
                     ),
                   ],
@@ -141,17 +157,18 @@ Future<String> _generateInvoice(Order order) async {
               ],
             ),
           ),
-          
+
           pw.SizedBox(height: 20),
-          
+
           // Tableau des articles
-          pw.Text('DÉTAIL DES ARTICLES', 
-            style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
+          pw.Text('DÉTAIL DES ARTICLES',
+              style:
+                  pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
           pw.SizedBox(height: 10),
           _buildItemsTable(order),
-          
+
           pw.SizedBox(height: 20),
-          
+
           // Récapitulatif des prix
           pw.Align(
             alignment: pw.Alignment.centerRight,
@@ -160,28 +177,32 @@ Future<String> _generateInvoice(Order order) async {
               child: pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
-                  _buildPriceRow('Sous-total', '${order.subtotal.toStringAsFixed(2)} €'),
-                  _buildPriceRow('Frais de livraison', '${order.deliveryFee.toStringAsFixed(2)} €'),
+                  _buildPriceRow(
+                      'Sous-total', '${order.subtotal.toStringAsFixed(2)} €'),
+                  _buildPriceRow('Frais de livraison',
+                      '${order.deliveryFee.toStringAsFixed(2)} €'),
                   pw.Divider(thickness: 1),
-                  _buildPriceRow('TOTAL', '${order.total.toStringAsFixed(2)} €', 
-                    isTotal: true),
+                  _buildPriceRow('TOTAL', '${order.total.toStringAsFixed(2)} €',
+                      isTotal: true),
                 ],
               ),
             ),
           ),
-          
+
           pw.SizedBox(height: 30),
-          
+
           // Message de remerciement
           pw.Container(
             alignment: pw.Alignment.center,
             child: pw.Column(
               children: [
-                pw.Text('Merci pour votre commande !', 
-                  style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+                pw.Text('Merci pour votre commande !',
+                    style: pw.TextStyle(
+                        fontSize: 14, fontWeight: pw.FontWeight.bold)),
                 pw.SizedBox(height: 5),
-                pw.Text('Pour toute question, contactez notre service client.', 
-                  style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
+                pw.Text('Pour toute question, contactez notre service client.',
+                    style: const pw.TextStyle(
+                        fontSize: 10, color: PdfColors.grey700)),
               ],
             ),
           ),
@@ -209,10 +230,15 @@ pw.Widget _buildHeader(Order order) {
         pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            pw.Text('OPTI APP', 
-              style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold, color: PdfColors.black)),
+            pw.Text('OPTI APP',
+                style: pw.TextStyle(
+                    fontSize: 24,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColors.black)),
             pw.SizedBox(height: 5),
-            pw.Text('Votre partenaire optique', style: const pw.TextStyle(fontSize: 12, color: PdfColors.grey700)),
+            pw.Text('Votre partenaire optique',
+                style:
+                    const pw.TextStyle(fontSize: 12, color: PdfColors.grey700)),
           ],
         ),
         pw.Container(
@@ -221,8 +247,9 @@ pw.Widget _buildHeader(Order order) {
             border: pw.Border.all(color: PdfColors.black),
             borderRadius: const pw.BorderRadius.all(pw.Radius.circular(5)),
           ),
-          child: pw.Text('FACTURE', 
-            style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
+          child: pw.Text('FACTURE',
+              style:
+                  pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
         ),
       ],
     ),
@@ -236,10 +263,10 @@ pw.Widget _buildFooter(pw.Context context) {
     child: pw.Row(
       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
       children: [
-        pw.Text('Opti App - SIRET: 123 456 789 00010', 
-          style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey)),
-        pw.Text('Page ${context.pageNumber} sur ${context.pagesCount}', 
-          style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey)),
+        pw.Text('Opti App - SIRET: 123 456 789 00010',
+            style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey)),
+        pw.Text('Page ${context.pageNumber} sur ${context.pagesCount}',
+            style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey)),
       ],
     ),
   );
@@ -247,9 +274,10 @@ pw.Widget _buildFooter(pw.Context context) {
 
 // Construction du tableau des articles
 pw.Widget _buildItemsTable(Order order) {
-  final headerStyle = pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white);
+  final headerStyle =
+      pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white);
   final headerDecoration = const pw.BoxDecoration(color: PdfColors.grey800);
-  
+
   return pw.Table(
     border: null,
     columnWidths: {
@@ -265,19 +293,23 @@ pw.Widget _buildItemsTable(Order order) {
         children: [
           pw.Padding(
             padding: const pw.EdgeInsets.all(8),
-            child: pw.Text('Article', style: headerStyle, textAlign: pw.TextAlign.left),
+            child: pw.Text('Article',
+                style: headerStyle, textAlign: pw.TextAlign.left),
           ),
           pw.Padding(
             padding: const pw.EdgeInsets.all(8),
-            child: pw.Text('Prix unitaire', style: headerStyle, textAlign: pw.TextAlign.right),
+            child: pw.Text('Prix unitaire',
+                style: headerStyle, textAlign: pw.TextAlign.right),
           ),
           pw.Padding(
             padding: const pw.EdgeInsets.all(8),
-            child: pw.Text('Qté', style: headerStyle, textAlign: pw.TextAlign.center),
+            child: pw.Text('Qté',
+                style: headerStyle, textAlign: pw.TextAlign.center),
           ),
           pw.Padding(
             padding: const pw.EdgeInsets.all(8),
-            child: pw.Text('Total', style: headerStyle, textAlign: pw.TextAlign.right),
+            child: pw.Text('Total',
+                style: headerStyle, textAlign: pw.TextAlign.right),
           ),
         ],
       ),
@@ -286,7 +318,7 @@ pw.Widget _buildItemsTable(Order order) {
         final index = entry.key;
         final item = entry.value;
         final isEvenRow = index % 2 == 0;
-        
+
         return pw.TableRow(
           decoration: pw.BoxDecoration(
             color: isEvenRow ? PdfColors.white : PdfColors.grey100,
@@ -298,15 +330,18 @@ pw.Widget _buildItemsTable(Order order) {
             ),
             pw.Padding(
               padding: const pw.EdgeInsets.all(8),
-              child: pw.Text('${item.unitPrice.toStringAsFixed(2)} €', textAlign: pw.TextAlign.right),
+              child: pw.Text('${item.unitPrice.toStringAsFixed(2)} €',
+                  textAlign: pw.TextAlign.right),
             ),
             pw.Padding(
               padding: const pw.EdgeInsets.all(8),
-              child: pw.Text('${item.quantity}', textAlign: pw.TextAlign.center),
+              child:
+                  pw.Text('${item.quantity}', textAlign: pw.TextAlign.center),
             ),
             pw.Padding(
               padding: const pw.EdgeInsets.all(8),
-              child: pw.Text('${item.totalPrice.toStringAsFixed(2)} €', textAlign: pw.TextAlign.right),
+              child: pw.Text('${item.totalPrice.toStringAsFixed(2)} €',
+                  textAlign: pw.TextAlign.right),
             ),
           ],
         );
@@ -322,15 +357,54 @@ pw.Widget _buildPriceRow(String label, String amount, {bool isTotal = false}) {
     child: pw.Row(
       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
       children: [
-        pw.Text(label, 
-          style: isTotal 
-            ? pw.TextStyle(fontWeight: pw.FontWeight.bold) 
-            : const pw.TextStyle()),
-        pw.Text(amount, 
-          style: isTotal 
-            ? pw.TextStyle(fontWeight: pw.FontWeight.bold) 
-            : const pw.TextStyle()),
+        pw.Text(label,
+            style: isTotal
+                ? pw.TextStyle(fontWeight: pw.FontWeight.bold)
+                : const pw.TextStyle()),
+        pw.Text(amount,
+            style: isTotal
+                ? pw.TextStyle(fontWeight: pw.FontWeight.bold)
+                : const pw.TextStyle()),
       ],
     ),
   );
+}
+
+Future<void> downloadPdfFile(String pdfPath, String orderId) async {
+  try {
+    Directory? destinationDirectory;
+
+    if (Platform.isAndroid) {
+      // Sur Android, on tente d'utiliser le dossier Download.
+      destinationDirectory = Directory('/storage/emulated/0/Download');
+      if (!await destinationDirectory.exists()) {
+        // Fallback vers l'external storage de l'application.
+        destinationDirectory = await getExternalStorageDirectory();
+      }
+    } else if (Platform.isIOS) {
+      // Sur iOS, on utilise le dossier Documents.
+      destinationDirectory = await getApplicationDocumentsDirectory();
+    }
+
+    if (destinationDirectory == null) {
+      throw Exception("Aucun dossier de destination trouvé");
+    }
+
+    // Construire le nouveau chemin avec le nom de fichier souhaité.
+    final newPath = "${destinationDirectory.path}/facture_$orderId.pdf";
+    final sourceFile = File(pdfPath);
+    await sourceFile.copy(newPath);
+
+    Get.snackbar(
+      "Téléchargement terminé",
+      "Le fichier PDF a été sauvegardé dans: $newPath",
+      snackPosition: SnackPosition.BOTTOM,
+    );
+  } catch (e) {
+    Get.snackbar(
+      "Erreur",
+      "Impossible de télécharger le PDF: $e",
+      snackPosition: SnackPosition.BOTTOM,
+    );
+  }
 }

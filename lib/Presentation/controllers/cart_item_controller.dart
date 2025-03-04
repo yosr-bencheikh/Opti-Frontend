@@ -2,7 +2,6 @@ import 'package:get/get.dart';
 import 'package:opti_app/data/repositories/cart_item_repository_impl.dart';
 import '../../domain/entities/Cart_item.dart';
 import '../../domain/repositories/product_repository.dart';
- 
 
 class CartItemController extends GetxController {
   final CartItemRepositoryImpl repository;
@@ -140,22 +139,37 @@ class CartItemController extends GetxController {
     }
   }
 
-   Future<void> clearCart(String userId) async {
+  Future<void> clearCart(String userId) async {
     try {
-      // Clear the local cart items
-      cartItems.value = [];
+      isLoading(true);
 
-      // If you're storing cart items in a database or remote service,
-      // add the code to clear those items here
-      // Example: await cartRepository.clearCart(userId);
+      // Get the current cart items
+      final currentCartItems = List.from(cartItems);
 
-      update(); // Update the UI
-    } catch (e) {
+      // Delete each cart item individually
+      for (var cartItem in currentCartItems) {
+        await repository.deleteCartItem(cartItem.id!);
+      }
+
+      // Clear the local cart items list
+      cartItems.clear();
+
+      // Show success message
       Get.snackbar(
-        'Erreur',
-        'Une erreur est survenue lors de la suppression du panier: $e',
+        'Succès',
+        'Votre panier a été vidé',
         duration: const Duration(seconds: 3),
       );
+    } catch (e) {
+      // Handle any errors
+      print('Error clearing cart: $e');
+      Get.snackbar(
+        'Erreur',
+        'Impossible de vider le panier: $e',
+        duration: const Duration(seconds: 3),
+      );
+    } finally {
+      isLoading(false);
     }
   }
 }

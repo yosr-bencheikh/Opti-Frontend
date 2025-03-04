@@ -7,6 +7,7 @@ abstract class CartItemDataSource {
   Future<List<CartItem>> getCartItems(String userId);
   Future<CartItem> updateCartItem(String id, int quantity, double totalPrice);
   Future<void> deleteCartItem(String id);
+  Future<void> clearCartItems(String userId);
 }
 
 class CartItemDataSourceImpl implements CartItemDataSource {
@@ -85,6 +86,25 @@ class CartItemDataSourceImpl implements CartItemDataSource {
       }
     } catch (e) {
       throw Exception('Failed to delete cart item: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<void> clearCartItems(String id) async {
+    try {
+      final response = await client.delete(
+        Uri.parse('$baseUrl/cart/$id'),
+      );
+
+      // Consider 204 and 200 as successful deletions
+      if (response.statusCode != 204 && response.statusCode != 200) {
+        throw Exception('Failed to delete cart item');
+      }
+    } catch (e) {
+      // Log the error but don't throw if the item might have already been deleted
+      print('Error deleting cart item: $e');
+      // Optionally rethrow if you want to stop the entire clearing process
+      // throw e;
     }
   }
 }

@@ -129,4 +129,13 @@ class AuthRepositoryImpl implements AuthRepository {
       throw Exception('Error deleting the image: $e');
     }
   }
+
+  @override
+  Future<Map<String, dynamic>> getUserById(String userId) async {
+    try {
+      return await dataSource.getUserById(userId);
+    } catch (e) {
+      throw Exception('Error deleting the image: $e');
+    }
+  }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:opti_app/Presentation/controllers/auth_controller.dart';
+import 'package:opti_app/data/models/user_model.dart';
 import 'package:opti_app/domain/entities/product_entity.dart';
 import 'package:opti_app/domain/entities/user.dart';
 import 'package:opti_app/Presentation/controllers/review_controller.dart';
@@ -14,13 +15,10 @@ class ReviewsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     // Initialize (or retrieve) the ReviewController
     final ReviewController reviewController = Get.put(ReviewController());
+    final AuthController authController = Get.find();
 
-    // Set the product ID and fetch reviews when the screen is built.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (reviewController.productId.value != product.id) {
-        reviewController.setProductId(product.id!);
-      }
-    });
+    // Set the product ID
+    reviewController.setProductId(product.id!);
 
     return Scaffold(
       appBar: AppBar(
@@ -65,76 +63,104 @@ class ReviewsScreen extends StatelessWidget {
     final ReviewController reviewController = Get.find<ReviewController>();
     final AuthController authController = Get.find<AuthController>();
 
-    final User? currentUser = authController.currentUser;
-    final String userName = currentUser != null
-        ? '${currentUser.nom} ${currentUser.prenom}'
-        : 'Unknown User';
-    final String userImageUrl =
-        currentUser?.imageUrl ?? 'https://i.pravatar.cc/50';
+    // Extract user ID from the review
+    dynamic userIdValue = review['userId'];
+    String userId = '';
 
-    final String relativeTime = _getRelativeTime(review['timestamp']);
-
-    // Try to obtain the review ID using several possible keys.
-    final dynamic reviewIdValue = review['id'] ??
-        review['reviewId'] ??
-        review['review_id'] ??
-        review['_id'];
-    final String reviewId = reviewIdValue?.toString() ?? '';
-
-    if (reviewId.isEmpty) {
-      print("Review data keys: ${review.keys}");
-      print("Review ID is missing; cannot delete.");
+    if (userIdValue is String) {
+      userId = userIdValue;
+    } else if (userIdValue is Map<String, dynamic>) {
+      userId = userIdValue['_id']?.toString() ?? '';
     }
 
-    return GestureDetector(
-      onLongPress: () {
-        if (reviewId.isEmpty) {
-          print("Review ID is missing; cannot delete.");
-          return;
-        }
-        // Update the controller with the selected review ID.
-        reviewController.setSelectedReviewId(reviewId);
-        // Show the delete confirmation dialog.
-        _showDeleteConfirmation(context, reviewId);
-      },
-      child: Card(
-        margin: const EdgeInsets.only(bottom: 16),
-        elevation: 1,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: CircleAvatar(
-                  backgroundImage: NetworkImage(userImageUrl),
-                ),
-                title: Text(userName),
-                subtitle: Text(relativeTime),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: List.generate(
-                    review['rating'],
-                    (index) => const Icon(
-                      Icons.star,
-                      color: Colors.amber,
-                      size: 16,
+    // Log the user ID being searched
+    print("Searching for user with ID: $userId");
+
+    return FutureBuilder<UserModel?>(
+      future: userId.isNotEmpty
+          ? authController.fetchAndStoreUser(userId)
+          : Future.value(null),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError) {
+          return const Center(child: Text('Error fetching user'));
+        } else {
+          final reviewUser = snapshot.data;
+
+          // Extract user information
+          final String userName = reviewUser != null
+              ? '${reviewUser.nom} ${reviewUser.prenom}'
+              : 'Unknown User';
+          final String userImageUrl =
+              reviewUser?.imageUrl ?? 'https://i.pravatar.cc/50';
+
+          final String relativeTime = _getRelativeTime(review['timestamp']);
+
+          // Try to obtain the review ID using several possible keys.
+          final dynamic reviewIdValue = review['id'] ??
+              review['reviewId'] ??
+              review['review_id'] ??
+              review['_id'];
+          final String reviewId = reviewIdValue?.toString() ?? '';
+
+          if (reviewId.isEmpty) {
+            print("Review data keys: ${review.keys}");
+            print("Review ID is missing; cannot delete.");
+          }
+
+          return GestureDetector(
+            onLongPress: () {
+              if (reviewId.isEmpty) {
+                print("Review ID is missing; cannot delete.");
+                return;
+              }
+              // Update the controller with the selected review ID.
+              reviewController.setSelectedReviewId(reviewId);
+              // Show the delete confirmation dialog.
+              _showDeleteConfirmation(context, reviewId);
+            },
+            child: Card(
+              margin: const EdgeInsets.only(bottom: 16),
+              elevation: 1,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: CircleAvatar(
+                        backgroundImage: NetworkImage(userImageUrl),
+                      ),
+                      title: Text(userName),
+                      subtitle: Text(relativeTime),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: List.generate(
+                          review['rating'],
+                          (index) => const Icon(
+                            Icons.star,
+                            color: Colors.amber,
+                            size: 16,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        review['reviewText'],
+                        style: TextStyle(color: Colors.grey[700]),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  review['reviewText'],
-                  style: TextStyle(color: Colors.grey[700]),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+            ),
+          );
+        }
+      },
     );
   }
 
@@ -204,6 +230,98 @@ class ReviewsScreen extends StatelessWidget {
     } else {
       return '${(difference.inDays / 365).floor()}y';
     }
+  }
+
+  Widget _buildOverallRating(
+      Product product, ReviewController reviewController) {
+    // Calculate average rating and total reviews manually
+    double averageRating = 0.0;
+    int totalReviews = reviewController.reviews.length;
+
+    if (totalReviews > 0) {
+      int sum = 0;
+      for (var review in reviewController.reviews) {
+        sum += review['rating'] as int;
+      }
+      averageRating = sum / totalReviews;
+    }
+
+    // Update the product's fields with the calculated values
+    if (product.averageRating != averageRating) {
+      product.averageRating = averageRating;
+    }
+
+    if (product.totalReviews != totalReviews) {
+      product.totalReviews = totalReviews;
+    }
+
+    // Calculate rating distribution
+    Map<int, int> ratingCounts = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
+    for (var review in reviewController.reviews) {
+      int rating = review['rating'] as int;
+      ratingCounts[rating] = (ratingCounts[rating] ?? 0) + 1;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
+      ),
+      child: Row(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                averageRating.toStringAsFixed(1),
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.amber[800],
+                ),
+              ),
+              Row(
+                children: List.generate(
+                  5,
+                  (index) => Icon(
+                    index < averageRating.floor()
+                        ? Icons.star
+                        : (index < averageRating)
+                            ? Icons.star_half
+                            : Icons.star_border,
+                    color: Colors.amber,
+                    size: 20,
+                  ),
+                ),
+              ),
+              Text(
+                '$totalReviews reviews',
+                style: TextStyle(color: Colors.grey),
+              ),
+            ],
+          ),
+          const SizedBox(width: 20),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                _buildRatingProgress('5',
+                    totalReviews > 0 ? ratingCounts[5]! / totalReviews : 0),
+                _buildRatingProgress('4',
+                    totalReviews > 0 ? ratingCounts[4]! / totalReviews : 0),
+                _buildRatingProgress('3',
+                    totalReviews > 0 ? ratingCounts[3]! / totalReviews : 0),
+                _buildRatingProgress('2',
+                    totalReviews > 0 ? ratingCounts[2]! / totalReviews : 0),
+                _buildRatingProgress('1',
+                    totalReviews > 0 ? ratingCounts[1]! / totalReviews : 0),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showReviewDialog(
@@ -325,99 +443,6 @@ class ReviewsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildOverallRating(
-      Product product, ReviewController reviewController) {
-    // Calculate average rating and total reviews manually
-    double averageRating = 0.0;
-    int totalReviews = reviewController.reviews.length;
-
-    if (totalReviews > 0) {
-      int sum = 0;
-      for (var review in reviewController.reviews) {
-        sum += review['rating'] as int;
-      }
-      averageRating = sum / totalReviews;
-    }
-
-    // Update the product's fields with the calculated values
-    // Only update if they're not matching (to avoid unnecessary updates)
-    if (product.averageRating != averageRating) {
-      product.averageRating = averageRating;
-    }
-
-    if (product.totalReviews != totalReviews) {
-      product.totalReviews = totalReviews;
-    }
-
-    // Calculate rating distribution
-    Map<int, int> ratingCounts = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
-    for (var review in reviewController.reviews) {
-      int rating = review['rating'] as int;
-      ratingCounts[rating] = (ratingCounts[rating] ?? 0) + 1;
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
-      ),
-      child: Row(
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                averageRating.toStringAsFixed(1),
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.amber[800],
-                ),
-              ),
-              Row(
-                children: List.generate(
-                  5,
-                  (index) => Icon(
-                    index < averageRating.floor()
-                        ? Icons.star
-                        : (index < averageRating)
-                            ? Icons.star_half
-                            : Icons.star_border,
-                    color: Colors.amber,
-                    size: 20,
-                  ),
-                ),
-              ),
-              Text(
-                '$totalReviews reviews',
-                style: TextStyle(color: Colors.grey),
-              ),
-            ],
-          ),
-          const SizedBox(width: 20),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                _buildRatingProgress('5',
-                    totalReviews > 0 ? ratingCounts[5]! / totalReviews : 0),
-                _buildRatingProgress('4',
-                    totalReviews > 0 ? ratingCounts[4]! / totalReviews : 0),
-                _buildRatingProgress('3',
-                    totalReviews > 0 ? ratingCounts[3]! / totalReviews : 0),
-                _buildRatingProgress('2',
-                    totalReviews > 0 ? ratingCounts[2]! / totalReviews : 0),
-                _buildRatingProgress('1',
-                    totalReviews > 0 ? ratingCounts[1]! / totalReviews : 0),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildRatingProgress(String stars, double percentage) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -438,6 +463,4 @@ class ReviewsScreen extends StatelessWidget {
       ),
     );
   }
-
-  // Function to calculate relative time
 }

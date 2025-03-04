@@ -1,15 +1,17 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:opti_app/Presentation/UI/Screens/Auth/location_picker_screen.dart';
+import 'dart:developer' as developer;
 
 import 'package:opti_app/Presentation/UI/screens/auth/pdf.dart';
 import 'package:opti_app/Presentation/controllers/OrderController.dart';
 import 'package:opti_app/Presentation/controllers/cart_item_controller.dart';
 import 'package:opti_app/Presentation/controllers/auth_controller.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
-import 'package:opti_app/domain/entities/Order.dart';
-import 'package:pdf/widgets.dart' as pw;
+import 'package:url_launcher/url_launcher.dart';
 
 class CheckoutScreen extends StatefulWidget {
   @override
@@ -22,28 +24,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final OrderController orderController = Get.find();
   final ProductController productController = Get.find();
 
-  // Variables pour les adresses et méthodes de paiement
-  final List<String> addresses = [
-    '12 Rue de Paris, 75001 Paris',
-    '45 Avenue des Champs-Élysées, 75008 Paris',
-    'Ajouter une nouvelle adresse...',
-  ];
+  // Add RxDouble values for latitude and longitude
+  final RxDouble selectedLatitude = 0.0.obs;
+  final RxDouble selectedLongitude = 0.0.obs;
 
+  // Variables pour les adresses et méthodes de paiement
   final List<String> paymentMethods = [
-    'Carte bancaire',
-    'PayPal',
-    'Paiement à la livraison',
+    'Paiement à la livraison', // Only cash on delivery
   ];
 
   @override
   void initState() {
     super.initState();
-    // Préparer l'adresse et le mode de paiement par défaut
-    if (orderController.selectedAddress.value.isEmpty && addresses.isNotEmpty) {
-      orderController.setAddress(addresses.first);
-    }
-
-    // Initialiser la méthode de paiement par défaut si nécessaire
+    // Set default payment method
     if (orderController.selectedPaymentMethod.value.isEmpty &&
         paymentMethods.isNotEmpty) {
       orderController.setPaymentMethod(paymentMethods.first);
@@ -128,9 +121,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   child: orderController.isCreating.value
                       ? const CircularProgressIndicator(color: Colors.white)
                       : const Text(
-                    'Confirmer et payer',
-                    style: TextStyle(fontSize: 16),
-                  ),
+                          'Confirmer et payer',
+                          style: TextStyle(fontSize: 16),
+                        ),
                 ),
               ),
             ],
@@ -151,7 +144,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         ),
         onPressed: orderController.currentOrder.value != null
             ? () => _showCancelConfirmationDialog(
-            context, orderController.currentOrder.value!.id!)
+                context, orderController.currentOrder.value!.id!)
             : null,
         style: OutlinedButton.styleFrom(
           foregroundColor: Colors.red,
@@ -225,7 +218,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         itemBuilder: (context, index) {
           final cartItem = cartController.cartItems[index];
           final product = productController.products.firstWhereOrNull(
-                (p) => p.id == cartItem.productId,
+            (p) => p.id == cartItem.productId,
           );
 
           if (product == null) {
@@ -241,25 +234,25 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               borderRadius: BorderRadius.circular(8),
               child: product.image.startsWith('assets/')
                   ? Image.asset(
-                product.image,
-                width: 50,
-                height: 50,
-                fit: BoxFit.cover,
-              )
+                      product.image,
+                      width: 50,
+                      height: 50,
+                      fit: BoxFit.cover,
+                    )
                   : Image.network(
-                product.image,
-                width: 50,
-                height: 50,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    width: 50,
-                    height: 50,
-                    color: Colors.grey[200],
-                    child: const Icon(Icons.image_not_supported),
-                  );
-                },
-              ),
+                      product.image,
+                      width: 50,
+                      height: 50,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          width: 50,
+                          height: 50,
+                          color: Colors.grey[200],
+                          child: const Icon(Icons.image_not_supported),
+                        );
+                      },
+                    ),
             ),
             title: Text(
               product.name,
@@ -292,41 +285,69 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           ),
         ],
       ),
-      child: DropdownButtonFormField<String>(
-        value: orderController.selectedAddress.value.isNotEmpty
-            ? orderController.selectedAddress.value
-            : addresses.first,
-        decoration: const InputDecoration(
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(12)),
-            borderSide: BorderSide.none,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Show the current selected address
+          if (orderController.selectedAddress.value.isNotEmpty) ...[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.location_on, color: Color(0xFFFFA837)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Adresse de livraison actuelle:',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w500,
+                          fontSize: 14,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        orderController.selectedAddress.value,
+                        style: const TextStyle(fontSize: 15),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          // Map button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              icon: const Icon(Icons.map, color: Colors.white),
+              label: Text(
+                orderController.selectedAddress.value.isEmpty
+                    ? 'Sélectionner mon adresse sur la carte'
+                    : 'Modifier mon adresse',
+                style: const TextStyle(color: Colors.white),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFFA837),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onPressed: () => _showLocationOptions(context),
+            ),
           ),
-          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        ),
-        items: addresses.map((address) {
-          return DropdownMenuItem<String>(
-            value: address,
-            child: Text(address),
-          );
-        }).toList(),
-        onChanged: (value) {
-          if (value == 'Ajouter une nouvelle adresse...') {
-            _showAddAddressDialog(context);
-          } else if (value != null) {
-            orderController.setAddress(value);
-          }
-        },
+        ],
       ),
     );
   }
 
   Widget _buildPaymentMethodSelector() {
-    // S'assurer qu'une méthode de paiement par défaut est sélectionnée
-    final currentPaymentMethod =
-    orderController.selectedPaymentMethod.value.isNotEmpty
-        ? orderController.selectedPaymentMethod.value
-        : paymentMethods.first;
-
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -339,26 +360,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           ),
         ],
       ),
-      child: DropdownButtonFormField<String>(
-        value: currentPaymentMethod,
-        decoration: const InputDecoration(
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(12)),
-            borderSide: BorderSide.none,
-          ),
-          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        ),
-        items: paymentMethods.map((method) {
-          return DropdownMenuItem<String>(
-            value: method,
-            child: Text(method),
-          );
-        }).toList(),
-        onChanged: (value) {
-          if (value != null) {
-            orderController.setPaymentMethod(value);
-          }
-        },
+      child: ListTile(
+        title: Text('Paiement à la livraison'),
+        subtitle: Text('Seule méthode disponible'),
+        leading: Icon(Icons.money_off_csred),
       ),
     );
   }
@@ -366,7 +371,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Widget _buildSummary() {
     final subtotal = cartController.cartItems.fold<double>(
       0,
-          (sum, item) => sum + item.totalPrice,
+      (sum, item) => sum + item.totalPrice,
     );
 
     final deliveryFee = orderController.deliveryFee;
@@ -434,54 +439,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
-  void _showAddAddressDialog(BuildContext context) {
-    final TextEditingController addressController = TextEditingController();
-
-    Get.dialog(
-      AlertDialog(
-        title: const Text('Ajouter une nouvelle adresse'),
-        content: TextField(
-          controller: addressController,
-          decoration: const InputDecoration(
-            hintText: 'Entrez votre adresse complète',
-            border: OutlineInputBorder(),
-          ),
-          maxLines: 3,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text('Annuler'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (addressController.text.isNotEmpty) {
-                final newAddress = addressController.text;
-                orderController.setAddress(newAddress);
-                Get.back();
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.black,
-            ),
-            child: const Text('Ajouter'),
-          ),
-        ],
-      ),
-    );
-  }
-
   Future<void> _placeOrder(BuildContext context) async {
     // Vérifier que l'utilisateur est connecté
     final userId = authController.currentUserId.value;
-    if (userId == null) {
-      Get.snackbar(
-        'Erreur',
-        'Vous devez être connecté pour passer une commande',
-        duration: const Duration(seconds: 3),
-      );
-      return;
-    }
 
     // Vérifier que l'adresse est renseignée
     if (orderController.selectedAddress.value.isEmpty) {
@@ -497,6 +457,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     // Si la commande a été créée avec succès
     if (orderController.currentOrder.value != null) {
+      // Vider le panier après la création de la commande
+      await cartController.clearCart(userId);
+
       // Générer et afficher la facture
       await generateAndOpenInvoice(orderController.currentOrder.value!);
 
@@ -506,6 +469,87 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         'Commande réussie',
         'Votre commande a été confirmée. Vous pouvez suivre son statut dans la section Mes Commandes.',
         duration: const Duration(seconds: 4),
+      );
+    }
+  }
+
+  void _showLocationOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: Icon(Icons.my_location),
+                title: Text('Use Current Location'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  await _handleCurrentLocationSelection();
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.map),
+                title: Text('Choose on Map'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _selectAddressFromMap(context);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _handleCurrentLocationSelection() async {
+    try {
+      final status = await Geolocator.checkPermission();
+      if (status == LocationPermission.denied) {
+        final result = await Geolocator.requestPermission();
+        if (result != LocationPermission.whileInUse &&
+            result != LocationPermission.always) {
+          throw Exception('Location permission denied');
+        }
+      }
+
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      final addresses = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+
+      if (addresses.isNotEmpty) {
+        final place = addresses.first;
+        final address =
+            '${place.street}, ${place.locality}, ${place.postalCode}';
+        orderController.setAddress(
+          address,
+          position.latitude,
+          position.longitude,
+        );
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Could not get current location: ${e.toString()}',
+        duration: Duration(seconds: 3),
+      );
+    }
+  }
+
+  Future<void> _selectAddressFromMap(BuildContext context) async {
+    final result = await Get.to(() => LocationPickerScreen());
+    if (result != null) {
+      orderController.setAddress(
+        result['address'],
+        result['lat'],
+        result['lng'],
       );
     }
   }

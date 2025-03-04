@@ -2,6 +2,7 @@ import '../../domain/entities/user.dart';
 
 class UserModel extends User {
   UserModel({
+    String? id, // Make id optional
     required super.email,
     required super.date,
     required super.phone,
@@ -13,8 +14,8 @@ class UserModel extends User {
     String? imageUrl,
     String? refreshTokens,
     String? status, // Correctly define status as a String?
-    String? id,
   }) : super(
+          id: id, // Pass id to the superclass
           nom: nom ?? "", // Provide a default value for nullable fields
           prenom: prenom ?? "",
           imageUrl: imageUrl ?? '', // Pass imageUrl to the superclass
@@ -24,11 +25,11 @@ class UserModel extends User {
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
-      id: json['id'],
+      id: json['id'] ?? json['_id'], // Handle id from JSON, can be null
       email: json['email'] ?? '',
-      nom: json['nom'],
-      prenom: json['prenom'],
-      date: json['date'],
+      nom: json['nom'] ?? '',
+      prenom: json['prenom'] ?? '',
+      date: json['date'] ?? '',
       region: json['region'] ?? '',
       genre: json['genre'] ?? '',
       phone: json['phone'] ?? '',
@@ -42,6 +43,7 @@ class UserModel extends User {
   @override
   Map<String, dynamic> toJson() {
     return {
+      'id': id, // Include id in the toJson, can be null
       'email': email,
       'nom': nom,
       'prenom': prenom,
@@ -59,6 +61,7 @@ class UserModel extends User {
   // Convert UserModel to User entity
   User toEntity() {
     return User(
+      id: id, // Include id in the conversion, can be null
       nom: nom,
       prenom: prenom,
       email: email,
@@ -76,6 +79,7 @@ class UserModel extends User {
   // Create UserModel from User entity
   static UserModel fromEntity(User user) {
     return UserModel(
+      id: user.id, // Include id in the conversion, can be null
       email: user.email,
       nom: user.nom,
       prenom: user.prenom,
@@ -92,6 +96,7 @@ class UserModel extends User {
 
   // Optional: Add a method to create a copy of the model with some changes
   UserModel copyWith({
+    String? id, // Include id in copyWith, can be null
     String? email,
     String? nom,
     String? prenom,
@@ -105,6 +110,7 @@ class UserModel extends User {
     String? status, // Include status in copyWith
   }) {
     return UserModel(
+      id: id ?? this.id, // Include id in copyWith, can be null
       email: email ?? this.email,
       nom: nom ?? this.nom,
       prenom: prenom ?? this.prenom,

@@ -36,6 +36,7 @@ class AuthController extends GetxController {
   final Rx<User?> _currentUser = Rx<User?>(null);
   var authToken = ''.obs;
   final RxString error = ''.obs;
+  final List<User> users = []; // or List<UserModel> users = [];
 
   User? get currentUser => _currentUser.value;
   set currentUser(User? value) => _currentUser.value = value;
@@ -50,9 +51,11 @@ class AuthController extends GetxController {
   void onInit() {
     super.onInit();
     loadUserFromPrefs();
-    favorites = List.generate(productController.products.length, (index) => false);
+    favorites =
+        List.generate(productController.products.length, (index) => false);
   }
-   void toggleFavorite(int index) {
+
+  void toggleFavorite(int index) {
     favorites[index] = !favorites[index];
   }
 
@@ -188,6 +191,26 @@ class AuthController extends GetxController {
       await loadUserData(email);
     } catch (e) {
       await logout();
+    }
+  }
+
+  Future<UserModel?> fetchAndStoreUser(String userId) async {
+    try {
+      // Fetch user data as a Map
+      final userData = await authRepository.getUserById(userId);
+
+      // Convert the Map to a User object
+      final user = UserModel.fromJson(
+          userData); // Assuming userData is a Map<String, dynamic>
+
+      // Log the fetched user ID
+      print("User  fetched: ${user.id}"); // Now this should work
+
+      // Return the User object
+      return user;
+    } catch (e) {
+      print('Error fetching user: $e');
+      return null; // Return null in case of an error
     }
   }
 

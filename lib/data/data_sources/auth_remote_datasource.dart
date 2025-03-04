@@ -18,6 +18,7 @@ abstract class AuthRemoteDataSource {
   Future<String> refreshToken(String refreshToken);
   Future<bool> verifyToken(String token);
   Future<void> deleteUserImage(String email);
+  Future<Map<String, dynamic>> getUserById(String userId);
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -26,10 +27,30 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   // Use your server's IP and port (make sure this is accessible from your phone)
   final String baseUrl = 'http://192.168.1.22:3000/api';
 
-  static String? verifiedEmail; // Made static
+  static String? verifiedEmail; // Made statica
   static String? verificationCode;
 
   AuthRemoteDataSourceImpl({required this.client});
+
+  @override
+  Future<Map<String, dynamic>> getUserById(String userId) async {
+    try {
+      final response = await client.get(
+        Uri.parse('$baseUrl/users/id/$userId'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> userData = json.decode(response.body);
+        return userData;
+      } else {
+        throw Exception('Server returned status code ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Failed to load user by ID: ${e.toString()}');
+    }
+  }
+
   @override
   Future<bool> verifyToken(String token) async {
     try {

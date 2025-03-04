@@ -12,6 +12,7 @@ abstract class CartItemRepository {
   Future<List<CartItem>> getCartItems(String userId);
   Future<CartItem> updateCartItem(String id, int quantity, double totalPrice);
   Future<void> deleteCartItem(String id);
+  Future<void> clearCartItems(String userId);
 }
 
 class CartItemRepositoryImpl implements CartItemRepository {
@@ -52,5 +53,10 @@ class CartItemRepositoryImpl implements CartItemRepository {
   @override
   Future<void> deleteCartItem(String id) async {
     await dataSource.deleteCartItem(id);
+  }
+
+  @override
+  Future<void> clearCartItems(String userId) async {
+    await dataSource.deleteCartItem(userId);
   }
 }

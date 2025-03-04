@@ -1,3 +1,4 @@
+import 'package:geocoding/geocoding.dart';
 import 'package:get/get.dart';
 import 'package:opti_app/Presentation/controllers/cart_item_controller.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
@@ -5,6 +6,8 @@ import 'package:opti_app/domain/entities/Order.dart';
 import 'package:opti_app/domain/entities/product_entity.dart';
 import 'package:opti_app/domain/repositories/OrderRepository.dart';
 import 'dart:developer' as developer;
+
+import 'package:url_launcher/url_launcher.dart';
 
 class OrderController extends GetxController {
   final OrderRepository orderRepository;
@@ -298,9 +301,56 @@ class OrderController extends GetxController {
     }
   }
   
-  void setAddress(String address) {
-    selectedAddress.value = address;
+ Future<void> setAddress(String address, dynamic selectedLatitude, dynamic selectedLongitude) async {
+  selectedAddress.value = address;
+  
+  // Try to get coordinates from the address
+  try {
+    List<Location> locations = await locationFromAddress(address);
+    if (locations.isNotEmpty) {
+      selectedLatitude = locations[0].latitude;
+      selectedLongitude = locations[0].longitude;
+      developer.log('Geocoded address to: ${selectedLatitude}, ${selectedLongitude}');
+    }
+  } catch (e) {
+    developer.log('Geocoding failed: $e', error: e);
+    // Reset coordinates if geocoding fails
+    selectedLatitude= 0.0;
+    selectedLongitude = 0.0;
   }
+}
+
+// Add a method to launch maps with specific address
+Future<void> openInMaps(String address, {double? latitude, double? longitude}) async {
+  try {
+    String mapUrl;
+    
+    if (latitude != null && longitude != null && latitude != 0 && longitude != 0) {
+      // Use coordinates if available
+      mapUrl = 'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude';
+    } else {
+      // Use address string
+      mapUrl = 'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(address)}';
+    }
+    
+    if (await canLaunchUrl(Uri.parse(mapUrl))) {
+      await launchUrl(Uri.parse(mapUrl), mode: LaunchMode.externalApplication);
+    } else {
+      Get.snackbar(
+        'Erreur',
+        'Impossible d\'ouvrir Google Maps',
+        duration: const Duration(seconds: 3),
+      );
+    }
+  } catch (e) {
+    developer.log('Error launching maps: $e', error: e);
+    Get.snackbar(
+      'Erreur',
+      'Une erreur est survenue lors de l\'ouverture de la carte',
+      duration: const Duration(seconds: 3),
+    );
+  }
+}
   
   void setPaymentMethod(String method) {
     selectedPaymentMethod.value = method;

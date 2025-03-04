@@ -16,4 +16,5 @@ abstract class AuthRepository {
   Future<Map<String, dynamic>> getUserByEmail(String email);
   Future<String> refreshToken(String refreshToken);
   Future<void> deleteUserImage(String email);
+  Future<Map<String, dynamic>> getUserById(String userId);
 }
