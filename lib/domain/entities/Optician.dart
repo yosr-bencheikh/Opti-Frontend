@@ -1,80 +1,80 @@
 import 'package:equatable/equatable.dart';
 
-class User extends Equatable {
-   String? id; // Make id optional
+class Optician extends Equatable {
+  String? id; // Make id optional
   String nom;
-   String prenom;
-  String email;
-   String date;
-   String region;
-   String genre;
+  String prenom;
+  String date;
+  String genre;
   final String password;
-   String phone;
+  String address;
+  String email;
+  String phone;
+  String region;
   String imageUrl;
-  final String refreshTokens;
   String status;
 
-  User({
-    this.id, // Make id optional in the constructor
+  Optician({
+    this.id,
     required this.nom,
     required this.prenom,
-    required this.email,
     required this.date,
-    required this.region,
     required this.genre,
-    required this.password,
+    required this.password, // Fixed: Added a comma here
+    required this.address,
+    required this.email,
     required this.phone,
+    required this.region,
     this.imageUrl = '',
-    this.refreshTokens = '',
     this.status = 'Inactive',
   });
 
-  factory User.fromJson(Map<String, dynamic> json) {
-    return User(
+  factory Optician.fromJson(Map<String, dynamic> json) {
+    return Optician(
       id: json['id'] ?? json['_id'], // Handle id from JSON, can be null
       nom: json['nom'] ?? '',
       prenom: json['prenom'] ?? '',
-      email: json['email'] ?? '',
       date: json['date'] ?? '',
-      region: json['region'] ?? '',
       genre: json['genre'] ?? '',
       password: json['password'] ?? '',
+      address: json['address'] ?? '',
+      email: json['email'] ?? '',
       phone: json['phone'] ?? '',
+      region: json['region'] ?? '',
       imageUrl: json['imageUrl'] ?? '',
-      refreshTokens: json['refreshToken'] ?? '',
       status: json['status'] ?? 'Inactive',
     );
   }
 
   @override
   List<Object?> get props => [
-    id, // Include id in the props, can be null
-    nom,
-    prenom,
-    email,
-    date,
-    region,
-    genre,
-    password,
-    phone,
-    imageUrl,
-    refreshTokens,
-    status,
-  ];
+        id, // Include id in the props, can be null
+        nom,
+        prenom,
+        date,
+        genre,
+        password,
+        address,
+        email,
+        phone,
+        region,
+        imageUrl,
+        status,
+      ];
 
   Map<String, dynamic> toJson() {
     return {
       'id': id, // Include id in the JSON output, can be null
       'nom': nom,
       'prenom': prenom,
-      'email': email,
       'date': date,
-      'region': region,
       'genre': genre,
       'password': password,
+      'address': address,
+      'email': email,
       'phone': phone,
+      'region': region,
       'imageUrl': imageUrl,
-      'refreshToken': refreshTokens,
       'status': status,
     };
   }

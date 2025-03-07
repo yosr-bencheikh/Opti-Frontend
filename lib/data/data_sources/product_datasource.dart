@@ -1,13 +1,17 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:dio/dio.dart'; // Assurez-vous d'importer Dio ici
 import 'package:http/http.dart' as http;
-import 'package:http/http.dart' as client;
 import 'package:http_parser/http_parser.dart';
-import 'package:opti_app/domain/entities/Opticien.dart';
+import 'package:opti_app/domain/entities/Boutique.dart';
 import 'package:opti_app/domain/entities/product_entity.dart';
-
+import 'dart:html' as html;
+import 'dart:typed_data';
 class ProductDatasource {
-  final String baseUrl = 'http://192.168.1.22:3000/api/products';
+  final String baseUrl = 'http://localhost:3000/api/products';
+  final Dio _dio = Dio(); // Créez une instance de Dio
+
   Future<List<Product>> getProductsByOptician(String opticianId) async {
     try {
       final response =
@@ -129,21 +133,75 @@ class ProductDatasource {
     }
   }
 
-  @override
   Future<Product> getProductById(String productId) async {
     final response =
-        await client.get(Uri.parse('$baseUrl/products/$productId'));
+        await http.get(Uri.parse('$baseUrl/products/$productId'));
     if (response.statusCode == 200) {
       return Product.fromJson(json.decode(response.body));
     } else {
-      throw Exception('Failed to load product');
+      throw Exception('Échec du chargement du produit');
     }
   }
 
+
+
+Future<String> uploadImageWeb(Uint8List imageBytes, String fileName, String productId) async {
+  try {
+    // Vérification des paramètres
+    if (imageBytes.isEmpty) {
+      throw Exception('Image bytes cannot be empty');
+    }
+    
+    // Debug logs
+    print('Uploading image: fileName=$fileName, productId=$productId, bytesLength=${imageBytes.length}');
+    
+    // IMPORTANT: Modifiez l'URL pour correspondre à la route définie sur le serveur
+    final uploadUrl = '$baseUrl/upload';
+    print('Upload URL: $uploadUrl');
+    
+    final formData = FormData.fromMap({
+      'image': MultipartFile.fromBytes(
+        imageBytes, 
+        filename: fileName,
+        contentType: MediaType.parse('image/jpeg'), 
+      ),
+      'productId': productId,
+    });
+    
+    final response = await Dio().post(
+      uploadUrl,
+      data: formData,
+      options: Options(
+        headers: {
+          'Accept': 'application/json',
+        },
+        receiveTimeout: const Duration(seconds: 30),
+        sendTimeout: const Duration(seconds: 30),
+        validateStatus: (status) {
+          print('Upload response status: $status');
+          return status != null && status < 500;
+        },
+      ),
+    );
+    
+    print('Upload response: ${response.data}');
+    
+    if (response.statusCode == 200) {
+      final imageUrl = response.data['imageUrl'];
+      print('Parsed imageUrl: $imageUrl');
+      return imageUrl ?? '';
+    } else {
+      throw Exception('Failed to upload image: ${response.statusCode} - ${response.data}');
+    }
+  } catch (e) {
+    print('Error uploading image: $e');
+    throw Exception('Failed to upload image: $e');
+  }
+}
   Future<List<Opticien>> getOpticiens() async {
     try {
       final response =
-          await http.get(Uri.parse('http://192.168.1.22:3000/opticiens'));
+          await http.get(Uri.parse('http://localhost:3000/opticiens'));
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);

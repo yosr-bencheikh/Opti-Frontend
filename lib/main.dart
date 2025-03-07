@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
@@ -9,26 +10,30 @@ import 'package:opti_app/Presentation/UI/Screens/Auth/home_screen.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/splash_screen.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/stores_screen.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/WelcomePage.dart';
+import 'package:opti_app/Presentation/controllers/OpticianController.dart';
 import 'package:opti_app/Presentation/controllers/OrderController.dart';
 import 'package:opti_app/Presentation/controllers/auth_controller.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/wishlist_page.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
 import 'package:opti_app/Presentation/controllers/user_controller.dart';
+import 'package:opti_app/data/data_sources/OpticianDataSource.dart';
 import 'package:opti_app/data/data_sources/OrderDataSource.dart';
 import 'package:opti_app/data/data_sources/user_datasource.dart';
+import 'package:opti_app/data/repositories/OpticianRepositoryImpl.dart';
 import 'package:opti_app/data/repositories/OrderRepositoryImpl.dart';
 import 'package:opti_app/data/repositories/cart_item_repository_impl.dart';
 import 'package:opti_app/Presentation/controllers/cart_item_controller.dart';
 import 'package:opti_app/Presentation/controllers/navigation_controller.dart';
-import 'package:opti_app/Presentation/controllers/opticien_controller.dart';
+import 'package:opti_app/Presentation/controllers/boutique_controller.dart';
 import 'package:opti_app/data/data_sources/cart_item_remote_datasource.dart';
-import 'package:opti_app/data/data_sources/opticien_remote_datasource.dart';
+import 'package:opti_app/data/data_sources/boutique_remote_datasource.dart';
 import 'package:opti_app/data/data_sources/product_datasource.dart';
-import 'package:opti_app/data/repositories/opticien_repository_impl.dart';
+import 'package:opti_app/data/repositories/boutique_repository_impl.dart';
 import 'package:opti_app/data/repositories/product_repository_impl.dart';
+import 'package:opti_app/domain/repositories/OpticianRepository.dart';
 import 'package:opti_app/domain/repositories/OrderRepository.dart';
+import 'package:opti_app/domain/repositories/boutique_repository.dart';
 
-import 'package:opti_app/domain/repositories/opticien_repository.dart';
 import 'package:opti_app/domain/repositories/product_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/SignUpScreen.dart';
@@ -71,7 +76,7 @@ Future<void> main() async {
       ProductRepositoryImpl(dataSource: productRemoteDataSource);
   Get.put<ProductRepository>(productRepository);
   Get.put<ProductRepositoryImpl>(productRepository);
-  Get.put<ProductController>(ProductController(productRepository));
+  Get.put<ProductController>(ProductController(productRepository, productRemoteDataSource));
 
   final authRemoteDataSource = AuthRemoteDataSourceImpl(client: client);
   Get.put<AuthRemoteDataSource>(authRemoteDataSource);
@@ -80,12 +85,25 @@ Future<void> main() async {
   Get.put<AuthController>(
       AuthController(authRepository: authRepository, prefs: prefs));
 
-  final opticienRemoteDataSource = OpticienRemoteDataSourceImpl(client: client);
-  Get.put<OpticienRemoteDataSource>(opticienRemoteDataSource);
-  final opticienRepository = OpticienRepositoryImpl(opticienRemoteDataSource);
-  Get.put<OpticienRepository>(opticienRepository);
-  Get.put<OpticienController>(
-      OpticienController(opticienRepository: opticienRepository));
+final boutiqueRemoteDataSource = BoutiqueRemoteDataSourceImpl(client: client);
+Get.put<BoutiqueRemoteDataSource>(boutiqueRemoteDataSource);
+
+final boutiqueRepository = BoutiqueRepositoryImpl(boutiqueRemoteDataSource);
+Get.put<BoutiqueRepository>(boutiqueRepository);
+
+Get.put<BoutiqueController>(
+  BoutiqueController(boutiqueRepository: boutiqueRepository), // Correct parameter
+);
+
+ final opticianDataSource = OpticianDataSourceImpl();
+    Get.put<OpticianDataSource>(opticianDataSource);
+
+    // Register the repository
+    final opticianRepository = OpticianRepositoryImpl(opticianDataSource);
+    Get.put<OpticianRepository>(opticianRepository);
+
+    // Register the controller
+    Get.put<OpticianController>(OpticianController());
 
   final cartItemRemoteDataSource = CartItemDataSourceImpl(client: client);
   Get.put<CartItemDataSource>(cartItemRemoteDataSource);
@@ -119,6 +137,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
+      
       debugShowCheckedModeBanner: false,
       title: 'Opti App',
       theme: ThemeData(

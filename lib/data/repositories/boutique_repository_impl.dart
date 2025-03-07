@@ -1,11 +1,11 @@
-import 'package:opti_app/data/data_sources/opticien_remote_datasource.dart';
-import 'package:opti_app/domain/entities/Opticien.dart';
-import 'package:opti_app/domain/repositories/opticien_repository.dart';
+import 'package:opti_app/data/data_sources/boutique_remote_datasource.dart';
+import 'package:opti_app/domain/entities/Boutique.dart';
+import 'package:opti_app/domain/repositories/boutique_repository.dart';
 
-class OpticienRepositoryImpl implements OpticienRepository {
-  final OpticienRemoteDataSource dataSource;
+class BoutiqueRepositoryImpl implements BoutiqueRepository {
+  final BoutiqueRemoteDataSource dataSource;
 
-  OpticienRepositoryImpl(this.dataSource);
+  BoutiqueRepositoryImpl(this.dataSource);
 
   @override
   Future<List<Opticien>> getOpticiens() async {
@@ -15,7 +15,7 @@ class OpticienRepositoryImpl implements OpticienRepository {
       throw Exception('Failed to fetch opticians: $e');
     }
   }
-  
+
   @override
   Future<void> addOpticien(Opticien opticien) async {
     try {
@@ -24,7 +24,7 @@ class OpticienRepositoryImpl implements OpticienRepository {
       throw Exception('Failed to add optician: $e');
     }
   }
-  
+
   @override
   Future<void> updateOpticien(String id, Opticien opticien) async {
     try {
@@ -33,7 +33,7 @@ class OpticienRepositoryImpl implements OpticienRepository {
       throw Exception('Failed to update optician: $e');
     }
   }
-  
+
   @override
   Future<void> deleteOpticien(String id) async {
     try {

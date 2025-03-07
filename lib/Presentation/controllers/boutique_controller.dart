@@ -1,14 +1,15 @@
 import 'package:get/get.dart';
-import 'package:opti_app/domain/entities/Opticien.dart';
-import 'package:opti_app/domain/repositories/opticien_repository.dart';
+import 'package:opti_app/data/repositories/boutique_repository_impl.dart';
+import 'package:opti_app/domain/entities/Boutique.dart';
+import 'package:opti_app/domain/repositories/boutique_repository.dart';
 
-class OpticienController extends GetxController {
-  final OpticienRepository opticienRepository;
+class BoutiqueController extends GetxController {
+  final BoutiqueRepository boutiqueRepository; // Correct parameter name
   final isLoading = false.obs;
   final opticiensList = <Opticien>[].obs;
   final error = RxString('');
 
-  OpticienController({required this.opticienRepository});
+  BoutiqueController({required this.boutiqueRepository}); // Remove unnecessary parameter
 
   @override
   void onInit() {
@@ -22,7 +23,7 @@ class OpticienController extends GetxController {
       error(''); // Reset error message
       print('Fetching opticians...'); // Log fetching start
 
-      final result = await opticienRepository.getOpticiens();
+      final result = await boutiqueRepository.getOpticiens(); // Use boutiqueRepository
       print('Fetched opticians: $result'); // Log fetched data
 
       // Directly assign the result if it's already a List<Opticien>
@@ -36,52 +37,52 @@ class OpticienController extends GetxController {
       print('Finished fetching opticians.'); // Log fetching end
     }
   }
-  
+
   // Add a new optician
-Future<bool> addOpticien(Opticien opticien) async {
-  try {
-    isLoading(true);
-    error('');
+  Future<bool> addOpticien(Opticien opticien) async {
+    try {
+      isLoading(true);
+      error('');
 
-    // Debugging: Print the optician object
-    print('Adding optician: ${opticien.toJson()}');
+      // Debugging: Print the optician object
+      print('Adding optician: ${opticien.toJson()}');
 
-    // Ensure all required fields are provided
-    if (opticien.nom.isEmpty ||
-        opticien.adresse.isEmpty ||
-        opticien.phone.isEmpty ||
-        opticien.email.isEmpty ||
-        opticien.description.isEmpty ||
-        opticien.opening_hours.isEmpty) {
-      throw Exception('All fields are required');
+      // Ensure all required fields are provided
+      if (opticien.nom.isEmpty ||
+          opticien.adresse.isEmpty ||
+          opticien.phone.isEmpty ||
+          opticien.email.isEmpty ||
+          opticien.description.isEmpty ||
+          opticien.opening_hours.isEmpty) {
+        throw Exception('All fields are required');
+      }
+
+      await boutiqueRepository.addOpticien(opticien); // Use boutiqueRepository
+
+      // Refresh the list after adding
+      await getOpticien();
+
+      return true;
+    } catch (e) {
+      error(e.toString());
+      print('Error adding optician: $e');
+      return false;
+    } finally {
+      isLoading(false);
     }
-
-    await opticienRepository.addOpticien(opticien);
-
-    // Refresh the list after adding
-    await getOpticien();
-
-    return true;
-  } catch (e) {
-    error(e.toString());
-    print('Error adding optician: $e');
-    return false;
-  } finally {
-    isLoading(false);
   }
-}
+
   // Update an existing optician
   Future<bool> updateOpticien(String id, Opticien opticien) async {
     try {
       isLoading(true);
       error('');
-      
-      
-      await opticienRepository.updateOpticien(id, opticien);
-      
+
+      await boutiqueRepository.updateOpticien(id, opticien); // Use boutiqueRepository
+
       // Refresh the list after updating
       await getOpticien();
-      
+
       return true;
     } catch (e) {
       error(e.toString());
@@ -91,20 +92,19 @@ Future<bool> addOpticien(Opticien opticien) async {
       isLoading(false);
     }
   }
-  
+
   // Delete an optician
   Future<bool> deleteOpticien(String id) async {
     try {
       isLoading(true);
       error('');
-      
+
       // Call the repository method to delete the optician
-      // This needs to be implemented in the repository
-      await opticienRepository.deleteOpticien(id);
-      
+      await boutiqueRepository.deleteOpticien(id); // Use boutiqueRepository
+
       // Refresh the list after deleting
       await getOpticien();
-      
+
       return true;
     } catch (e) {
       error(e.toString());

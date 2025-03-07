@@ -1,5 +1,5 @@
 import 'package:opti_app/data/data_sources/product_datasource.dart';
-import 'package:opti_app/domain/entities/Opticien.dart';
+import 'package:opti_app/domain/entities/Boutique.dart';
 import 'package:opti_app/domain/entities/product_entity.dart';
 import 'dart:io';
 import 'package:opti_app/domain/repositories/product_repository.dart';

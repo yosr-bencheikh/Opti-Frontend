@@ -1,11 +1,9 @@
-import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:get/get.dart' hide FormData, MultipartFile, Response;
 
-import 'package:get/get.dart';
 import 'package:opti_app/data/data_sources/user_datasource.dart';
-import 'package:opti_app/data/models/user_model.dart';
 import 'package:opti_app/domain/entities/user.dart';
-import 'package:opti_app/domain/repositories/user_repository.dart';
 
 class UserController extends GetxController {
   final UserDataSource _dataSource;
@@ -38,23 +36,93 @@ class UserController extends GetxController {
   }
 
 Future<void> fetchUsers() async {
+  // Ne rafraîchir que si nous ne sommes pas déjà en train de charger
+  if (_isLoading.value) return;
+  
   try {
     _isLoading.value = true;
     _error.value = null;
-
-    final results = await _dataSource.getUsers();
+    
+    final results = await _dataSource.getUsers()
+      .timeout(const Duration(seconds: 10), 
+      onTimeout: () {
+        throw Exception('Le serveur met trop de temps à répondre');
+      });
+    
     _users.assignAll(results);
-    print('Users fetched: ${_users.length}');
-    for (var user in _users) {
-      print('User ID: ${user.id}');
-    }
+    
   } catch (e) {
+    print('Erreur lors du chargement des utilisateurs: $e');
     _error.value = e.toString();
   } finally {
+    // Cette ligne est critique - elle garantit que l'état de chargement
+    // est désactivé même si une exception est levée
     _isLoading.value = false;
   }
 }
-
+Future<String> uploadImageWeb(Uint8List imageBytes, String fileName, String email) async {
+    try {
+      _isLoading.value = true;
+      _error.value = null;
+      
+      // Call the datasource method
+      final imageUrl = await (_dataSource as UserDataSourceImpl).uploadImageWeb(
+        imageBytes, 
+        fileName, 
+        email
+      );
+      
+      // Update the user with the new image URL
+      try {
+        final user = await _dataSource.getUserByEmail(email);
+        user.imageUrl = imageUrl;
+        await _dataSource.updateUser(user);
+        
+        // Update current user if this is the same user
+        if (_currentUser.value?.email == email) {
+          _currentUser.value?.imageUrl = imageUrl;
+          _currentUser.refresh();
+        }
+      } catch (e) {
+        print('User not found, creating new user with image: $e');
+        final newUser = User(
+          nom: '',
+          prenom: '',
+          email: email,
+          date: '',
+          region: '',
+          genre: '',
+          password: '',
+          phone: '',
+          status: 'Active',
+          imageUrl: imageUrl,
+        );
+        await _dataSource.addUser(newUser);
+      }
+      
+      // Refresh the users list
+      await fetchUsers();
+      
+      Get.snackbar(
+        'Succès',
+        'Image téléchargée avec succès',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      
+      return imageUrl;
+    } catch (e) {
+      _error.value = e.toString();
+      Get.snackbar(
+        'Erreur',
+        'Échec du téléchargement de l\'image: ${e.toString()}',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      throw Exception('Image upload failed: $e');
+    } finally {
+      _isLoading.value = false;
+    }
+  }
+  
   /// Ajouter un nouvel utilisateur
   Future<void> addUser(User user) async {
     try {
@@ -183,24 +251,28 @@ Future<void> fetchUsers() async {
     _users.refresh();
   }
 
-  /// Upload a user profile image
 Future<String> uploadImage(File imageFile, String email) async {
   try {
-    _isLoading.value = true;
-    _error.value = null;
+    if (!await imageFile.exists()) {
+      throw Exception('File does not exist');
+    }
 
-    // Upload the image and get the URL
-    final imageUrl = await _dataSource.uploadImage(imageFile.path, email);
+    // Use more robust file path handling
+    final filePath = imageFile.absolute.path;
 
-    // Check if the user exists
+    // Perform image upload
+    final imageUrl = await _dataSource.uploadImage(filePath, email);
+
+    // Update user logic
     try {
       final user = await _dataSource.getUserByEmail(email);
       user.imageUrl = imageUrl;
       await _dataSource.updateUser(user);
     } catch (e) {
-      // If the user doesn't exist, create a new user
+      // Handle user not found scenario
+      print('User not found, creating new user: $e');
       final newUser = User(
-        nom: '', // Provide default values or handle accordingly
+        nom: '',
         prenom: '',
         email: email,
         date: '',
@@ -214,26 +286,15 @@ Future<String> uploadImage(File imageFile, String email) async {
       await _dataSource.addUser(newUser);
     }
 
-    // Refresh the user list
+    // Refresh users
     await fetchUsers();
 
-    Get.snackbar(
-      'Success',
-      'Image uploaded successfully!',
-      snackPosition: SnackPosition.BOTTOM,
-    );
-
-    return imageUrl; // Return the uploaded image URL
+    // Use context-aware snackbar or alternative notification
+    return imageUrl;
   } catch (e) {
-    _error.value = e.toString();
-    Get.snackbar(
-      'Error',
-      'Failed to upload image: ${e.toString()}',
-      snackPosition: SnackPosition.BOTTOM,
-    );
-    throw e; // Re-throw the exception to handle it in the UI
-  } finally {
-    _isLoading.value = false;
+    print('Image upload error: $e');
+    // Consider a more robust error handling mechanism
+    throw Exception('Failed to upload image: ${e.toString()}');
   }
 }
 String getUserName(String userId) {

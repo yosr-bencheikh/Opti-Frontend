@@ -5,9 +5,10 @@ import 'package:opti_app/Presentation/UI/Screens/Auth/optician_product_screen.da
 import 'package:opti_app/Presentation/UI/Screens/Auth/product_details_screen.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/wishlist_page.dart';
 import 'package:opti_app/Presentation/controllers/auth_controller.dart';
+import 'package:opti_app/Presentation/controllers/boutique_controller.dart';
+import 'package:opti_app/Presentation/controllers/boutique_controller.dart';
 import 'package:opti_app/Presentation/controllers/cart_item_controller.dart';
 import 'package:opti_app/Presentation/controllers/navigation_controller.dart';
-import 'package:opti_app/Presentation/controllers/opticien_controller.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
 import 'package:opti_app/domain/entities/product_entity.dart';
 import 'package:opti_app/Presentation/controllers/wishlist_controller.dart';
@@ -18,7 +19,7 @@ class HomeScreen extends GetView<AuthController> {
   final PageController _pageController = PageController(viewportFraction: 0.9);
   final RxInt _currentPage = 0.obs;
   final NavigationController navigationController = Get.find();
-  final OpticienController opticienController = Get.find();
+  final BoutiqueController opticienController = Get.find();
   final ProductController productController = Get.find();
   final WishlistController wishlistController = Get.find();
 

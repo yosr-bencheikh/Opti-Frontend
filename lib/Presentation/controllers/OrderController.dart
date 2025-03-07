@@ -30,7 +30,33 @@ class OrderController extends GetxController {
   final RxString selectedPaymentMethod = 'Carte bancaire'.obs;
   
   final deliveryFee = 5.50;
-
+// Add this method to your OrderController class
+void updateLocalOrderStatus(String orderId, String newStatus) {
+  // Find the order in the allOrders list
+  final int index = allOrders.indexWhere((order) => order.id == orderId);
+  
+  if (index != -1) {
+    // Create a copy of the order with the updated status
+    Order updatedOrder = Order(
+      id: allOrders[index].id,
+      userId: allOrders[index].userId,
+      items: allOrders[index].items,
+      status: newStatus,
+      address: allOrders[index].address,
+      paymentMethod: allOrders[index].paymentMethod,
+      subtotal: allOrders[index].subtotal,
+      deliveryFee: allOrders[index].deliveryFee,
+      total: allOrders[index].total,
+      createdAt: allOrders[index].createdAt, updatedAt: allOrders[index].updatedAt,
+    );
+    
+    // Update the order in the list
+    allOrders[index] = updatedOrder;
+    
+    // Notify the UI that the data has changed
+    update();
+  }
+}
   Future<void> createOrderFromCart(String userId) async {
     try {
       isCreating.value = true;

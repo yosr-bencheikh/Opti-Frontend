@@ -1,6 +1,6 @@
-import 'package:opti_app/domain/entities/Opticien.dart';
+import 'package:opti_app/domain/entities/Boutique.dart';
 
-abstract class OpticienRepository {
+abstract class BoutiqueRepository {
   Future<List<Opticien>> getOpticiens();
   Future<void> addOpticien(Opticien opticien);
   Future<void> updateOpticien(String id, Opticien opticien);

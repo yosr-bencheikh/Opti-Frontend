@@ -104,6 +104,15 @@ class AuthController extends GetxController {
     }
   }
 
+Future<Map<String, dynamic>> getUserByEmail(String email) async {
+  try {
+    final userData = await authRepository.getUserByEmail(email);
+    return userData;
+  } catch (e) {
+    print('Error getting user by email: $e');
+    throw e;
+  }
+}
   /// Updated loadUserData using the repository's function instead of a direct HTTP call.
   Future<void> loadUserData(String email) async {
     try {

@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:opti_app/data/data_sources/auth_remote_datasource.dart';
 import 'package:opti_app/data/repositories/auth_repository_impl.dart';
 import 'package:opti_app/Presentation/controllers/auth_controller.dart';
+import 'package:opti_app/data/repositories/product_repository_impl.dart'; // Assurez-vous d'importer le bon repository
 
 class AuthBinding extends Bindings {
   @override
@@ -33,11 +34,23 @@ class AuthBinding extends Bindings {
       fenix: true, // Re-instantiate if needed after logout
     );
 
-    // First register the datasource
-    Get.put<ProductDatasource>(ProductDatasource());
+    // Register ProductDatasource
+    Get.lazyPut<ProductDatasource>(
+      () => ProductDatasource(),
+    );
 
-    // Then register the controller that depends on it
-    Get.put<ProductController>(ProductController(Get.find()));
+    // Register ProductRepository
+    Get.lazyPut<ProductRepositoryImpl>(
+      () => ProductRepositoryImpl(dataSource: Get.find<ProductDatasource>()),
+    );
+
+    // Register ProductController
+    Get.lazyPut<ProductController>(
+      () => ProductController(
+        Get.find<ProductRepositoryImpl>(), // Pass the ProductRepositoryImpl
+        Get.find<ProductDatasource>(), // Pass the ProductDatasource
+      ),
+    );
   }
 }
 
