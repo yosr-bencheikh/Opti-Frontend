@@ -5,7 +5,8 @@ import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import 'package:opti_app/Presentation/UI/screens/auth/FilePickerExample.dart';
+import 'package:opti_app/Presentation/UI/screens/Admin/FilePickerExample.dart';
+import 'package:opti_app/Presentation/UI/screens/Opticien/OpticienDashboardApp.dart';
 import 'package:opti_app/Presentation/controllers/auth_controller.dart';
 import 'package:opti_app/Presentation/controllers/user_controller.dart';
 import 'package:opti_app/core/constants/regions.dart';
@@ -14,11 +15,7 @@ import 'package:opti_app/domain/entities/user.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:file_picker/file_picker.dart';
-import 'dart:typed_data';
-import 'package:universal_html/html.dart' as html;
-import 'package:dio/dio.dart';
-import 'package:dio/dio.dart' as dio_pkg;
+
 class UsersScreen extends StatefulWidget {
   final String? selectedUserId;
   const UsersScreen({Key? key, this.selectedUserId}) : super(key: key);
@@ -257,114 +254,124 @@ class _UsersScreenState extends State<UsersScreen> {
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return ScaffoldMessenger(
-      key: scaffoldMessengerKey,
-      child: Scaffold(
-        backgroundColor: _backgroundColor,
-        body: Builder(
-          builder: (BuildContext context) {
-            if (_controller.isLoading) {
-              return Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SizedBox(
-                      width: 60,
-                      height: 60,
-                      child: CircularProgressIndicator(
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(_primaryColor),
-                        strokeWidth: 4,
-                      ),
+@override
+Widget build(BuildContext context) {
+  return ScaffoldMessenger(
+    key: scaffoldMessengerKey,
+    child: Scaffold(
+      backgroundColor: _backgroundColor,
+      body: Builder(
+        builder: (BuildContext context) {
+          if (_controller.isLoading) {
+            return Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 60,
+                    height: 60,
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(_primaryColor),
+                      strokeWidth: 4,
                     ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Chargement des utilisateurs...',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: _textSecondaryColor,
-                        fontWeight: FontWeight.w500,
-                      ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Chargement des utilisateurs...',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: _textSecondaryColor,
+                      fontWeight: FontWeight.w500,
                     ),
-                  ],
-                ),
-              );
-            }
-
-            if (_controller.error != null) {
-              return Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.error_outline,
-                      size: 64,
-                      color: _accentColor,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Erreur de chargement',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: _textPrimaryColor,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _controller.error!,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: _textSecondaryColor,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      onPressed: _loadUsers,
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Réessayer'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _primaryColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 24, vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            return SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildHeader(),
-                    const SizedBox(height: 24),
-                    _buildSearchBar(),
-                    if (_showFilters) _buildAdvancedFilters(),
-                    const SizedBox(height: 24),
-                    Expanded(
-                      child: _buildContent(),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildPagination(),
-                  ],
-                ),
+                  ),
+                ],
               ),
             );
-          },
-        ),
+          }
+
+          if (_controller.error != null) {
+            return Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 64,
+                    color: _accentColor,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Erreur de chargement',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: _textPrimaryColor,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _controller.error!,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: _textSecondaryColor,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: _loadUsers,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Réessayer'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _primaryColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          // Wrap the main content in a Row to include the sidebar
+          return Row(
+            children: [
+              // Add the CustomSidebar here
+              CustomSidebar(currentPage: 'Users'),
+
+              // Main content
+              Expanded(
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildHeader(),
+                        const SizedBox(height: 24),
+                        _buildSearchBar(),
+                        if (_showFilters) _buildAdvancedFilters(),
+                        const SizedBox(height: 24),
+                        Expanded(
+                          child: _buildContent(),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildPagination(),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildHeader() {
     return Container(
@@ -1490,370 +1497,332 @@ Future<void> _showAddUserDialog() async {
   }
 }
   Future<void> _showEditDialog(User user) async {
-    final _formKey = GlobalKey<FormState>();
+  final _formKey = GlobalKey<FormState>();
+  bool _isLoading = false;
 
-    // Créer une copie de l'utilisateur pour éviter de modifier l'original avant confirmation
-    final User userCopy = User(
-      id: user.id,
-      nom: user.nom,
-      prenom: user.prenom,
-      email: user.email,
-      phone: user.phone,
-      date: user.date,
-      region: user.region,
-      genre: user.genre,
-      imageUrl: user.imageUrl,
-      password: '',
-    );
+  // Créez une copie de l'utilisateur pour éviter de modifier l'original avant confirmation
+  final User userCopy = User(
+    id: user.id,
+    nom: user.nom,
+    prenom: user.prenom,
+    email: user.email,
+    phone: user.phone,
+    date: user.date,
+    region: user.region,
+    genre: user.genre,
+    imageUrl: user.imageUrl,
+    password: '', // Pas besoin de modifier le mot de passe dans l'édition
+    status: user.status,
+  );
 
-    // Initialize controllers with existing user data
-    final TextEditingController _nomController =
-        TextEditingController(text: userCopy.nom);
-    final TextEditingController _prenomController =
-        TextEditingController(text: userCopy.prenom);
-    final TextEditingController _emailController =
-        TextEditingController(text: userCopy.email);
-    final TextEditingController _phoneController =
-        TextEditingController(text: userCopy.phone);
-    final TextEditingController _dateController =
-        TextEditingController(text: userCopy.date);
+  // Initialisez les contrôleurs avec les données existantes de l'utilisateur
+  final TextEditingController _nomController = TextEditingController(text: userCopy.nom);
+  final TextEditingController _prenomController = TextEditingController(text: userCopy.prenom);
+  final TextEditingController _emailController = TextEditingController(text: userCopy.email);
+  final TextEditingController _phoneController = TextEditingController(text: userCopy.phone);
+  final TextEditingController _dateController = TextEditingController(text: userCopy.date);
 
-    // Initialize selected values
-    String _selectedRegion = userCopy.region;
-    String _selectedGenre = userCopy.genre;
-    DateTime _selectedDate = DateTime.tryParse(userCopy.date) ?? DateTime.now();
-    File? _tempSelectedImage;
+  // Initialisez les valeurs sélectionnées
+  String _selectedRegion = userCopy.region;
+  String _selectedGenre = userCopy.genre;
+  DateTime _selectedDate = DateTime.tryParse(userCopy.date) ?? DateTime.now();
+  PlatformFile? _tempSelectedImage;
 
-    await showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) => StatefulBuilder(
-        builder: (context, setState) {
-          return AlertDialog(
-            title: const Text('Modifier l\'utilisateur'),
-            content: Container(
-              width: 600,
-              child: Form(
-                key: _formKey,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Profile image section
-                      Center(
-                        child: Column(
-                          children: [
-                            GestureDetector(
-                              onTap: () async {
-                                FilePickerResult? result =
-                                    await FilePicker.platform.pickFiles(
-                                  type: FileType.image,
-                                  allowMultiple: false,
-                                );
+  await showDialog(
+    context: context,
+    builder: (BuildContext dialogContext) => StatefulBuilder(
+      builder: (context, setState) {
+        return AlertDialog(
+          title: const Text('Modifier l\'utilisateur'),
+          content: Container(
+            width: 600,
+            child: Form(
+              key: _formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Section de l'image de profil
+                    Center(
+                      child: Column(
+                        children: [
+                          FilePickerExample(
+                            onImagePicked: (PlatformFile? file) {
+                              setState(() {
+                                _tempSelectedImage = file;
+                              });
+                            },
+                            initialImageUrl: userCopy.imageUrl,
+                          ),
+                          const SizedBox(height: 8),
+                          const Text('Photo de profil'),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
 
-                                if (result != null) {
-                                  setState(() {
-                                    _tempSelectedImage =
-                                        File(result.files.single.path!);
-                                  });
-                                }
-                              },
-                              child: Container(
-                                width: 100,
-                                height: 100,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[200],
-                                  shape: BoxShape.circle,
-                                  image: _tempSelectedImage != null
-                                      ? DecorationImage(
-                                          image: FileImage(_tempSelectedImage!),
-                                          fit: BoxFit.cover,
-                                        )
-                                      : userCopy.imageUrl.isNotEmpty
-                                          ? DecorationImage(
-                                              image: NetworkImage(
-                                                  userCopy.imageUrl),
-                                              fit: BoxFit.cover,
-                                            )
-                                          : null,
-                                ),
-                                child: (_tempSelectedImage == null &&
-                                        userCopy.imageUrl.isEmpty)
-                                    ? Center(
-                                        child: Text(
-                                          '${userCopy.nom[0]}${userCopy.prenom[0]}',
-                                          style: const TextStyle(
-                                            color: Colors.blue,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      )
-                                    : null,
-                              ),
+                    // Champs du formulaire
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _nomController,
+                            decoration: const InputDecoration(
+                              labelText: 'Nom',
+                              border: OutlineInputBorder(),
                             ),
-                            const SizedBox(height: 8),
-                            const Text('Photo de profil'),
-                          ],
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Veuillez entrer un nom';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _prenomController,
+                            decoration: const InputDecoration(
+                              labelText: 'Prénom',
+                              border: OutlineInputBorder(),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Veuillez entrer un prénom';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Champ email
+                    TextFormField(
+                      controller: _emailController,
+                      decoration: const InputDecoration(
+                        labelText: 'Email',
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.emailAddress,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Veuillez entrer un email';
+                        }
+                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                          return 'Veuillez entrer un email valide';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Champ téléphone
+                    TextFormField(
+                      controller: _phoneController,
+                      decoration: const InputDecoration(
+                        labelText: 'Téléphone',
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.phone,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Veuillez entrer un numéro de téléphone';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Champ date de naissance
+                    GestureDetector(
+                      onTap: () async {
+                        final DateTime? picked = await showDatePicker(
+                          context: context,
+                          initialDate: _selectedDate,
+                          firstDate: DateTime(1900),
+                          lastDate: DateTime.now(),
+                        );
+                        if (picked != null && picked != _selectedDate) {
+                          setState(() {
+                            _selectedDate = picked;
+                            _dateController.text = DateFormat('yyyy-MM-dd').format(_selectedDate);
+                          });
+                        }
+                      },
+                      child: AbsorbPointer(
+                        child: TextFormField(
+                          controller: _dateController,
+                          decoration: const InputDecoration(
+                            labelText: 'Date de naissance',
+                            border: OutlineInputBorder(),
+                            suffixIcon: Icon(Icons.calendar_today),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Veuillez sélectionner une date';
+                            }
+                            return null;
+                          },
                         ),
                       ),
-                      const SizedBox(height: 16),
+                    ),
+                    const SizedBox(height: 16),
 
-                      // Name and surname fields
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: _nomController,
-                              decoration: const InputDecoration(
-                                labelText: 'Nom',
-                                border: OutlineInputBorder(),
-                              ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Veuillez entrer un nom';
-                                }
-                                return null;
-                              },
+                    // Sélection de la région et du genre
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            decoration: const InputDecoration(
+                              labelText: 'Région',
+                              border: OutlineInputBorder(),
                             ),
+                            value: _selectedRegion,
+                            items: Regions.list.map((region) {
+                              return DropdownMenuItem(
+                                value: region,
+                                child: Text(region),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              if (value != null) {
+                                setState(() {
+                                  _selectedRegion = value;
+                                });
+                              }
+                            },
                           ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: TextFormField(
-                              controller: _prenomController,
-                              decoration: const InputDecoration(
-                                labelText: 'Prénom',
-                                border: OutlineInputBorder(),
-                              ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Veuillez entrer un prénom';
-                                }
-                                return null;
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Email field
-                      TextFormField(
-                        controller: _emailController,
-                        decoration: const InputDecoration(
-                          labelText: 'Email',
-                          border: OutlineInputBorder(),
                         ),
-                        keyboardType: TextInputType.emailAddress,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Veuillez entrer un email';
-                          }
-                          if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                              .hasMatch(value)) {
-                            return 'Veuillez entrer un email valide';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Phone and date fields
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: _phoneController,
-                              decoration: const InputDecoration(
-                                labelText: 'Téléphone',
-                                border: OutlineInputBorder(),
-                              ),
-                              keyboardType: TextInputType.phone,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Veuillez entrer un numéro de téléphone';
-                                }
-                                return null;
-                              },
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            decoration: const InputDecoration(
+                              labelText: 'Genre',
+                              border: OutlineInputBorder(),
                             ),
+                            value: _selectedGenre,
+                            items: ['Homme', 'Femme', 'Autre'].map((genre) {
+                              return DropdownMenuItem(
+                                value: genre,
+                                child: Text(genre),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              if (value != null) {
+                                setState(() {
+                                  _selectedGenre = value;
+                                });
+                              }
+                            },
                           ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () async {
-                                final DateTime? picked = await showDatePicker(
-                                  context: context,
-                                  initialDate: _selectedDate,
-                                  firstDate: DateTime(1900),
-                                  lastDate: DateTime.now(),
-                                );
-                                if (picked != null && picked != _selectedDate) {
-                                  setState(() {
-                                    _selectedDate = picked;
-                                    _dateController.text =
-                                        DateFormat('yyyy-MM-dd')
-                                            .format(_selectedDate);
-                                  });
-                                }
-                              },
-                              child: AbsorbPointer(
-                                child: TextFormField(
-                                  controller: _dateController,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Date de naissance',
-                                    border: OutlineInputBorder(),
-                                    suffixIcon: Icon(Icons.calendar_today),
-                                  ),
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Veuillez sélectionner une date';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Region and gender selection
-                      Row(
-                        children: [
-                          Expanded(
-                            child: DropdownButtonFormField<String>(
-                              decoration: const InputDecoration(
-                                labelText: 'Région',
-                                border: OutlineInputBorder(),
-                              ),
-                              value: _selectedRegion,
-                              items: Regions.list.map((region) {
-                                return DropdownMenuItem(
-                                  value: region,
-                                  child: Text(region),
-                                );
-                              }).toList(),
-                              onChanged: (value) {
-                                if (value != null) {
-                                  setState(() {
-                                    _selectedRegion = value;
-                                  });
-                                }
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: DropdownButtonFormField<String>(
-                              decoration: const InputDecoration(
-                                labelText: 'Genre',
-                                border: OutlineInputBorder(),
-                              ),
-                              value: _selectedGenre,
-                              items: ['Homme', 'Femme', 'Autre'].map((genre) {
-                                return DropdownMenuItem(
-                                  value: genre,
-                                  child: Text(genre),
-                                );
-                              }).toList(),
-                              onChanged: (value) {
-                                if (value != null) {
-                                  setState(() {
-                                    _selectedGenre = value;
-                                  });
-                                }
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Annuler'),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  if (_formKey.currentState!.validate()) {
-                    try {
-                      // Update user object with new values
-                      userCopy.nom = _nomController.text;
-                      userCopy.prenom = _prenomController.text;
-                      userCopy.email = _emailController.text;
-                      userCopy.date = _dateController.text;
-                      userCopy.region = _selectedRegion;
-                      userCopy.genre = _selectedGenre;
-                      userCopy.phone = _phoneController.text;
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Annuler'),
+            ),
+            ElevatedButton(
+              onPressed: _isLoading
+                  ? null
+                  : () async {
+                      if (_formKey.currentState!.validate()) {
+                        // Démarrez le chargement
+                        setState(() {
+                          _isLoading = true;
+                        });
 
-                      // Si une nouvelle image a été sélectionnée, la télécharger
-                      if (_tempSelectedImage != null) {
-                        // Assuming you have a function to upload image and get URL
-                       String newImageUrl =
-                            await _uploadImageAndGetUrl(
-                              _tempSelectedImage as PlatformFile?,
+                        try {
+                          // Mettez à jour l'objet utilisateur avec les nouvelles valeurs
+                          userCopy.nom = _nomController.text;
+                          userCopy.prenom = _prenomController.text;
+                          userCopy.email = _emailController.text;
+                          userCopy.date = _dateController.text;
+                          userCopy.region = _selectedRegion;
+                          userCopy.genre = _selectedGenre;
+                          userCopy.phone = _phoneController.text;
+
+                          // Si une nouvelle image est sélectionnée, téléchargez-la
+                          if (_tempSelectedImage != null) {
+                            final imageUrl = await _uploadImageAndGetUrl(
+                              _tempSelectedImage,
                               _emailController.text,
-                            );                         userCopy.imageUrl = newImageUrl;
+                            );
+                            // Mettez à jour l'URL de l'image de l'utilisateur
+                            userCopy.imageUrl = imageUrl;
+                          }
 
-                        // Ou si vous n'avez pas cette fonction, vous pouvez commenter ci-dessus
-                        // et utiliser cette approche simplifiée:
-                        // userCopy.imageUrl = _tempSelectedImage.path; // Local path only for test
-                      }
+                          // Mettez à jour l'utilisateur dans la base de données
+                          await _controller.updateUser(userCopy);
 
-                      // Update the user in the database through the controller
-                      await _controller.updateUser(userCopy);
+                          // Mettez à jour l'utilisateur original avec les nouvelles valeurs
+                          user.nom = userCopy.nom;
+                          user.prenom = userCopy.prenom;
+                          user.email = userCopy.email;
+                          user.date = userCopy.date;
+                          user.region = userCopy.region;
+                          user.genre = userCopy.genre;
+                          user.phone = userCopy.phone;
+                          user.imageUrl = userCopy.imageUrl;
 
-                      // Important: Update the state of the parent widget to reflect changes immediately
-                      // This should trigger a rebuild of the main screen
-                      setState(() {
-                        // Update the original user with the values from the copy
-                        user.nom = userCopy.nom;
-                        user.prenom = userCopy.prenom;
-                        user.email = userCopy.email;
-                        user.date = userCopy.date;
-                        user.region = userCopy.region;
-                        user.genre = userCopy.genre;
-                        user.phone = userCopy.phone;
-                        if (_tempSelectedImage != null) {
-                          // Update image URL if changed
-                          // user.imageUrl = userCopy.imageUrl;
+                          // Affichez un message de succès
+                          _showSnackBar('Utilisateur modifié avec succès');
+
+                          // Forcez le rafraîchissement de l'interface utilisateur
+                          if (mounted) {
+                            _controller.fetchUsers().then((_) {
+                              if (mounted) {
+                                setState(() {
+                                  _filterUsers();
+                                });
+                              }
+                            }).catchError((error) {
+                              print("Erreur lors du rafraîchissement des utilisateurs: $error");
+                            });
+                          }
+
+                          // Fermez la boîte de dialogue
+                          Navigator.pop(dialogContext);
+                        } catch (e) {
+                          // Affichez un message d'erreur
+                          _showSnackBar('Erreur: ${e.toString()}', isError: true);
+                        } finally {
+                          if (mounted) {
+                            setState(() {
+                              _isLoading = false;
+                            });
+                          }
                         }
-                      });
-
-                      // Force the parent widget to rebuild
-                      if (mounted) {
-                        // Call setState on the parent widget
-                        (context as Element).markNeedsBuild();
                       }
+                    },
+              child: _isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2.0),
+                    )
+                  : const Text('Enregistrer'),
+            ),
+          ],
+        );
+      },
+    ),
+  );
 
-                      // Also update the filtered list to show changes immediately
-                      _filterUsers();
-
-                      // Show success message
-                      _showSnackBar('Utilisateur modifié avec succès');
-
-                      // Close the dialog
-                      Navigator.pop(context);
-                    } catch (e) {
-                      // Show error message
-                      _showSnackBar('Erreur: ${e.toString()}', isError: true);
-                    }
-                  }
-                },
-                child: const Text('Enregistrer'),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-
-    // Force rebuild after dialog is closed to ensure UI reflects all changes
+  // Forcez le rafraîchissement après la fermeture de la boîte de dialogue
+  if (mounted) {
     setState(() {});
   }
+}
 
   Future<void> _showDeleteDialog(User user) async {
     await showDialog(

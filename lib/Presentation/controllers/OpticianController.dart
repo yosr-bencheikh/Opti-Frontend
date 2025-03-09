@@ -1,4 +1,7 @@
 // Presentation/controllers/OpticianController.dart
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:get/get.dart';
 import 'package:opti_app/data/data_sources/OpticianDataSource.dart';
 import 'package:opti_app/domain/entities/Optician.dart';
@@ -75,6 +78,90 @@ class OpticianController extends GetxController {
       Get.snackbar('Error', 'Failed to delete optician: ${e.toString()}');
     } finally {
       isLoading(false);
+    }
+  }
+   int getTotalOpticians() {
+    return opticians.length;
+  }
+
+  Future<String> uploadImage(File imageFile, String email) async {
+    try {
+      if (!await imageFile.exists()) {
+        throw Exception('File does not exist');
+      }
+
+      // Use more robust file path handling
+      final filePath = imageFile.absolute.path;
+
+      // Perform image upload
+      final imageUrl = await _dataSource.uploadImage(filePath, email);
+
+      // Update optician logic
+      try {
+        final optician = await _dataSource.getOpticianByEmail(email);
+        optician.imageUrl = imageUrl;
+        await _dataSource.updateOptician(optician);
+      } catch (e) {
+        // Handle optician not found scenario
+        print('Optician not found, creating new optician: $e');
+        final newOptician = Optician(
+          id: '', // Generate a unique ID if needed
+          nom: '',
+          prenom: '',
+          email: email,
+          date: '',
+          genre: '',
+          password: '',
+          address: '',
+          phone: '',
+          region: '',
+          imageUrl: imageUrl,
+        );
+        await _dataSource.addOptician(newOptician);
+      }
+
+      // Refresh opticians list
+      await fetchOpticians();
+
+      // Use context-aware snackbar or alternative notification
+      return imageUrl;
+    } catch (e) {
+      print('Image upload error: $e');
+      // Consider a more robust error handling mechanism
+      throw Exception('Failed to upload image: ${e.toString()}');
+    }
+  }
+   Future<String> uploadImageWeb(Uint8List imageBytes, String fileName, String email) async {
+    try {
+      final imageUrl = await _dataSource.uploadImageWeb(imageBytes, fileName, email);
+
+      try {
+        final optician = await _dataSource.getOpticianByEmail(email);
+        optician.imageUrl = imageUrl;
+        await _dataSource.updateOptician(optician);
+      } catch (e) {
+        print('Optician not found, creating new optician: $e');
+        final newOptician = Optician(
+          id: '',
+          nom: '',
+          prenom: '',
+          email: email,
+          date: '',
+          genre: '',
+          password: '',
+          address: '',
+          phone: '',
+          region: '',
+          imageUrl: imageUrl,
+        );
+        await _dataSource.addOptician(newOptician);
+      }
+
+      await fetchOpticians();
+      return imageUrl;
+    } catch (e) {
+      print('Web image upload error: $e');
+      throw Exception('Failed to upload image: ${e.toString()}');
     }
   }
 }

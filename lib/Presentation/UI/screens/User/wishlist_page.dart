@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:opti_app/Presentation/UI/screens/auth/product_details_screen.dart';
+import 'package:opti_app/Presentation/UI/screens/User/product_details_screen.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
 import 'package:opti_app/Presentation/controllers/wishlist_controller.dart';
-import 'package:opti_app/domain/entities/product_entity.dart';
 
 class WishlistPage extends StatelessWidget {
   final String userEmail;

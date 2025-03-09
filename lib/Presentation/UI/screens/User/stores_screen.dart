@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:opti_app/Presentation/UI/Screens/Auth/optician_product_screen.dart';
+import 'package:opti_app/Presentation/UI/screens/Admin/optician_product_screen.dart';
 import 'package:opti_app/Presentation/controllers/boutique_controller.dart';
 import 'package:opti_app/Presentation/controllers/navigation_controller.dart';
 import 'package:url_launcher/url_launcher.dart';

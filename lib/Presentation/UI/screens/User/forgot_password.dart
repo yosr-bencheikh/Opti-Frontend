@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:opti_app/Presentation/UI/Screens/Auth/code_verification.dart';
+import 'package:opti_app/Presentation/UI/screens/User/code_verification.dart';
 import 'package:opti_app/Presentation/controllers/auth_controller.dart';
 
 class EnterEmailScreen extends StatelessWidget {

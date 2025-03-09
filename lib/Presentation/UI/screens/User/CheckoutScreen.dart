@@ -3,10 +3,10 @@ import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geocoding/geocoding.dart';
-import 'package:opti_app/Presentation/UI/Screens/Auth/location_picker_screen.dart';
+import 'package:opti_app/Presentation/UI/screens/User/location_picker_screen.dart';
+import 'package:opti_app/Presentation/UI/screens/User/pdf.dart';
 import 'dart:developer' as developer;
 
-import 'package:opti_app/Presentation/UI/screens/auth/pdf.dart';
 import 'package:opti_app/Presentation/controllers/OrderController.dart';
 import 'package:opti_app/Presentation/controllers/cart_item_controller.dart';
 import 'package:opti_app/Presentation/controllers/auth_controller.dart';

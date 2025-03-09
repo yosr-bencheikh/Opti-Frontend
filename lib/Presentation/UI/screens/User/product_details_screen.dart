@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:opti_app/Presentation/UI/Screens/Auth/camera_screen.dart';
-import 'package:opti_app/Presentation/UI/screens/auth/home_screen.dart';
+import 'package:opti_app/Presentation/UI/screens/User/camera_screen.dart';
+import 'package:opti_app/Presentation/UI/screens/User/home_screen.dart';
+import 'package:opti_app/Presentation/UI/screens/User/reviews_screen.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
 import 'package:opti_app/domain/entities/product_entity.dart';
 import 'package:opti_app/domain/entities/wishlist_item.dart';
 import 'package:opti_app/Presentation/controllers/auth_controller.dart';
 import 'package:opti_app/Presentation/controllers/wishlist_controller.dart';
-import 'package:opti_app/Presentation/UI/Screens/Auth/reviews_screen.dart';
 
 class ProductDetailsScreen extends GetView<ProductController> {
   final Product product;

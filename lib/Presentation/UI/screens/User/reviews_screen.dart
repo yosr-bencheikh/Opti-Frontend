@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import 'package:opti_app/Presentation/controllers/auth_controller.dart';
 import 'package:opti_app/data/models/user_model.dart';
 import 'package:opti_app/domain/entities/product_entity.dart';
-import 'package:opti_app/domain/entities/user.dart';
 import 'package:opti_app/Presentation/controllers/review_controller.dart';
 
 class ReviewsScreen extends StatelessWidget {

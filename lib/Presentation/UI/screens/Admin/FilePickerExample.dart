@@ -5,8 +5,9 @@ import 'package:file_picker/file_picker.dart';
 
 class FilePickerExample extends StatefulWidget {
   final Function(PlatformFile?) onImagePicked;
+  final String? initialImageUrl;
 
-  const FilePickerExample({Key? key, required this.onImagePicked}) : super(key: key);
+  const FilePickerExample({Key? key, required this.onImagePicked, this.initialImageUrl}) : super(key: key);
 
   @override
   _FilePickerExampleState createState() => _FilePickerExampleState();
@@ -29,7 +30,7 @@ class _FilePickerExampleState extends State<FilePickerExample> {
         });
       }
     } catch (e) {
-      print('Error picking image: $e');
+      print('Erreur lors de la sélection de l\'image: $e');
     }
   }
 
@@ -62,11 +63,21 @@ class _FilePickerExampleState extends State<FilePickerExample> {
                         fit: BoxFit.cover,
                       ),
               )
-            : Icon(
-                Icons.add_a_photo,
-                size: 40,
-                color: Colors.grey[600],
-              ),
+            : widget.initialImageUrl != null
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(50),
+                    child: Image.network(
+                      widget.initialImageUrl!,
+                      width: 100,
+                      height: 100,
+                      fit: BoxFit.cover,
+                    ),
+                  )
+                : Icon(
+                    Icons.add_a_photo,
+                    size: 40,
+                    color: Colors.grey[600],
+                  ),
       ),
     );
   }

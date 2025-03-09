@@ -297,6 +297,7 @@ Future<String> uploadImage(File imageFile, String email) async {
     throw Exception('Failed to upload image: ${e.toString()}');
   }
 }
+
 String getUserName(String userId) {
   // Recherchez l'utilisateur dans la liste par son ID (ou email)
   final user = _users.firstWhere(

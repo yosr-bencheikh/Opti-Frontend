@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
-import 'package:opti_app/Presentation/UI/screens/auth/UsersScreen.dart';
+import 'package:opti_app/Presentation/UI/screens/Admin/UsersScreen.dart';
 import 'package:opti_app/Presentation/controllers/OrderController.dart';
 import 'package:opti_app/domain/entities/Order.dart';
 

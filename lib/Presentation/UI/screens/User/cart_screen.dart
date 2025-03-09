@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:opti_app/Presentation/UI/screens/User/home_screen.dart';
 
-import 'package:opti_app/Presentation/UI/Screens/Auth/home_screen.dart';
-import 'package:opti_app/Presentation/UI/screens/auth/CheckoutScreen.dart';
 import 'package:opti_app/Presentation/controllers/navigation_controller.dart';
 import 'package:opti_app/Presentation/controllers/cart_item_controller.dart';
 import 'package:opti_app/Presentation/controllers/auth_controller.dart';

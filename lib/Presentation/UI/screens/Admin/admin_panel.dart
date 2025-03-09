@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:opti_app/Presentation/UI/screens/auth/Admin_Commande.dart';
-import 'package:opti_app/Presentation/UI/screens/auth/Admin_Opticiens.dart';
-import 'package:opti_app/Presentation/UI/screens/auth/BoutiqueScreen.dart';
-import 'package:opti_app/Presentation/UI/screens/auth/ProductsScreen.dart';
-import 'package:opti_app/Presentation/UI/screens/auth/UsersScreen.dart';
+import 'package:opti_app/Presentation/UI/screens/Admin/Admin_Commande.dart';
+import 'package:opti_app/Presentation/UI/screens/Admin/Admin_Opticiens.dart';
+import 'package:opti_app/Presentation/UI/screens/Admin/BoutiqueScreen.dart';
+import 'package:opti_app/Presentation/UI/screens/Admin/ProductsScreen.dart';
+import 'package:opti_app/Presentation/UI/screens/Admin/UsersScreen.dart';
 
 class AdminPanelApp extends StatelessWidget {
   const AdminPanelApp({super.key});

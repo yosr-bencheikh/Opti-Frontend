@@ -127,18 +127,34 @@ class ProductController extends GetxController {
     }
   }
 
-  Future<void> updateProduct(String id, Product product) async {
-    try {
-      final updatedProduct = await _repository.updateProduct(id, product);
-      final index = _products.indexWhere((p) => p.id == id);
-      if (index != -1) {
-        _products[index] = updatedProduct;
-      }
-    } catch (e) {
-      _error.value = e.toString();
+  Future<bool> updateProduct(String id, Product product) async {
+  try {
+    _isLoading.value = true;
+    final updatedProduct = await _repository.updateProduct(id, product);
+    
+    // Mettre à jour dans la liste des produits
+    final index = _products.indexWhere((p) => p.id == id);
+    if (index != -1) {
+      _products[index] = updatedProduct;
+      // Forcer la mise à jour de l'interface
+      _products.refresh();
     }
+    
+    // Mettre à jour également dans la liste complète des produits
+    final allIndex = _allProducts.indexWhere((p) => p.id == id);
+    if (allIndex != -1) {
+      _allProducts[allIndex] = updatedProduct;
+      _allProducts.refresh();
+    }
+    
+    return true;
+  } catch (e) {
+    _error.value = e.toString();
+    return false;
+  } finally {
+    _isLoading.value = false;
   }
-
+}
   Future<void> deleteProduct(String id) async {
     try {
       await _repository.deleteProduct(id);

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:opti_app/Presentation/UI/Screens/Auth/cart_screen.dart';
-import 'package:opti_app/Presentation/UI/Screens/Auth/wishlist_page.dart';
+import 'package:opti_app/Presentation/UI/screens/User/cart_screen.dart';
+import 'package:opti_app/Presentation/UI/screens/User/wishlist_page.dart';
 import 'package:opti_app/Presentation/controllers/auth_controller.dart';
 import 'package:opti_app/Presentation/controllers/navigation_controller.dart';
 import 'package:opti_app/domain/entities/user.dart';
