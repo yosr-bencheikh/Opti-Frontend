@@ -20,45 +20,47 @@ class OrderController extends GetxController {
   });
 
   final RxList<Order> userOrders = <Order>[].obs;
-  final RxList<Order> allOrders = <Order>[].obs; // Liste pour toutes les commandes
+  final RxList<Order> allOrders =
+      <Order>[].obs; // Liste pour toutes les commandes
   final RxBool isLoading = false.obs;
   final RxBool isCreating = false.obs;
   final Rx<Order?> currentOrder = Rx<Order?>(null);
-  
+
   // Pour les champs de la commande
   final RxString selectedAddress = ''.obs;
-  final RxString selectedPaymentMethod = 'Carte bancaire'.obs;
-  
+  final RxString selectedPaymentMethod = ''.obs;
+
   final deliveryFee = 5.50;
 
   Future<void> createOrderFromCart(String userId) async {
     try {
       isCreating.value = true;
-      
+
       final cartController = Get.find<CartItemController>();
       final productController = Get.find<ProductController>();
-      
+
       if (cartController.cartItems.value.isEmpty) {
         Get.snackbar('Erreur', 'Votre panier est vide');
         return;
       }
-      
+
       // Log order creation attempt
       developer.log('Creating order for user: $userId');
-      developer.log('Cart items count: ${cartController.cartItems.value.length}');
-      
+      developer
+          .log('Cart items count: ${cartController.cartItems.value.length}');
+
       // Préparer les éléments de la commande à partir du panier
       final List<OrderItem> orderItems = [];
       double subtotal = 0;
-      
+
       for (var cartItem in cartController.cartItems.value) {
         final Product? product = productController.products.firstWhereOrNull(
           (p) => p.id == cartItem.productId,
         );
-        
+
         if (product != null) {
           final double unitPrice = cartItem.totalPrice / cartItem.quantity;
-          
+
           orderItems.add(OrderItem(
             productId: product.id!,
             productName: product.name,
@@ -67,13 +69,13 @@ class OrderController extends GetxController {
             unitPrice: unitPrice,
             totalPrice: cartItem.totalPrice,
           ));
-          
+
           subtotal += cartItem.totalPrice;
         }
       }
-      
+
       final double total = subtotal + deliveryFee;
-      
+
       // Créer l'objet Order
       final order = Order(
         userId: userId,
@@ -86,41 +88,42 @@ class OrderController extends GetxController {
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
-      
+
       // Log the order data
       developer.log('Order data prepared: ${order.toJson()}');
-      
+
       // Envoyer la commande au serveur directement via le repository
       developer.log('Sending order to server...');
       final createdOrder = await orderRepository.createOrder(order);
-      
+
       developer.log('Order created successfully with ID: ${createdOrder.id}');
       currentOrder.value = createdOrder;
-      
+
       // Vider le panier après une commande réussie
       developer.log('Clearing cart...');
       await cartController.clearCart(userId);
-      
+
       Get.snackbar(
-        'Succès', 
+        'Succès',
         'Votre commande a été confirmée avec succès',
         duration: const Duration(seconds: 3),
       );
-      
     } catch (e) {
       developer.log('Error creating order: $e', error: e);
-      
+
       // Show a more user-friendly error message
-      String errorMessage = 'Une erreur est survenue lors de la création de la commande.';
-      
-      if (e.toString().contains('timed out') || 
+      String errorMessage =
+          'Une erreur est survenue lors de la création de la commande.';
+
+      if (e.toString().contains('timed out') ||
           e.toString().contains('SocketException') ||
           e.toString().contains('Connection refused')) {
-        errorMessage = 'Impossible de se connecter au serveur. Vérifiez votre connexion internet ou réessayez plus tard.';
+        errorMessage =
+            'Impossible de se connecter au serveur. Vérifiez votre connexion internet ou réessayez plus tard.';
       }
-      
+
       Get.snackbar(
-        'Erreur', 
+        'Erreur',
         errorMessage,
         duration: const Duration(seconds: 5),
       );
@@ -128,120 +131,82 @@ class OrderController extends GetxController {
       isCreating.value = false;
     }
   }
+
   final RxString currentUserName = ''.obs;
 
-Future<String> getOrderUserName(String userId) async {
-  try {
-    // First, check if the user is already loaded in the controller's users list
-    final user = userController.users.firstWhere(
-      (user) => user.email == userId, 
-    );
-
-    if (user != null) {
-      currentUserName.value = '${user.nom} ${user.prenom}'.trim();
-      return currentUserName.value;
-    }
-
-    // If not found in the current list, fetch the user by ID
+  Future<String> getOrderUserName(String userId) async {
     try {
-      final fetchedUser = await userController.fetchUserById(userId);
-      currentUserName.value = '${fetchedUser.nom} ${fetchedUser.prenom}'.trim();
-      return currentUserName.value;
-    } catch (fetchError) {
-      print('Error fetching user by ID: $fetchError');
-    }
+      // First, check if the user is already loaded in the controller's users list
+      final user = userController.users.firstWhere(
+        (user) => user.email == userId,
+      );
 
-    // Last resort if no user is found
-    currentUserName.value = 'Utilisateur ${userId.substring(0, 8)}';
-    return currentUserName.value;
-  } catch (e) {
-    print('Error in getOrderUserName: $e');
-    currentUserName.value = 'Utilisateur Inconnu';
-    return currentUserName.value;
+      if (user != null) {
+        currentUserName.value = '${user.nom} ${user.prenom}'.trim();
+        return currentUserName.value;
+      }
+
+      // If not found in the current list, fetch the user by ID
+      try {
+        final fetchedUser = await userController.fetchUserById(userId);
+        currentUserName.value =
+            '${fetchedUser.nom} ${fetchedUser.prenom}'.trim();
+        return currentUserName.value;
+      } catch (fetchError) {
+        print('Error fetching user by ID: $fetchError');
+      }
+
+      // Last resort if no user is found
+      currentUserName.value = 'Utilisateur ${userId.substring(0, 8)}';
+      return currentUserName.value;
+    } catch (e) {
+      print('Error in getOrderUserName: $e');
+      currentUserName.value = 'Utilisateur Inconnu';
+      return currentUserName.value;
+    }
   }
-}
 
   Future<void> loadUserOrders(String userId) async {
-  try {
-    isLoading.value = true;
-    developer.log('Loading orders for user: $userId');
-    
-    final orders = await orderRepository.getUserOrders(userId);
-    developer.log('Orders fetched: ${orders.length}');
-    
-    userOrders.value = orders;
-    
-    developer.log('Loaded ${orders.length} orders');
-  } catch (e) {
-    developer.log('Error loading orders: $e', error: e);
-    
-    String errorMessage = 'Une erreur est survenue lors du chargement des commandes.';
-    
-    if (e.toString().contains('timed out') || 
-        e.toString().contains('SocketException') ||
-        e.toString().contains('Connection refused')) {
-      errorMessage = 'Impossible de se connecter au serveur. Vérifiez votre connexion internet.';
-    }
-    
-    Get.snackbar(
-      'Erreur', 
-      errorMessage,
-      duration: const Duration(seconds: 3),
-    );
-  } finally {
-    isLoading.value = false;
-  }
-}
-  Future<void> loadAllOrders() async {
-  try {
-    isLoading.value = true;
-    developer.log('Loading all orders...');
-
-    final orders = await orderRepository.getAllOrders();
-    allOrders.value = orders;
-
-    developer.log('Loaded ${orders.length} orders');
-  } catch (e) {
-    developer.log('Error loading all orders: $e', error: e);
-
-    String errorMessage = 'Une erreur est survenue lors du chargement des commandes.';
-    if (e.toString().contains('timed out') || 
-        e.toString().contains('SocketException') ||
-        e.toString().contains('Connection refused')) {
-      errorMessage = 'Impossible de se connecter au serveur. Vérifiez votre connexion internet.';
-    }
-
-    Get.snackbar(
-      'Erreur', 
-      errorMessage,
-      duration: const Duration(seconds: 3),
-    );
-  } finally {
-    isLoading.value = false;
-  }
-}
-  Future<void> getOrderDetails(String orderId) async {
     try {
+      // Add null and empty string checks
+      if (userId == null || userId.isEmpty || userId.trim() == '') {
+        developer.log('Invalid user ID for fetching orders');
+        Get.snackbar(
+          'Erreur',
+          'Impossible de charger les commandes. Utilisateur non identifié.',
+          duration: const Duration(seconds: 3),
+        );
+        return;
+      }
+
       isLoading.value = true;
-      developer.log('Fetching details for order: $orderId');
-      
-      final order = await orderRepository.getOrderById(orderId);
-      currentOrder.value = order;
-      
-      developer.log('Order details fetched successfully');
+      developer.log('Loading orders for user: $userId');
+
+      final orders = await orderRepository.getUserOrders(userId);
+      developer.log('Orders fetched: ${orders.length}');
+
+      userOrders.value = orders;
+
+      // Add a log to show more details about the fetched orders
+      orders.forEach((order) {
+        developer.log(
+            'Order ID: ${order.id}, Total: ${order.total}, Status: ${order.status}');
+      });
     } catch (e) {
-      developer.log('Error fetching order details: $e', error: e);
-      
-      String errorMessage = 'Une erreur est survenue lors du chargement des détails de la commande.';
-      
-      if (e.toString().contains('timed out') || 
+      developer.log('Error loading orders: $e', error: e);
+
+      String errorMessage =
+          'Une erreur est survenue lors du chargement des commandes.';
+
+      if (e.toString().contains('timed out') ||
           e.toString().contains('SocketException') ||
           e.toString().contains('Connection refused')) {
-        errorMessage = 'Impossible de se connecter au serveur. Vérifiez votre connexion internet.';
+        errorMessage =
+            'Impossible de se connecter au serveur. Vérifiez votre connexion internet.';
       }
-      
+
       Get.snackbar(
-        'Erreur', 
+        'Erreur',
         errorMessage,
         duration: const Duration(seconds: 3),
       );
@@ -249,7 +214,70 @@ Future<String> getOrderUserName(String userId) async {
       isLoading.value = false;
     }
   }
-  
+
+  Future<void> loadAllOrders() async {
+    try {
+      isLoading.value = true;
+      developer.log('Loading all orders...');
+
+      final orders = await orderRepository.getAllOrders();
+      allOrders.value = orders;
+
+      developer.log('Loaded ${orders.length} orders');
+    } catch (e) {
+      developer.log('Error loading all orders: $e', error: e);
+
+      String errorMessage =
+          'Une erreur est survenue lors du chargement des commandes.';
+      if (e.toString().contains('timed out') ||
+          e.toString().contains('SocketException') ||
+          e.toString().contains('Connection refused')) {
+        errorMessage =
+            'Impossible de se connecter au serveur. Vérifiez votre connexion internet.';
+      }
+
+      Get.snackbar(
+        'Erreur',
+        errorMessage,
+        duration: const Duration(seconds: 3),
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<void> getOrderDetails(String orderId) async {
+    try {
+      isLoading.value = true;
+      developer.log('Fetching details for order: $orderId');
+
+      final order = await orderRepository.getOrderById(orderId);
+      currentOrder.value = order;
+
+      developer.log('Order details fetched successfully');
+    } catch (e) {
+      developer.log('Error fetching order details: $e', error: e);
+
+      String errorMessage =
+          'Une erreur est survenue lors du chargement des détails de la commande.';
+
+      if (e.toString().contains('timed out') ||
+          e.toString().contains('SocketException') ||
+          e.toString().contains('Connection refused')) {
+        errorMessage =
+            'Impossible de se connecter au serveur. Vérifiez votre connexion internet.';
+      }
+
+      Get.snackbar(
+        'Erreur',
+        errorMessage,
+        duration: const Duration(seconds: 3),
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
   Future<bool> cancelOrder(String orderId) async {
     try {
       isLoading.value = true;
@@ -272,7 +300,7 @@ Future<String> getOrderUserName(String userId) async {
           'Commande supprimée avec succès',
           duration: const Duration(seconds: 3),
         );
-        
+
         developer.log('Order cancelled successfully');
       } else {
         Get.snackbar(
@@ -280,24 +308,26 @@ Future<String> getOrderUserName(String userId) async {
           'Impossible de supprimer la commande',
           duration: const Duration(seconds: 3),
         );
-        
+
         developer.log('Failed to cancel order');
       }
 
       return success;
     } catch (e) {
       developer.log('Error cancelling order: $e', error: e);
-      
-      String errorMessage = 'Une erreur est survenue lors de la suppression de la commande.';
-      
-      if (e.toString().contains('timed out') || 
+
+      String errorMessage =
+          'Une erreur est survenue lors de la suppression de la commande.';
+
+      if (e.toString().contains('timed out') ||
           e.toString().contains('SocketException') ||
           e.toString().contains('Connection refused')) {
-        errorMessage = 'Impossible de se connecter au serveur. Vérifiez votre connexion internet.';
+        errorMessage =
+            'Impossible de se connecter au serveur. Vérifiez votre connexion internet.';
       }
-      
+
       Get.snackbar(
-        'Erreur', 
+        'Erreur',
         errorMessage,
         duration: const Duration(seconds: 3),
       );
@@ -306,7 +336,7 @@ Future<String> getOrderUserName(String userId) async {
       isLoading.value = false;
     }
   }
-  
+
   Future<bool> updateOrderStatus(String orderId, String status) async {
     try {
       isLoading.value = true;
@@ -320,7 +350,7 @@ Future<String> getOrderUserName(String userId) async {
         if (currentOrder.value?.id == orderId) {
           await getOrderDetails(orderId);
         }
-        
+
         // Refresh user orders list
         if (currentOrder.value?.userId != null) {
           await loadUserOrders(currentOrder.value!.userId);
@@ -331,7 +361,7 @@ Future<String> getOrderUserName(String userId) async {
           'Statut de commande mis à jour avec succès',
           duration: const Duration(seconds: 3),
         );
-        
+
         developer.log('Order status updated successfully');
       } else {
         Get.snackbar(
@@ -339,24 +369,26 @@ Future<String> getOrderUserName(String userId) async {
           'Impossible de mettre à jour le statut de la commande',
           duration: const Duration(seconds: 3),
         );
-        
+
         developer.log('Failed to update order status');
       }
 
       return success;
     } catch (e) {
       developer.log('Error updating order status: $e', error: e);
-      
-      String errorMessage = 'Une erreur est survenue lors de la mise à jour du statut.';
-      
-      if (e.toString().contains('timed out') || 
+
+      String errorMessage =
+          'Une erreur est survenue lors de la mise à jour du statut.';
+
+      if (e.toString().contains('timed out') ||
           e.toString().contains('SocketException') ||
           e.toString().contains('Connection refused')) {
-        errorMessage = 'Impossible de se connecter au serveur. Vérifiez votre connexion internet.';
+        errorMessage =
+            'Impossible de se connecter au serveur. Vérifiez votre connexion internet.';
       }
-      
+
       Get.snackbar(
-        'Erreur', 
+        'Erreur',
         errorMessage,
         duration: const Duration(seconds: 3),
       );
@@ -365,58 +397,67 @@ Future<String> getOrderUserName(String userId) async {
       isLoading.value = false;
     }
   }
-  
- Future<void> setAddress(String address, dynamic selectedLatitude, dynamic selectedLongitude) async {
-  selectedAddress.value = address;
-  
-  // Try to get coordinates from the address
-  try {
-    List<Location> locations = await locationFromAddress(address);
-    if (locations.isNotEmpty) {
-      selectedLatitude = locations[0].latitude;
-      selectedLongitude = locations[0].longitude;
-      developer.log('Geocoded address to: ${selectedLatitude}, ${selectedLongitude}');
+
+  Future<void> setAddress(String address, dynamic selectedLatitude,
+      dynamic selectedLongitude) async {
+    selectedAddress.value = address;
+
+    // Try to get coordinates from the address
+    try {
+      List<Location> locations = await locationFromAddress(address);
+      if (locations.isNotEmpty) {
+        selectedLatitude = locations[0].latitude;
+        selectedLongitude = locations[0].longitude;
+        developer.log(
+            'Geocoded address to: ${selectedLatitude}, ${selectedLongitude}');
+      }
+    } catch (e) {
+      developer.log('Geocoding failed: $e', error: e);
+      // Reset coordinates if geocoding fails
+      selectedLatitude = 0.0;
+      selectedLongitude = 0.0;
     }
-  } catch (e) {
-    developer.log('Geocoding failed: $e', error: e);
-    // Reset coordinates if geocoding fails
-    selectedLatitude= 0.0;
-    selectedLongitude = 0.0;
   }
-}
 
 // Add a method to launch maps with specific address
-Future<void> openInMaps(String address, {double? latitude, double? longitude}) async {
-  try {
-    String mapUrl;
-    
-    if (latitude != null && longitude != null && latitude != 0 && longitude != 0) {
-      // Use coordinates if available
-      mapUrl = 'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude';
-    } else {
-      // Use address string
-      mapUrl = 'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(address)}';
-    }
-    
-    if (await canLaunchUrl(Uri.parse(mapUrl))) {
-      await launchUrl(Uri.parse(mapUrl), mode: LaunchMode.externalApplication);
-    } else {
+  Future<void> openInMaps(String address,
+      {double? latitude, double? longitude}) async {
+    try {
+      String mapUrl;
+
+      if (latitude != null &&
+          longitude != null &&
+          latitude != 0 &&
+          longitude != 0) {
+        // Use coordinates if available
+        mapUrl =
+            'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude';
+      } else {
+        // Use address string
+        mapUrl =
+            'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(address)}';
+      }
+
+      if (await canLaunchUrl(Uri.parse(mapUrl))) {
+        await launchUrl(Uri.parse(mapUrl),
+            mode: LaunchMode.externalApplication);
+      } else {
+        Get.snackbar(
+          'Erreur',
+          'Impossible d\'ouvrir Google Maps',
+          duration: const Duration(seconds: 3),
+        );
+      }
+    } catch (e) {
+      developer.log('Error launching maps: $e', error: e);
       Get.snackbar(
         'Erreur',
-        'Impossible d\'ouvrir Google Maps',
+        'Une erreur est survenue lors de l\'ouverture de la carte',
         duration: const Duration(seconds: 3),
       );
     }
-  } catch (e) {
-    developer.log('Error launching maps: $e', error: e);
-    Get.snackbar(
-      'Erreur',
-      'Une erreur est survenue lors de l\'ouverture de la carte',
-      duration: const Duration(seconds: 3),
-    );
   }
-}
-  
+
   void setPaymentMethod(String method) {
     selectedPaymentMethod.value = method;
   }

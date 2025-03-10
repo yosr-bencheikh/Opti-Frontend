@@ -34,8 +34,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (email.isEmpty || password.isEmpty) {
       Get.snackbar(
-        'Error',
-        'Please fill in all fields',
+        'Erreur',
+        'Remplissez tous les champs',
         snackPosition: SnackPosition.BOTTOM,
       );
       return;
@@ -355,7 +355,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   style: TextStyle(fontSize: 14),
                                   children: [
                                     TextSpan(
-                                      text: 'Nouveau patient ? ',
+                                      text: 'Nouveau utilisateur ? ',
                                       style: AppTextStyles.signUpTextStyle,
                                     ),
                                     TextSpan(

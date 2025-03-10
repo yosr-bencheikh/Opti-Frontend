@@ -4,11 +4,12 @@ buildscript {
         google()
         mavenCentral()
     }
-
     dependencies {
-        // Changer la version de 8.2.2 à 8.1.3 qui est la dernière version supportée
+        // Version de l'outil de build Android et du plugin Kotlin
         classpath 'com.android.tools.build:gradle:8.1.3'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        // Plugin Google Services (nécessaire pour Firebase)
+        classpath 'com.google.gms:google-services:4.4.2'
     }
 }
 
@@ -26,7 +27,6 @@ subprojects {
 subprojects {
     project.evaluationDependsOn(':app')
 }
-
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }

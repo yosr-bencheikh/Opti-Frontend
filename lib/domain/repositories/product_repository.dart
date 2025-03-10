@@ -9,4 +9,5 @@ abstract class ProductRepository {
   Future<String> uploadImage(File imageFile);
   Future<Product> getProductById(String productId);
   Future<Product> createProduct(Product product);
+  Future<Map<String, dynamic>> getProductRatings(String productId);
 }

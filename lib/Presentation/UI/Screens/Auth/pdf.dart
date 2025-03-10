@@ -1,7 +1,8 @@
-import 'package:flutter/services.dart';
+import 'package:opti_app/Presentation/UI/Screens/Auth/ordersList_screen.dart';
 import 'package:opti_app/domain/entities/Order.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+// ignore: depend_on_referenced_packages
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'package:intl/intl.dart';
@@ -12,31 +13,34 @@ import 'package:share_plus/share_plus.dart';
 
 // Fonction principale pour générer et afficher la facture
 Future<void> generateAndOpenInvoice(Order order) async {
-  // Générer le PDF et obtenir le chemin du fichier
+  // Generate the PDF and get the file path
   final pdfPath = await _generateInvoice(order);
 
-  // Assurez-vous que order.id n'est pas null, sinon fournir un fallback.
-  final orderId = order.id?.toString() ?? 'inconnu';
+  // Ensure order.id is not null, otherwise provide a fallback
+  final orderId = order.id?.toString() ?? 'unknown';
 
-  // Afficher le PDF dans l'application en passant l'orderId
+  // Navigate to PDF Viewer Screen
   Get.to(() => PdfViewerScreen(
         pdfPath: pdfPath,
-        title: 'Facture #$orderId',
+        title: 'Invoice #$orderId',
         orderId: orderId,
+        order: order, // Pass the entire order object
       ));
 }
 
-// Écran de visualisation PDF
+// PDF Viewer Screen with Order List Navigation
 class PdfViewerScreen extends StatelessWidget {
   final String pdfPath;
   final String title;
-  final String orderId; // Utilisé pour le nom du fichier
+  final String orderId;
+  final Order order; // Add order parameter
 
   const PdfViewerScreen({
     Key? key,
     required this.pdfPath,
     required this.title,
     required this.orderId,
+    required this.order,
   }) : super(key: key);
 
   @override
@@ -47,21 +51,28 @@ class PdfViewerScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         actions: [
-          // Bouton pour télécharger le PDF
+          // Button to view order list
+          IconButton(
+            icon: const Icon(Icons.list_alt),
+            tooltip: 'Voir toutes les commandes',
+            onPressed: () {
+              // Navigate to OrdersListPage
+              Get.off(() => OrdersListPage());
+            },
+          ),
+          // Download PDF button
           IconButton(
             icon: const Icon(Icons.download),
             onPressed: () {
-              print("pdfPath:{$pdfPath}");
-              print("orderId:{$orderId}");
               downloadPdfFile(pdfPath, orderId);
             },
           ),
-          // Bouton pour partager le PDF
+          // Share PDF button
           IconButton(
             icon: const Icon(Icons.share),
             onPressed: () {
               Share.shareXFiles([XFile(pdfPath)],
-                  text: 'Votre facture #$orderId');
+                  text: 'Your invoice #$orderId');
             },
           ),
         ],
@@ -84,6 +95,15 @@ class PdfViewerScreen extends StatelessWidget {
           print('$page: ${error.toString()}');
         },
         onViewCreated: (PDFViewController pdfViewController) {},
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          // Navigate to OrdersListPage
+          Get.off(() => OrdersListPage());
+        },
+        icon: Icon(Icons.list),
+        label: Text('Toutes les commandes'),
+        backgroundColor: Colors.blue,
       ),
     );
   }
@@ -137,7 +157,7 @@ Future<String> _generateInvoice(Order order) async {
                             style: pw.TextStyle(
                                 fontWeight: pw.FontWeight.bold, fontSize: 12)),
                         pw.SizedBox(height: 5),
-                        pw.Text(order.address ?? 'Non spécifiée',
+                        pw.Text(order.address,
                             style: const pw.TextStyle(fontSize: 11)),
                       ],
                     ),
@@ -148,7 +168,7 @@ Future<String> _generateInvoice(Order order) async {
                             style: pw.TextStyle(
                                 fontWeight: pw.FontWeight.bold, fontSize: 12)),
                         pw.SizedBox(height: 5),
-                        pw.Text(order.paymentMethod ?? 'Non spécifiée',
+                        pw.Text(order.paymentMethod,
                             style: const pw.TextStyle(fontSize: 11)),
                       ],
                     ),

@@ -349,35 +349,46 @@ class ProductDetailsScreen extends GetView<ProductController> {
   }
 
   // Rating Section
+  // Rating Section: Updated to fetch real-time values from ProductController
   Widget _buildRatingSection() {
+    // Get the product controller
+    final ProductController productController = Get.find<ProductController>();
     return GestureDetector(
       onTap: () => Get.to(() => ReviewsScreen(product: product)),
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.amber.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.star, color: Colors.amber, size: 20),
-            SizedBox(width: 4),
-            Text(
-              ' ${product.averageRating.toStringAsFixed(1)}',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.amber[800],
+      child: Obx(() {
+        // Look up the updated product in the controller’s products list.
+        // If not found, fall back to the passed product instance.
+        final updatedProduct = productController.products.firstWhere(
+          (p) => p.id == product.id,
+          orElse: () => product,
+        );
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.amber.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.star, color: Colors.amber, size: 20),
+              const SizedBox(width: 4),
+              Text(
+                ' ${updatedProduct.averageRating.toStringAsFixed(1)}',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.amber[800],
+                ),
               ),
-            ),
-            SizedBox(width: 4),
-            Text(
-              ' (${product.totalReviews} reviews)',
-              style: TextStyle(color: Colors.grey),
-            ),
-            Icon(Icons.chevron_right, color: Colors.grey, size: 20),
-          ],
-        ),
-      ),
+              const SizedBox(width: 4),
+              Text(
+                ' (${updatedProduct.totalReviews} avis)',
+                style: const TextStyle(color: Colors.grey),
+              ),
+              const Icon(Icons.chevron_right, color: Colors.grey, size: 20),
+            ],
+          ),
+        );
+      }),
     );
   }
 

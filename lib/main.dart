@@ -1,11 +1,15 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
+import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:opti_app/AuthBinding.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/CheckoutScreen.dart';
+import 'package:opti_app/Presentation/UI/Screens/Auth/admin_panel.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/cart_screen.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/favourite_screen.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/home_screen.dart';
+import 'package:opti_app/Presentation/UI/Screens/Auth/ordersList_screen.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/splash_screen.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/stores_screen.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/WelcomePage.dart';
@@ -30,9 +34,9 @@ import 'package:opti_app/domain/repositories/OrderRepository.dart';
 
 import 'package:opti_app/domain/repositories/opticien_repository.dart';
 import 'package:opti_app/domain/repositories/product_repository.dart';
+import 'package:opti_app/notification_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/SignUpScreen.dart';
-import 'package:opti_app/Presentation/UI/screens/auth/admin_panel.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/login_screen.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/profile_screen.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/forgot_password.dart';
@@ -109,6 +113,7 @@ Future<void> main() async {
   final sendCodeToEmail = SendCodeToEmail(Get.find());
   Get.put(sendCodeToEmail);
   Get.put(NavigationController(), permanent: true);
+  NotificationService().initialize();
 
   runApp(const MyApp());
 }
@@ -134,7 +139,7 @@ class MyApp extends StatelessWidget {
         ),
         GetPage(
           name: '/Admin_pannel',
-          page: () => AdminPanelApp(),
+          page: () => AdminMainScreen(),
           binding: AuthBinding(),
         ),
         GetPage(
@@ -203,6 +208,11 @@ class MyApp extends StatelessWidget {
         GetPage(
           name: '/order',
           page: () => CheckoutScreen(),
+          binding: AuthBinding(),
+        ),
+        GetPage(
+          name: '/orderList',
+          page: () => OrdersListPage(),
           binding: AuthBinding(),
         ),
       ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/cart_screen.dart';
+import 'package:opti_app/Presentation/UI/Screens/Auth/ordersList_screen.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/wishlist_page.dart';
 import 'package:opti_app/Presentation/controllers/auth_controller.dart';
 import 'package:opti_app/Presentation/controllers/navigation_controller.dart';
@@ -38,7 +39,8 @@ class ProfileScreen extends GetView<AuthController> {
         // Récupération de l'utilisateur actuel
         final User? user = controller.currentUser;
         if (user == null) {
-          return const Center(child: Text('Loading user data...'));
+          return const Center(
+              child: Text('Chargement des données utilisateur...'));
         }
 
         // Construction de l'interface principale
@@ -50,10 +52,10 @@ class ProfileScreen extends GetView<AuthController> {
                 // En-tête : avatar, nom, email, bouton « Edit profile »
                 _buildProfileHeader(context, user),
                 const SizedBox(height: 24),
-                // Section « Inventories » : My stores, Support
+                // Section « Inventories » : Mes magasins, Support
                 _buildInventoriesSection(),
                 const SizedBox(height: 24),
-                // Section « Preferences » : toggles (Push notifications, Face ID, PIN code)
+                // Section « Preferences » : toggles (Notifications push, Face ID, Code PIN)
                 _buildPreferencesSection(),
                 const SizedBox(height: 24),
                 // Bouton « Logout »
@@ -110,29 +112,29 @@ class ProfileScreen extends GetView<AuthController> {
                       icon: const Icon(Icons.camera_alt,
                           color: Colors.blueAccent),
                       onPressed: () async {
-                        // Call method to pick an image first
+                        // Appeler la méthode pour choisir une image d'abord
                         await controller.pickImage();
                         if (controller.selectedImage != null) {
                           controller.uploadImage(user.email);
                         } else {
-                          Get.snackbar('Error', 'No image selected!');
+                          Get.snackbar('Erreur', 'Aucune image sélectionnée!');
                         }
                       },
                     ),
-                    // Only show clear icon if an image is present
+                    // Afficher uniquement l'icône de suppression si une image est présente
                     if ((controller.currentUser?.imageUrl ?? '').isNotEmpty)
                       IconButton(
                         icon: const Icon(Icons.clear, color: Colors.redAccent),
                         onPressed: () {
                           Get.defaultDialog(
-                            title: "Confirm",
+                            title: "Confirmer",
                             middleText:
-                                "Are you sure you want to delete the picture?",
-                            textCancel: "No",
-                            textConfirm: "Yes",
+                                "Êtes-vous sûr de vouloir supprimer la photo ?",
+                            textCancel: "Non",
+                            textConfirm: "Oui",
                             onConfirm: () {
                               controller.clearImage(user.email);
-                              Get.back(); // Close the dialog
+                              Get.back(); // Fermer la boîte de dialogue
                             },
                             onCancel: () {},
                           );
@@ -144,16 +146,16 @@ class ProfileScreen extends GetView<AuthController> {
             ],
           ),
           const SizedBox(height: 10),
-          // User name
+          // Nom de l'utilisateur
           Text(
-            user.prenom.isNotEmpty ? user.prenom : 'User Name',
+            user.prenom.isNotEmpty ? user.prenom : 'Nom d\'utilisateur',
             style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: Colors.black,
             ),
           ),
-          // User email
+          // Email de l'utilisateur
           Text(
             user.email,
             style: const TextStyle(
@@ -162,7 +164,7 @@ class ProfileScreen extends GetView<AuthController> {
             ),
           ),
           const SizedBox(height: 10),
-          // Edit profile button
+          // Bouton Edit profile
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.black,
@@ -174,7 +176,7 @@ class ProfileScreen extends GetView<AuthController> {
               Get.to(() => UpdateProfileScreen(email: user.email));
             },
             child: const Text(
-              'Edit profile',
+              'Modifier le profil',
               style: TextStyle(color: Colors.white),
             ),
           ),
@@ -185,7 +187,7 @@ class ProfileScreen extends GetView<AuthController> {
   }
 
   //------------------------------------------------------------------------------
-  // Section « Inventories » : My stores, Support
+  // Section « Inventories » : Mes magasins, Support
   //------------------------------------------------------------------------------
   Widget _buildInventoriesSection() {
     return Container(
@@ -212,20 +214,20 @@ class ProfileScreen extends GetView<AuthController> {
             ),
           ),
           const SizedBox(height: 8),
-          // My stores
+          // Mes magasins
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: const Icon(Icons.favorite, color: Colors.black),
-            title: const Text('My favourites'),
+            title: const Text('Mes favoris'),
             trailing: const Icon(Icons.arrow_forward_ios, size: 16),
             onTap: () {
               final userEmail = controller.currentUser?.email;
               if (userEmail != null) {
                 Get.to(() => WishlistPage(userEmail: userEmail));
               } else {
-                Get.snackbar('Error', 'Please log in first');
+                Get.snackbar('Erreur', 'Veuillez vous connecter d\'abord');
               }
-              // Action pour « My stores »
+              // Action pour « Mes magasins »
             },
           ),
           Divider(color: Colors.grey[300]),
@@ -233,11 +235,11 @@ class ProfileScreen extends GetView<AuthController> {
             contentPadding: EdgeInsets.zero,
             leading:
                 const Icon(Icons.shopping_cart_outlined, color: Colors.black),
-            title: const Text('My cart'),
+            title: const Text('Mon panier'),
             trailing: const Icon(Icons.arrow_forward_ios, size: 16),
             onTap: () {
               Get.to(() => CartScreen());
-              // Action pour « My stores »
+              // Action pour « Mes magasins »
             },
           ),
           Divider(color: Colors.grey[300]),
@@ -245,10 +247,10 @@ class ProfileScreen extends GetView<AuthController> {
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: const Icon(Icons.store, color: Colors.black),
-            title: const Text('My recent purchases'),
+            title: const Text('Mes commandes'),
             trailing: const Icon(Icons.arrow_forward_ios, size: 16),
             onTap: () {
-              // Action pour « Support »
+              Get.to(() => OrdersListPage());
             },
           ),
         ],
@@ -257,7 +259,7 @@ class ProfileScreen extends GetView<AuthController> {
   }
 
   //------------------------------------------------------------------------------
-  // Section « Preferences » : toggles (Push notifications, Face ID, PIN code)
+  // Section « Preferences » : toggles (Notifications push, Face ID, Code PIN)
   //------------------------------------------------------------------------------
   Widget _buildPreferencesSection() {
     return Container(
@@ -277,18 +279,18 @@ class ProfileScreen extends GetView<AuthController> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Preferences',
+            'Préférences',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 2),
-          // Push notifications
+          // Notifications push
           Obx(
             () => SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Recieve notifications'),
+              title: const Text('Recevoir des notifications'),
               value: pushNotifications.value,
               onChanged: (val) => pushNotifications.value = val,
             ),
@@ -338,7 +340,7 @@ class ProfileScreen extends GetView<AuthController> {
             Icon(Icons.logout, color: Colors.red),
             SizedBox(width: 12),
             Text(
-              'Logout',
+              'Se Déconnecter',
               style: TextStyle(
                 color: Colors.red,
                 fontWeight: FontWeight.bold,
@@ -350,6 +352,9 @@ class ProfileScreen extends GetView<AuthController> {
     );
   }
 
+  //------------------------------------------------------------------------------
+  // Bottom Navigation
+  //------------------------------------------------------------------------------
   Widget _buildBottomNavBar() {
     return Obx(() => BottomNavigationBar(
           type: BottomNavigationBarType.fixed,
@@ -357,11 +362,11 @@ class ProfileScreen extends GetView<AuthController> {
           selectedItemColor: Colors.blue,
           unselectedItemColor: Colors.grey,
           items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-            BottomNavigationBarItem(icon: Icon(Icons.store), label: 'Stores'),
+            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Accueil'),
+            BottomNavigationBarItem(icon: Icon(Icons.store), label: 'Magasins'),
             BottomNavigationBarItem(
-                icon: Icon(Icons.shopping_cart), label: 'Cart'),
-            BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+                icon: Icon(Icons.list_alt), label: 'Commandes'),
+            BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
           ],
           onTap: navigationController.changePage,
         ));

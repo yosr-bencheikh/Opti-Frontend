@@ -10,9 +10,8 @@ class Product {
   String image;
   String? typeVerre;
   String opticienId;
-  // Remove the 'final' keyword to allow updating these values
-  late double averageRating;
-  late int totalReviews;
+  double averageRating;
+  int totalReviews;
 
   Product({
     this.id,
@@ -32,7 +31,7 @@ class Product {
 
   factory Product.fromJson(Map<String, dynamic> json) {
     final imageUrl = _constructImageUrl(json['image'] ?? json['imageUrl']);
-    print('Parsed imageUrl: $imageUrl'); // Ajoutez ce log pour déboguer
+    print('Parsed imageUrl: $imageUrl'); // Debug log
 
     return Product(
       id: json['_id']?.toString() ?? '',
@@ -43,24 +42,25 @@ class Product {
       couleur: json['couleur']?.toString() ?? '',
       prix: json['prix'].toDouble() ?? 0.0,
       quantiteStock: json['quantite_stock'] ?? 0,
-      image: json['image'],
+      image: imageUrl ?? '', // Use the constructed image URL
       typeVerre: json['type_verre']?.toString() ?? '',
       opticienId: json['opticienId']?.toString() ?? '',
       averageRating: (json['averageRating'] as num?)?.toDouble() ?? 0.0,
       totalReviews: json['totalReviews'] ?? 0,
     );
   }
+
   static String? _constructImageUrl(String? imagePath) {
     if (imagePath == null || imagePath.isEmpty) {
       return null;
     }
 
-    // Si c'est déjà une URL complète, retournez-la
+    // If it's already a full URL, return it
     if (imagePath.startsWith('http')) {
       return imagePath;
     }
 
-    // Sinon, construisez l'URL complète
+    // Otherwise, construct the full URL
     return 'http://localhost:3000/${imagePath.startsWith('/') ? imagePath.substring(1) : imagePath}';
   }
 
@@ -79,5 +79,37 @@ class Product {
       'totalReviews': totalReviews,
       'averageRating': averageRating,
     };
+  }
+
+  Product copyWith({
+    String? id,
+    String? name,
+    String? description,
+    String? category,
+    String? marque,
+    String? couleur,
+    double? prix,
+    int? quantiteStock,
+    String? image,
+    String? typeVerre,
+    String? opticienId,
+    double? averageRating,
+    int? totalReviews,
+  }) {
+    return Product(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      category: category ?? this.category,
+      marque: marque ?? this.marque,
+      couleur: couleur ?? this.couleur,
+      prix: prix ?? this.prix,
+      quantiteStock: quantiteStock ?? this.quantiteStock,
+      image: image ?? this.image,
+      typeVerre: typeVerre ?? this.typeVerre,
+      opticienId: opticienId ?? this.opticienId,
+      averageRating: averageRating ?? this.averageRating,
+      totalReviews: totalReviews ?? this.totalReviews,
+    );
   }
 }

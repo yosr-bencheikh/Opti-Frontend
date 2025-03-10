@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:opti_app/domain/entities/user.dart';
 
 /// The abstract class defining all authentication-related API calls.
@@ -48,6 +49,37 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       }
     } catch (e) {
       throw Exception('Failed to load user by ID: ${e.toString()}');
+    }
+  }
+
+  void sendPlayerIdToBackend(String userId) async {
+    try {
+      final pushSubscription = await OneSignal.User.pushSubscription;
+      final String? playerId = pushSubscription.id;
+
+      if (playerId != null) {
+        debugPrint('Sending Player ID to backend: $playerId');
+
+        // Send the Player ID to your backend
+        final response = await http.post(
+          Uri.parse('$baseUrl/store-player-id'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'userId': userId,
+            'playerId': playerId,
+          }),
+        );
+
+        if (response.statusCode == 200) {
+          debugPrint('Player ID stored successfully');
+        } else {
+          debugPrint('Failed to store Player ID: ${response.body}');
+        }
+      } else {
+        debugPrint('Player ID is null');
+      }
+    } catch (e) {
+      debugPrint('Error sending Player ID: $e');
     }
   }
 
@@ -125,6 +157,15 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
       if (response.statusCode == 200 && responseData['token'] != null) {
         debugPrint('Login successful, token: ${responseData['token']}');
+
+        // Extract userId from the response
+        final userId =
+            responseData['userId']; // Ensure your backend returns userId
+        if (userId != null) {
+          // Send the Player ID to the backend
+          sendPlayerIdToBackend(userId); // Await the function call
+        }
+
         return responseData['token'];
       } else {
         debugPrint(
@@ -156,11 +197,20 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
           'genre': user.genre,
         }),
       );
+
       print('Response status: ${response.statusCode}'); // Log response status
       print('Response body: ${response.body}');
+
       if (response.statusCode == 201) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         if (data.containsKey('token')) {
+          // Extract userId from the response
+          final userId = data['userId']; // Ensure your backend returns userId
+          if (userId != null) {
+            // Send the Player ID to the backend
+            sendPlayerIdToBackend(userId); // Await the function call
+          }
+
           return data;
         } else {
           throw Exception('Missing token in response');

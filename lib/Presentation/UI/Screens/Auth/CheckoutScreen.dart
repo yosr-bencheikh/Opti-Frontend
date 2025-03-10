@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:opti_app/Presentation/UI/Screens/Auth/location_picker_screen.dart';
-import 'dart:developer' as developer;
+
 
 import 'package:opti_app/Presentation/UI/screens/auth/pdf.dart';
 import 'package:opti_app/Presentation/controllers/OrderController.dart';
 import 'package:opti_app/Presentation/controllers/cart_item_controller.dart';
 import 'package:opti_app/Presentation/controllers/auth_controller.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
-import 'package:url_launcher/url_launcher.dart';
+
 
 class CheckoutScreen extends StatefulWidget {
   @override
@@ -65,13 +64,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       body: Obx(() {
         if (cartController.isLoading.value) {
           return const Center(child: CircularProgressIndicator());
-        }
-
-        if (cartController.cartItems.isEmpty) {
-          return const Center(
-            child: Text(
-                'Votre panier est vide, impossible de confirmer la commande'),
-          );
         }
 
         return SingleChildScrollView(
@@ -425,7 +417,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
               Text(
-                '${total.toStringAsFixed(2)} €',
+                '${total.toStringAsFixed(2)} TND',
                 style: const TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 16,

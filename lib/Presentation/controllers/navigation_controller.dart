@@ -14,7 +14,7 @@ class NavigationController extends GetxController {
         route = '/stores';
         break;
       case 2:
-        route = '/cart';
+        route = '/orderList';
         break;
       case 3:
         route = '/profileScreen';

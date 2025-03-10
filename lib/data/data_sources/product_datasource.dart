@@ -155,4 +155,57 @@ class ProductDatasource {
       throw Exception('Erreur lors de la récupération des opticiens: $e');
     }
   }
+  Future<Map<String, dynamic>> getProductRatings(String productId) async {
+  try {
+    final response = await http.get(
+      Uri.parse('$baseUrl/ratings/$productId'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return {
+        'averageRating': data['averageRating'] ?? 0.0,
+        'totalReviews': data['totalReviews'] ?? 0
+      };
+    } else {
+      throw Exception('Failed to load product ratings');
+    }
+  } catch (e) {
+    print('Error fetching product ratings: $e');
+    return {
+      'averageRating': 0.0,
+      'totalReviews': 0
+    };
+  }
 }
+
+// Method to add a review
+Future<void> addProductReview({
+  required String productId, 
+  required String userId, 
+  required int rating, 
+  String? comment
+}) async {
+  try {
+    final response = await http.post(
+      Uri.parse('$baseUrl/reviews/add'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'productId': productId,
+        'userId': userId,
+        'rating': rating,
+        'comment': comment
+      }),
+    );
+
+    if (response.statusCode != 201) {
+      throw Exception('Failed to add review');
+    }
+  } catch (e) {
+    print('Error adding product review: $e');
+    rethrow;
+  }
+}
+}
+

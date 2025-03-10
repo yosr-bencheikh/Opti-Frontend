@@ -52,7 +52,7 @@ class StoresScreen extends StatelessWidget {
           controller: searchController,
           onChanged: (value) => searchQuery.value = value,
           decoration: InputDecoration(
-            hintText: 'Find optical stores...',
+            hintText: "Trouver des magasins d'optique...",
             hintStyle: GoogleFonts.montserrat(
               fontSize: 14,
               color: Colors.grey.shade600,
@@ -105,7 +105,7 @@ class StoresScreen extends StatelessWidget {
         children: [
           // Filter Title
           Text(
-            'Filter Opticians',
+            "Filtrer les magasins d'optique",
             style: GoogleFonts.montserrat(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -123,7 +123,7 @@ class StoresScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Address',
+                      'Adresse',
                       style: GoogleFonts.montserrat(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -134,7 +134,7 @@ class StoresScreen extends StatelessWidget {
                       value: selectedAddress.value.isEmpty
                           ? null
                           : selectedAddress.value,
-                      hint: 'Select address',
+                      hint: 'Selectionner adresse',
                       items: _getUniqueAddresses(),
                       onChanged: (value) {
                         selectedAddress.value = value ?? '';
@@ -151,7 +151,7 @@ class StoresScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'City',
+                      'Ville',
                       style: GoogleFonts.montserrat(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -162,7 +162,7 @@ class StoresScreen extends StatelessWidget {
                       value: selectedCity.value.isEmpty
                           ? null
                           : selectedCity.value,
-                      hint: 'Select city',
+                      hint: 'Selectionner ville',
                       items: _getUniqueCities(),
                       onChanged: (value) {
                         selectedCity.value = value ?? '';
@@ -179,7 +179,7 @@ class StoresScreen extends StatelessWidget {
           Row(
             children: [
               Text(
-                'Show favorites only',
+                'Afficher la liste des favoris seulement',
                 style: GoogleFonts.montserrat(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -235,7 +235,7 @@ class StoresScreen extends StatelessWidget {
                   ),
                 ),
                 child: Text(
-                  'Apply',
+                  'Appliquer',
                   style: GoogleFonts.montserrat(),
                 ),
               ),
@@ -334,7 +334,7 @@ class StoresScreen extends StatelessWidget {
               Icon(Icons.search_off, size: 64, color: Colors.grey.shade300),
               SizedBox(height: 16),
               Text(
-                'No opticians match your search',
+                "Aucun magasins d'optique ne correspond à votre recherche",
                 style: GoogleFonts.montserrat(
                   fontSize: 16,
                   color: Colors.grey.shade700,
@@ -342,7 +342,7 @@ class StoresScreen extends StatelessWidget {
               ),
               SizedBox(height: 8),
               Text(
-                'Try different search terms or reset filters',
+                'Essayez différents termes de recherche ou réinitialisez les filtres',
                 style: GoogleFonts.montserrat(
                   fontSize: 14,
                   color: Colors.grey.shade500,
@@ -359,7 +359,7 @@ class StoresScreen extends StatelessWidget {
         itemBuilder: (context, index) {
           final optician = filteredOpticians[index];
           debugPrint(
-              'Optician ${index + 1}: ${optician.nom} - ${optician.adresse}');
+              "magasin d'optique ${index + 1}: ${optician.nom} - ${optician.adresse}");
           return _buildOpticianCard(context, optician);
         },
       );
@@ -482,7 +482,7 @@ class StoresScreen extends StatelessWidget {
                     SizedBox(width: 8),
                     // Review count
                     Text(
-                      '(${/*optician.reviewCount ?? */ 24} reviews)',
+                      '(${/*optician.reviewCount ?? */ 24} Avis)',
                       style: GoogleFonts.montserrat(
                         fontSize: 12,
                         color: Colors.grey.shade600,
@@ -500,7 +500,7 @@ class StoresScreen extends StatelessWidget {
                     // Replace the existing phone button onTap with this improved version
                     _buildActionButton(
                       icon: Icons.phone,
-                      label: 'Call',
+                      label: 'Appeler',
                       color: Colors.green,
                       onTap: () async {
                         final rawNumber = optician.telephone ?? '20767957';
@@ -508,7 +508,8 @@ class StoresScreen extends StatelessWidget {
                             rawNumber.replaceAll(RegExp(r'[^\d+]'), '');
 
                         if (cleanedNumber.isEmpty) {
-                          _showErrorSnackbar('Invalid phone number format');
+                          _showErrorSnackbar(
+                              'Format de numéro de téléphone invalide');
                           return;
                         }
 
@@ -517,13 +518,15 @@ class StoresScreen extends StatelessWidget {
 
                           // Verify app can handle the URL
                           if (!await launchUrl(uri)) {
-                            _showErrorSnackbar('Could not launch dialer');
+                            _showErrorSnackbar(
+                                'Impossible de lancer le composeur');
                           }
                         } on PlatformException catch (e) {
-                          _showErrorSnackbar('Platform error: ${e.message}');
+                          _showErrorSnackbar(
+                              'Erreur de plateforme : ${e.message}');
                         } catch (e) {
                           _showErrorSnackbar(
-                              'Unexpected error: ${e.toString()}');
+                              'Erreur inattendue : ${e.toString()}');
                         }
                       },
                     ),
@@ -542,14 +545,15 @@ class StoresScreen extends StatelessWidget {
 
                           if (rawAddress.isEmpty) {
                             _showErrorSnackbar(
-                                'Address not available for this store');
+                                'Adresse non disponible pour ce magasin');
                             debugPrint(
-                                'Missing address for optician ID: ${optician.id}');
+                                "Adresse manquante pour magasin d'optique : ${optician.id}");
                             return;
                           }
 
                           // Add debug output to verify the address
-                          debugPrint('Attempting to navigate to: $rawAddress');
+                          debugPrint(
+                              "Tentative de navigation vers : $rawAddress");
 
                           final encodedAddress =
                               Uri.encodeComponent(rawAddress);
@@ -560,12 +564,12 @@ class StoresScreen extends StatelessWidget {
                             await launchUrl(mapsUri);
                           } else {
                             _showErrorSnackbar(
-                                'Could not launch maps application');
+                                "Impossible de lancer l'application de cartes");
                           }
                         } catch (e) {
                           _showErrorSnackbar(
-                              'Navigation error: ${e.toString()}');
-                          debugPrint('Navigation error details: $e');
+                              'Erreur de navigation : ${e.toString()}');
+                          debugPrint("Détails de l'erreur de navigation : $e");
                         }
                       },
                     ),
@@ -575,7 +579,7 @@ class StoresScreen extends StatelessWidget {
                       child: ElevatedButton.icon(
                         icon: Icon(Icons.visibility, size: 16),
                         label: Text(
-                          'View Products',
+                          'Voir les produits',
                           style: GoogleFonts.montserrat(fontSize: 12),
                         ),
                         style: ElevatedButton.styleFrom(
@@ -664,8 +668,8 @@ class StoresScreen extends StatelessWidget {
               onTap: () => {},
             ),
             _buildNavItem(
-              icon: Icons.shopping_cart_outlined,
-              label: 'Cart',
+              icon: (Icons.list_alt),
+              label: 'Commandes',
               isSelected: false,
               onTap: () => navigationController.changePage(2),
             ),
@@ -713,7 +717,7 @@ class StoresScreen extends StatelessWidget {
 
   void _showErrorSnackbar(String message) {
     Get.snackbar(
-      'Error',
+      'Erreur',
       message,
       snackPosition: SnackPosition.BOTTOM,
       backgroundColor: Colors.red.shade100,

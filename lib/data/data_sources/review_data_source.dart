@@ -53,7 +53,6 @@ class ReviewDataSource {
     }
   }
 
-  // Add deleteReview method
   Future<Map<String, dynamic>> deleteReview(
       String reviewId, String userId) async {
     try {
@@ -63,19 +62,24 @@ class ReviewDataSource {
         body: jsonEncode({'userId': userId}),
       );
 
-      final responseData = response.statusCode == 200
-          ? jsonDecode(response.body)
-          : {'error': 'Server error: ${response.statusCode}'};
+      // Log the response status and body for debugging
+      print('Response Status: ${response.statusCode}');
+      print('Response Body: ${response.body}');
 
+      final responseData = jsonDecode(response.body);
+
+      // Check if the response was successful
       if (response.statusCode == 200) {
         return {'success': true, 'message': 'Review deleted successfully'};
       } else {
-        return {
-          'success': false,
-          'error': responseData['error'] ?? 'Failed to delete review'
-        };
+        // If there is an error, return the error message from the response
+        String errorMessage =
+            responseData['error'] ?? 'Failed to delete review';
+        return {'success': false, 'error': errorMessage};
       }
     } catch (e) {
+      // Handle network or other exceptions
+      print('Error: ${e.toString()}');
       return {'success': false, 'error': 'Network error: ${e.toString()}'};
     }
   }

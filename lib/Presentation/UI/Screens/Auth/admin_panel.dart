@@ -1,235 +1,259 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:http/http.dart' as http;
+import 'package:opti_app/Presentation/UI/Screens/Auth/Monthly_sales_chart.dart';
+import 'package:opti_app/Presentation/UI/Screens/Auth/Order_Pie_Chart.dart';
+import 'package:opti_app/Presentation/UI/Screens/Auth/User_donut_chart.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/Admin_Commande.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/BoutiqueScreen.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/ProductsScreen.dart';
 import 'package:opti_app/Presentation/UI/screens/auth/UsersScreen.dart';
+import 'package:opti_app/Presentation/UI/screens/auth/Settings_screen.dart';
+import 'package:opti_app/Presentation/controllers/OrderController.dart';
+import 'package:opti_app/Presentation/controllers/opticien_controller.dart';
+import 'package:opti_app/Presentation/controllers/product_controller.dart';
+import 'package:opti_app/Presentation/controllers/user_controller.dart';
+import 'package:opti_app/data/data_sources/OrderDataSource.dart';
+import 'package:opti_app/data/data_sources/opticien_remote_datasource.dart';
+import 'package:opti_app/data/data_sources/product_datasource.dart';
+import 'package:opti_app/data/data_sources/user_datasource.dart';
+import 'package:opti_app/data/repositories/OrderRepositoryImpl.dart';
+import 'package:opti_app/data/repositories/opticien_repository_impl.dart';
+import 'package:opti_app/data/repositories/product_repository_impl.dart';
+import 'package:opti_app/domain/entities/product_entity.dart';
+import 'package:opti_app/domain/repositories/OrderRepository.dart';
+import 'package:opti_app/domain/repositories/opticien_repository.dart';
+import 'package:opti_app/domain/repositories/product_repository.dart';
+
+void main() {
+  // Initialize controllers before app starts
+// Register other dependencies
+  final client = http.Client();
+  Get.put<http.Client>(client); // Register UserDataSource and UserController
+  final userDataSource = UserDataSourceImpl(
+      client: client); // Assurez-vous que cette classe existe
+  Get.put<UserDataSource>(userDataSource);
+  final userController =
+      UserController(userDataSource); // Initialisez UserController
+  Get.put<UserController>(userController);
+
+  final orderDataSource = OrderDataSourceImpl(client: client);
+  Get.put<OrderDataSource>(orderDataSource);
+  final orderRepository = OrderRepositoryImpl(dataSource: orderDataSource);
+  Get.put<OrderRepository>(orderRepository);
+  Get.put<OrderController>(OrderController(orderRepository: orderRepository));
+
+  final opticienRemoteDataSource = OpticienRemoteDataSourceImpl(client: client);
+  Get.put<OpticienRemoteDataSource>(opticienRemoteDataSource);
+  final opticienRepository = OpticienRepositoryImpl(opticienRemoteDataSource);
+  Get.put<OpticienRepository>(opticienRepository);
+  Get.put<OpticienController>(
+      OpticienController(opticienRepository: opticienRepository));
+
+  final productRemoteDataSource = ProductDatasource();
+  Get.put<ProductDatasource>(productRemoteDataSource);
+  final productRepository =
+      ProductRepositoryImpl(dataSource: productRemoteDataSource);
+  Get.put<ProductRepository>(productRepository);
+  Get.put<ProductRepositoryImpl>(productRepository);
+  Get.put<ProductController>(ProductController(productRepository));
+
+  runApp(
+    GetMaterialApp(
+      // Use GetMaterialApp instead of MaterialApp
+      home: const AdminMainScreen(),
+    ),
+  );
+}
+
+class AdminMainScreen extends StatefulWidget {
+  const AdminMainScreen({super.key});
+
+  @override
+  State<AdminMainScreen> createState() => _AdminMainScreenState();
+}
+
+class _AdminMainScreenState extends State<AdminMainScreen> {
+  int _selectedIndex = 0; // Track the selected navigation index
+  final UserController userController = Get.find<UserController>();
+  final ProductController productController = Get.find<ProductController>();
+  final opticienController = Get.find<OpticienController>();
+  final OrderController orderController = Get.find<OrderController>();
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchData(); // Fetch data when the screen is initialized
+  }
+
+  Future<void> _fetchData() async {
+    await userController.fetchUsers();
+    await productController.loadProducts();
+    await opticienController.getOpticien();
+    await orderController.loadAllOrders();
+  }
+
+  final List<Widget> _screens = [
+    const AdminPanelApp(), // Dashboard
+    const UsersScreen(),
+    const BoutiqueScreen(),
+    const ProductsScreen(),
+    const AdminOrdersPage(),
+    const SettingsScreen(),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Row(
+        children: [
+          // Fixed Navigation Drawer
+          NavigationDrawer(
+            selectedIndex: _selectedIndex,
+            onItemSelected: (index) {
+              setState(() {
+                _selectedIndex = index;
+              });
+            },
+          ),
+          // Main content area
+          Expanded(
+            child: _screens[_selectedIndex], // Display the selected screen
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class AdminPanelApp extends StatelessWidget {
   const AdminPanelApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Admin Panel',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primaryColor: const Color.fromARGB(255, 139, 190, 232),
-        scaffoldBackgroundColor: Colors.grey[100],
-      ),
-      home: AdminDashboard(),
-    );
-  }
-}
+    final UserController userController = Get.find<UserController>();
+    final ProductController productController = Get.find<ProductController>();
+    final opticienController = Get.find<OpticienController>();
+    final OrderController orderController = Get.find<OrderController>();
 
-class AdminDashboard extends StatefulWidget {
-  const AdminDashboard({super.key});
-
-  @override
-  _AdminDashboardState createState() => _AdminDashboardState();
-}
-
-class _AdminDashboardState extends State<AdminDashboard> {
-  int _selectedIndex = 0;
-  bool _isDrawerOpen = false;
-
-  final List<Widget> _screens = [
-    DashboardScreen(),
-    UsersScreen(),
-    BoutiqueScreen(),
-    ProductsScreen(),
-    AdminOrdersPage(),
-    SettingsScreen(),
-  ];
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-      if (MediaQuery.of(context).size.width < 1100) {
-        Navigator.pop(context);
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    final isSmallScreen = width < 1100;
-
-    return Scaffold(
-      appBar: isSmallScreen
-          ? AppBar(
-              backgroundColor: Color.fromARGB(255, 109, 155, 196),
-              title: Text('Admin Panel'),
-              leading: IconButton(
-                icon: Icon(Icons.menu),
-                onPressed: () {
-                  setState(() {
-                    _isDrawerOpen = !_isDrawerOpen;
-                  });
-                },
-              ),
-            )
-          : null,
-      drawer: isSmallScreen
-          ? NavigationDrawer(
-              selectedIndex: _selectedIndex,
-              onItemSelected: _onItemTapped,
-            )
-          : null,
-      body: Row(
-        children: [
-          if (!isSmallScreen)
-            NavigationDrawer(
-              selectedIndex: _selectedIndex,
-              onItemSelected: _onItemTapped,
-            ),
-          Expanded(
-            child: _screens[_selectedIndex],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class DashboardScreen extends StatelessWidget {
-  const DashboardScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: EdgeInsets.all(20),
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHeader(),
-          SizedBox(height: 20),
-          _buildStatsGrid(),
-          SizedBox(height: 30),
-          Text(
-            'Recent Activity',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          _buildHeader(context),
+          const SizedBox(height: 20),
+          _buildStatsGrid(userController, productController, opticienController,
+              orderController), // Pass controllers
+          const SizedBox(height: 30),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Popular Products Chart
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionTitle('Top 5 Produits'),
+                    _buildProductsChart(),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 30),
+
+              // User Repartition Chart
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionTitle('Répartition des utilisateurs'),
+                    UserDistributionChart(),
+                  ],
+                ),
+              ),
+            ],
           ),
-          SizedBox(height: 10),
-          _buildDataTable(),
+          const SizedBox(height: 30),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Popular Products Chart
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionTitle('Répartition des commandes'),
+                    OrderStatusChart(),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 30),
+
+              // User Repartition Chart
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionTitle('Tendances des revenus mensuels'),
+                    MonthlySalesChart(),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildSectionTitle(String title) => Padding(
+        padding: const EdgeInsets.only(bottom: 15),
+        child: Text(
+          title,
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+      );
+
+  Widget _buildHeader(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          'Dashboard',
+        const Text(
+          'Tableau de bord',
           style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
-        Row(
-          children: [
-            Container(
-              width: 250,
-              height: 45,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(25),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.2),
-                    spreadRadius: 2,
-                    blurRadius: 5,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: 'Search...',
-                  hintStyle: TextStyle(color: Colors.grey[400]),
-                  prefixIcon: Icon(Icons.search, color: Color.fromARGB(255, 71, 129, 179)),
-                  border: InputBorder.none,
-                  contentPadding:
-                      EdgeInsets.symmetric(horizontal: 20, vertical: 13),
-                ),
-              ),
-            ),
-            SizedBox(width: 20),
-            IconButton(
-              icon: Icon(Icons.notifications, color: Color.fromARGB(255, 110, 162, 208)),
-              onPressed: () {},
-            ),
-            SizedBox(width: 10),
-            Builder(
-              builder: (context) => GestureDetector(
-                onTapDown: (TapDownDetails details) async {
-                  final RenderBox renderBox =
-                      context.findRenderObject() as RenderBox;
-                  final Offset position = renderBox.localToGlobal(Offset.zero);
-
-                  String? selectedValue = await showMenu<String>(
-                    context: context,
-                    position: RelativeRect.fromLTRB(
-                      position.dx,
-                      position.dy +
-                          renderBox.size.height, // Position below the avatar
-                      position.dx + renderBox.size.width,
-                      position.dy + renderBox.size.height + 50,
-                    ),
-                    items: [
-                      PopupMenuItem(
-                        value: 'settings',
-                        child: ListTile(
-                          leading: Icon(Icons.settings),
-                          title: Text('Settings'),
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: 'logout',
-                        child: ListTile(
-                          leading: Icon(Icons.logout),
-                          title: Text('Log Out'),
-                        ),
-                      ),
-                    ],
-                  );
-
-                  // Ensure the menu was not dismissed without selection
-                  if (selectedValue != null) {
-                    if (selectedValue == 'settings') {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => SettingsScreen()),
-                      );
-                    } else if (selectedValue == 'logout') {
-                      // Handle logout logic here
-                    }
-                  }
-                },
-                child: CircleAvatar(
-                  backgroundImage: NetworkImage('https://i.pravatar.cc/150'),
-                ),
-              ),
-            )
-          ],
-        ),
+        // Other header elements...
       ],
     );
   }
 
-  Widget _buildStatsGrid() {
+  Widget _buildStatValue(String value) {
+    return Text(
+      value,
+      style: const TextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
+      ),
+    );
+  }
+
+  Widget _buildStatsGrid(
+      UserController userController,
+      ProductController productController,
+      OpticienController opticienController,
+      OrderController orderController) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        int crossAxisCount = 4;
-        if (constraints.maxWidth < 600) {
-          crossAxisCount = 1;
-        } else if (constraints.maxWidth < 900) {
-          crossAxisCount = 2;
-        }
+        final crossAxisCount = constraints.maxWidth < 600
+            ? 1
+            : constraints.maxWidth < 900
+                ? 2
+                : 4;
 
         return GridView.builder(
           shrinkWrap: true,
-          physics: NeverScrollableScrollPhysics(),
+          physics: const NeverScrollableScrollPhysics(),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: crossAxisCount,
             crossAxisSpacing: 20,
@@ -239,41 +263,63 @@ class DashboardScreen extends StatelessWidget {
           itemCount: 4,
           itemBuilder: (context, index) {
             final stats = [
-              {'title': 'Total Users', 'value': '2,345', 'color': const Color.fromARGB(255, 123, 172, 212)},
-              {'title': 'Revenue', 'value': '\$34,543', 'color': Colors.green},
-              {'title': 'Orders', 'value': '1,234', 'color': Colors.orange},
-              {'title': 'Products', 'value': '567', 'color': Colors.purple},
+              {
+                'title': 'Utilisateurs',
+                'widget': Obx(() =>
+                    _buildStatValue(userController.users.length.toString())),
+                'color': const Color(0xFF7BACD4),
+                'icon': Icons.people
+              },
+              {
+                'title': 'Produits',
+                'widget': Obx(() => _buildStatValue(
+                    productController.products.length.toString())),
+                'color': Colors.purple,
+                'icon': Icons.shopping_bag
+              },
+              {
+                'title': 'Boutiques',
+                'widget': Obx(() => _buildStatValue(opticienController
+                    .opticiensList.length
+                    .toString())), // Dynamic value
+                'color': Colors.orange,
+                'icon': Icons.store
+              },
+              {
+                'title': 'Commandes',
+                'widget': Obx(() => _buildStatValue(
+                      // Add Obx here
+                      orderController.allOrders.length.toString(),
+                    )),
+                'color': Colors.green,
+                'icon': Icons.receipt_long
+              },
             ][index];
             return Card(
               elevation: 3,
               child: Padding(
-                padding: EdgeInsets.all(20),
+                padding: const EdgeInsets.all(20),
                 child: Row(
                   children: [
                     Container(
-                      padding: EdgeInsets.all(10),
+                      padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         color: stats['color'] as Color,
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Icon(Icons.trending_up, color: Colors.white),
+                      child:
+                          Icon(stats['icon'] as IconData, color: Colors.white),
                     ),
-                    SizedBox(width: 15),
+                    const SizedBox(width: 15),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
                           stats['title'] as String,
-                          style: TextStyle(color: Colors.grey),
+                          style: TextStyle(color: Colors.grey[600]),
                         ),
-                        Text(
-                          stats['value'] as String,
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        stats['widget'] as Widget,
                       ],
                     )
                   ],
@@ -286,35 +332,353 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDataTable() {
-    return Card(
-      elevation: 3,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Padding(
-          padding: EdgeInsets.all(20),
-          child: DataTable(
-            columns: [
-              DataColumn(label: Text('User')),
-              DataColumn(label: Text('Action')),
-              DataColumn(label: Text('Date')),
-              DataColumn(label: Text('Status')),
-            ],
-            rows: List.generate(5, (index) {
-              return DataRow(cells: [
-                DataCell(Text('User ${index + 1}')),
-                DataCell(Text('Performed action ${index + 1}')),
-                DataCell(Text('2024-02-${10 + index}')),
-                DataCell(
-                  Chip(
-                    label: Text('Completed'),
-                    backgroundColor: Colors.green[100],
+  Widget _buildProductsChart() {
+    final orderController = Get.find<OrderController>();
+    final productController = Get.find<ProductController>();
+
+    return SizedBox(
+      height: 380,
+      child: Obx(() {
+        // Calculate product popularity
+        final Map<String, int> productPopularity = {};
+
+        // Aggregate product orders
+        for (final order in orderController.allOrders) {
+          for (final item in order.items) {
+            productPopularity.update(
+              item.productId,
+              (value) => value + item.quantity,
+              ifAbsent: () => item.quantity,
+            );
+          }
+        }
+
+        // Get top 5 products
+        final sortedProducts = productPopularity.entries.toList()
+          ..sort((a, b) => b.value.compareTo(a.value));
+
+        final top5Products = sortedProducts.take(5).toList();
+
+        return Card(
+          elevation: 3,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: BarChart(
+              BarChartData(
+                alignment: BarChartAlignment.spaceAround,
+                maxY: (top5Products.isNotEmpty
+                        ? top5Products.first.value.toDouble()
+                        : 100) *
+                    1.2,
+                barTouchData: BarTouchData(
+                  enabled: true,
+                  touchTooltipData: BarTouchTooltipData(
+                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                      if (groupIndex >= top5Products.length) return null;
+
+                      final productId = top5Products[groupIndex].key;
+                      final product = productController.products.firstWhere(
+                        (p) => p.id == productId,
+                      );
+
+                      return BarTooltipItem(
+                        '${product.name}\nOrders: ${rod.toY.toInt()}',
+                        const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      );
+                    },
                   ),
                 ),
-              ]);
-            }),
+                titlesData: FlTitlesData(
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 40,
+                      getTitlesWidget: (double value, TitleMeta meta) {
+                        final index = value.toInt();
+                        if (index >= top5Products.length) return const Text('');
+
+                        final productId = top5Products[index].key;
+                        final product = productController.products.firstWhere(
+                          (p) => p.id == productId,
+                        );
+
+                        return SideTitleWidget(
+                          angle: 0,
+                          space: 4,
+                          meta: meta,
+                          child: Text(
+                            product.name,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 40,
+                      getTitlesWidget: (double value, TitleMeta meta) {
+                        return Text(
+                          value.toInt().toString(),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  topTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  rightTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                ),
+                borderData: FlBorderData(show: false),
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  horizontalInterval: top5Products.isNotEmpty
+                      ? (top5Products.first.value ~/ 5).toDouble()
+                      : 10,
+                ),
+                barGroups: top5Products.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final product = entry.value;
+                  return BarChartGroupData(
+                    x: index,
+                    barRods: [
+                      BarChartRodData(
+                        toY: product.value.toDouble(),
+                        color: _getChartColor(index),
+                        width: 28,
+                        borderRadius: BorderRadius.circular(4),
+                        backDrawRodData: BackgroundBarChartRodData(
+                          show: true,
+                          toY: double.infinity,
+                          color: Colors.grey[200],
+                        ),
+                      ),
+                    ],
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+// Helper function for chart colors
+  Color _getChartColor(int index) {
+    final colors = [
+      Colors.blue,
+      Colors.orange,
+      Colors.green,
+      Colors.purple,
+      Colors.red,
+    ];
+
+    return colors[index % colors.length];
+  }
+
+  String _getProductName(double x) {
+    switch (x.toInt()) {
+      case 0:
+        return 'Smartphone X';
+      case 1:
+        return 'Laptop Pro';
+      case 2:
+        return 'Headphones XL';
+      case 3:
+        return 'Smartwatch';
+      case 4:
+        return 'Tablet Mini';
+      default:
+        return '';
+    }
+  }
+
+  String _getShopName(double x) {
+    switch (x.toInt()) {
+      case 0:
+        return 'TechWorld';
+      case 1:
+        return 'Fashion Hub';
+      case 2:
+        return 'HomeGoods';
+      case 3:
+        return 'SportCenter';
+      case 4:
+        return 'BeautyZone';
+      default:
+        return '';
+    }
+  }
+
+  Widget _buildRevenueChart() {
+    return SizedBox(
+      height: 300,
+      child: Card(
+        elevation: 3,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: LineChart(
+            LineChartData(
+              lineTouchData: const LineTouchData(enabled: true),
+              gridData: FlGridData(show: true, drawVerticalLine: false),
+              titlesData: FlTitlesData(
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 30,
+                    getTitlesWidget: (double value, TitleMeta meta) {
+                      return Text(
+                        _getMonth(value),
+                        style: const TextStyle(fontSize: 12),
+                      );
+                    },
+                  ),
+                ),
+                leftTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 30,
+                    getTitlesWidget: (double value, TitleMeta meta) {
+                      return Text(
+                        '${(value / 1000).toInt()}K',
+                        style: const TextStyle(fontSize: 12),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              borderData: FlBorderData(
+                show: true,
+                border: Border.all(color: const Color(0xff37434d), width: 1),
+              ),
+              minX: 0,
+              maxX: 5,
+              minY: 0,
+              maxY: 20000,
+              lineBarsData: [
+                LineChartBarData(
+                  spots: const [
+                    FlSpot(0, 8000),
+                    FlSpot(1, 12000),
+                    FlSpot(2, 9500),
+                    FlSpot(3, 14000),
+                    FlSpot(4, 16500),
+                    FlSpot(5, 19000),
+                  ],
+                  isCurved: true,
+                  color: Colors.green,
+                  barWidth: 3,
+                  belowBarData: BarAreaData(
+                    show: true,
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.green.withOpacity(0.3),
+                        Colors.green.withOpacity(0.3)
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
+      ),
+    );
+  }
+
+  String _getMonth(double x) {
+    switch (x.toInt()) {
+      case 0:
+        return 'Jan';
+      case 1:
+        return 'Feb';
+      case 2:
+        return 'Mar';
+      case 3:
+        return 'Apr';
+      case 4:
+        return 'May';
+      case 5:
+        return 'Jun';
+      default:
+        return '';
+    }
+  }
+
+  Widget _buildOrderStatusChart() {
+    return SizedBox(
+      height: 300,
+      child: Card(
+        elevation: 3,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Row(
+            children: [
+              Expanded(
+                flex: 2,
+                child: PieChart(
+                  PieChartData(
+                    sectionsSpace: 2,
+                    centerSpaceRadius: 40,
+                    sections: [
+                      _buildPieSection(35, Colors.green),
+                      _buildPieSection(25, Colors.orange),
+                      _buildPieSection(20, const Color(0xFF7BACD4)),
+                      _buildPieSection(10, Colors.red),
+                      _buildPieSection(10, Colors.grey),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 20),
+              Expanded(
+                flex: 1,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    _LegendItem('Delivered', Colors.green),
+                    _LegendItem('Processing', Colors.orange),
+                    _LegendItem('Shipped', Color(0xFF7BACD4)),
+                    _LegendItem('Cancelled', Colors.red),
+                    _LegendItem('Returned', Colors.grey),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  PieChartSectionData _buildPieSection(double value, Color color) {
+    return PieChartSectionData(
+      color: color,
+      value: value,
+      title: '${value.toInt()}%',
+      radius: 80,
+      titleStyle: const TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        color: Colors.white,
       ),
     );
   }
@@ -324,7 +688,8 @@ class NavigationDrawer extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onItemSelected;
 
-  const NavigationDrawer({super.key, 
+  const NavigationDrawer({
+    super.key,
     required this.selectedIndex,
     required this.onItemSelected,
   });
@@ -332,12 +697,12 @@ class NavigationDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 250,
-      color: Color.fromARGB(255, 113, 160, 201),
+      width: 250, // Fixed width for the drawer
+      color: const Color.fromARGB(255, 113, 160, 201),
       child: Column(
         children: [
-          SizedBox(height: 40),
-          Text(
+          const SizedBox(height: 40),
+          const Text(
             'Admin Panel',
             style: TextStyle(
               color: Colors.white,
@@ -345,8 +710,15 @@ class NavigationDrawer extends StatelessWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
-          SizedBox(height: 40),
-          ...['Dashboard', 'Utilisateurs' , 'Boutiques', 'Produits','Commandes' ,'Settings'].asMap().entries.map(
+          const SizedBox(height: 40),
+          ...[
+            'Dashboard',
+            'Utilisateurs',
+            'Boutiques',
+            'Produits',
+            'Commandes',
+            'Settings'
+          ].asMap().entries.map(
             (entry) {
               final index = entry.key;
               final title = entry.value;
@@ -374,299 +746,50 @@ class NavigationDrawer extends StatelessWidget {
     );
   }
 
-   IconData _getIcon(int index) {
-  switch (index) {
-    case 0:
-      return Icons.dashboard;
-    case 1:
-      return Icons.people;
-    case 2:
-      return Icons.store; 
-    case 3:
-      return Icons.shopping_bag;
-    case 4:
-      return Icons.receipt_long; 
-    case 5:
-      return Icons.settings;
-    default:
-      return Icons.error;
+  IconData _getIcon(int index) {
+    switch (index) {
+      case 0:
+        return Icons.dashboard;
+      case 1:
+        return Icons.people;
+      case 2:
+        return Icons.store;
+      case 3:
+        return Icons.shopping_bag;
+      case 4:
+        return Icons.receipt_long;
+      case 5:
+        return Icons.settings;
+      default:
+        return Icons.error;
+    }
   }
 }
 
-}
+class _LegendItem extends StatelessWidget {
+  final String title;
+  final Color color;
 
-
-
-
-class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
-
-  @override
-  _SettingsScreenState createState() => _SettingsScreenState();
-}
-
-class _SettingsScreenState extends State<SettingsScreen> {
-  bool _emailNotifications = true;
-  bool _darkMode = false;
-  String _selectedLanguage = 'English';
+  const _LegendItem(this.title, this.color);
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 15),
+      child: Row(
         children: [
+          Container(
+            width: 16,
+            height: 16,
+            color: color,
+          ),
+          const SizedBox(width: 8),
           Text(
-            'Settings',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          SizedBox(height: 20),
-          Card(
-            child: Padding(
-              padding: EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'General Settings',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 20),
-                  ListTile(
-                    title: Text('Email Notifications'),
-                    subtitle: Text('Receive email updates and alerts'),
-                    trailing: Switch(
-                      value: _emailNotifications,
-                      onChanged: (value) {
-                        setState(() => _emailNotifications = value);
-                      },
-                    ),
-                  ),
-                  Divider(),
-                  ListTile(
-                    title: Text('Dark Mode'),
-                    subtitle: Text('Enable dark theme'),
-                    trailing: Switch(
-                      value: _darkMode,
-                      onChanged: (value) {
-                        setState(() => _darkMode = value);
-                      },
-                    ),
-                  ),
-                  Divider(),
-                  ListTile(
-                    title: Text('Language'),
-                    subtitle: Text('Select your preferred language'),
-                    trailing: DropdownButton<String>(
-                      value: _selectedLanguage,
-                      items: ['English', 'French', 'Spanish', 'German']
-                          .map((String value) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(value),
-                        );
-                      }).toList(),
-                      onChanged: (String? newValue) {
-                        if (newValue != null) {
-                          setState(() => _selectedLanguage = newValue);
-                        }
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          SizedBox(height: 20),
-          Card(
-            child: Padding(
-              padding: EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Account Settings',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 20),
-                  TextField(
-                    decoration: InputDecoration(
-                      labelText: 'Email',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  SizedBox(height: 20),
-                  TextField(
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      border: OutlineInputBorder(),
-                    ),
-                    obscureText: true,
-                  ),
-                  SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: () {},
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFF1E88E5),
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                    ),
-                    child: Text('Save Changes'),
-                  ),
-                ],
-              ),
-            ),
+            title,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
           ),
         ],
       ),
-    );
-  }
-}
-
-class EditUserDialog extends StatefulWidget {
-  final Map<String, dynamic> user;
-  const EditUserDialog({super.key, required this.user});
-
-  @override
-  _EditUserDialogState createState() => _EditUserDialogState();
-}
-
-class _EditUserDialogState extends State<EditUserDialog> {
-  late TextEditingController nameController;
-  late TextEditingController emailController;
-  late TextEditingController roleController;
-  late TextEditingController statusController;
-
-  @override
-  void initState() {
-    super.initState();
-    nameController = TextEditingController(text: widget.user['name']);
-    emailController = TextEditingController(text: widget.user['email']);
-    roleController = TextEditingController(text: widget.user['role']);
-    statusController = TextEditingController(text: widget.user['status']);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text('Edit User'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: InputDecoration(labelText: 'Name'),
-            ),
-            SizedBox(height: 16),
-            TextField(
-              controller: emailController,
-              decoration: InputDecoration(labelText: 'Email'),
-            ),
-            SizedBox(height: 16),
-            TextField(
-              controller: roleController,
-              decoration: InputDecoration(labelText: 'Role'),
-            ),
-            SizedBox(height: 16),
-            TextField(
-              controller: statusController,
-              decoration: InputDecoration(labelText: 'Status'),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text('Cancel'),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            // Implement save logic here
-            Navigator.pop(context);
-          },
-          style: ElevatedButton.styleFrom(backgroundColor: Color(0xFF1E88E5)),
-          child: Text('Save'),
-        ),
-      ],
-    );
-  }
-}
-
-class EditProductDialog extends StatefulWidget {
-  final Map<String, dynamic> product;
-  const EditProductDialog({super.key, required this.product});
-
-  @override
-  _EditProductDialogState createState() => _EditProductDialogState();
-}
-
-class _EditProductDialogState extends State<EditProductDialog> {
-  late TextEditingController nameController;
-  late TextEditingController priceController;
-  late TextEditingController stockController;
-  late TextEditingController categoryController;
-
-  @override
-  void initState() {
-    super.initState();
-    nameController = TextEditingController(text: widget.product['name']);
-    priceController =
-        TextEditingController(text: widget.product['price'].toString());
-    stockController =
-        TextEditingController(text: widget.product['stock'].toString());
-    categoryController =
-        TextEditingController(text: widget.product['category']);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text('Edit Product'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: InputDecoration(labelText: 'Name'),
-            ),
-            SizedBox(height: 16),
-            TextField(
-              controller: priceController,
-              decoration: InputDecoration(labelText: 'Price'),
-              keyboardType: TextInputType.number,
-            ),
-            SizedBox(height: 16),
-            TextField(
-              controller: stockController,
-              decoration: InputDecoration(labelText: 'Stock'),
-              keyboardType: TextInputType.number,
-            ),
-            SizedBox(height: 16),
-            TextField(
-              controller: categoryController,
-              decoration: InputDecoration(labelText: 'Category'),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text('Cancel'),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            // Implement save logic here
-            Navigator.pop(context);
-          },
-          style: ElevatedButton.styleFrom(backgroundColor: Color(0xFF1E88E5)),
-          child: Text('Save'),
-        ),
-      ],
     );
   }
 }

@@ -93,7 +93,7 @@ class _OpticianProductsScreenState extends State<OpticianProductsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Products Catalog',
+          'Catalogue de produits',
           style: GoogleFonts.montserrat(
             fontWeight: FontWeight.bold,
           ),
@@ -111,7 +111,7 @@ class _OpticianProductsScreenState extends State<OpticianProductsScreen> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Search by name or brand...',
+                hintText: 'Rechercher par nom ou marque...',
                 prefixIcon: Icon(Icons.search, color: Colors.blue.shade700),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
@@ -147,7 +147,7 @@ class _OpticianProductsScreenState extends State<OpticianProductsScreen> {
           // Filters section
           ExpansionTile(
             title: Text(
-              'Filters',
+              'Filtres',
               style: GoogleFonts.montserrat(
                 fontWeight: FontWeight.w600,
                 color: Colors.black87,
@@ -162,7 +162,7 @@ class _OpticianProductsScreenState extends State<OpticianProductsScreen> {
                   children: [
                     // Price Range Slider
                     Text(
-                      'Price Range',
+                      'Plage de prix',
                       style: GoogleFonts.montserrat(
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
@@ -171,7 +171,7 @@ class _OpticianProductsScreenState extends State<OpticianProductsScreen> {
                     SizedBox(height: 8),
                     Row(
                       children: [
-                        Text('\$${_priceRange.start.toInt()}'),
+                        Text('${_priceRange.start.toInt()}TND'),
                         Expanded(
                           child: RangeSlider(
                             values: _priceRange,
@@ -181,8 +181,8 @@ class _OpticianProductsScreenState extends State<OpticianProductsScreen> {
                             activeColor: Colors.blue.shade700,
                             inactiveColor: Colors.blue.shade100,
                             labels: RangeLabels(
-                              '\$${_priceRange.start.toInt()}',
-                              '\$${_priceRange.end.toInt()}',
+                              '${_priceRange.start.toInt()}TND',
+                              '${_priceRange.end.toInt()}TND',
                             ),
                             onChanged: (values) {
                               setState(() {
@@ -191,7 +191,7 @@ class _OpticianProductsScreenState extends State<OpticianProductsScreen> {
                             },
                           ),
                         ),
-                        Text('\$${_priceRange.end.toInt()}'),
+                        Text('${_priceRange.end.toInt()}TND'),
                       ],
                     ),
                     SizedBox(height: 16),
@@ -201,7 +201,7 @@ class _OpticianProductsScreenState extends State<OpticianProductsScreen> {
                       children: [
                         Expanded(
                           child: _buildDropdown(
-                            'Category',
+                            'Categorie',
                             categories,
                             _selectedCategory,
                             (value) {
@@ -214,7 +214,7 @@ class _OpticianProductsScreenState extends State<OpticianProductsScreen> {
                         SizedBox(width: 12),
                         Expanded(
                           child: _buildDropdown(
-                            'Lens Type',
+                            "Type de lentille",
                             typeVerres,
                             _selectedTypeVerre,
                             (value) {
@@ -228,7 +228,7 @@ class _OpticianProductsScreenState extends State<OpticianProductsScreen> {
                     ),
                     SizedBox(height: 12),
                     _buildDropdown(
-                      'Brand',
+                      "Marque",
                       marques,
                       _selectedMarque,
                       (value) {
@@ -259,7 +259,7 @@ class _OpticianProductsScreenState extends State<OpticianProductsScreen> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        child: Text('Reset Filters'),
+                        child: Text("Réinitialiser les filtres"),
                       ),
                     ),
                     SizedBox(height: 8),
@@ -283,7 +283,7 @@ class _OpticianProductsScreenState extends State<OpticianProductsScreen> {
                           size: 64, color: Colors.grey),
                       SizedBox(height: 16),
                       Text(
-                        'No products available',
+                        "Aucun produit disponible",
                         style: GoogleFonts.montserrat(
                           fontSize: 16,
                           color: Colors.grey.shade700,
@@ -303,7 +303,7 @@ class _OpticianProductsScreenState extends State<OpticianProductsScreen> {
                             size: 64, color: Colors.grey),
                         SizedBox(height: 16),
                         Text(
-                          'No products match your filters',
+                          "Aucun produit ne correspond à vos filtres",
                           style: GoogleFonts.montserrat(
                             fontSize: 16,
                             color: Colors.grey.shade700,
@@ -364,7 +364,7 @@ class _OpticianProductsScreenState extends State<OpticianProductsScreen> {
             ),
             value: selectedValue,
             isExpanded: true,
-            hint: Text('Select ${title.toLowerCase()}'),
+            hint: Text('Selectionner ${title.toLowerCase()}'),
             items: items.map((item) {
               return DropdownMenuItem(
                 value: item,
@@ -473,7 +473,7 @@ class _OpticianProductsScreenState extends State<OpticianProductsScreen> {
                           // Price with overflow protection
                           Flexible(
                             child: Text(
-                              '\$${product.prix.toStringAsFixed(2)}',
+                              '${product.prix.toStringAsFixed(2)}TND',
                               style: GoogleFonts.montserrat(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,

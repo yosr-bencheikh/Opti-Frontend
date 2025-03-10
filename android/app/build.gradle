@@ -1,7 +1,13 @@
 plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
+    id 'com.google.gms.google-services'
     id 'dev.flutter.flutter-gradle-plugin'
+}
+
+configurations {
+    // Exclure firebase-iid pour éviter les conflits avec firebase-messaging (utilisé par OneSignal)
+    all*.exclude group: 'com.google.firebase', module: 'firebase-iid'
 }
 
 def localProperties = new Properties()
@@ -17,19 +23,29 @@ if (flutterRoot == null) {
     throw new GradleException("Flutter SDK not found. Define location with flutter.sdk in the local.properties file.")
 }
 
+configurations.all {
+    resolutionStrategy.eachDependency { details ->
+        if (details.requested.group == 'com.google.firebase' &&
+            details.requested.name == 'firebase-iid') {
+            details.useVersion "20.1.5"
+            details.because("Avoid duplicate class conflict with firebase-messaging")
+        }
+    }
+}
+
 android {
     namespace "com.example.opti_app"
-    compileSdk 35  // Changé de 34 à 35
-    
+    compileSdk 35
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
-    
+
     kotlinOptions {
         jvmTarget = '1.8'
     }
-    
+
     defaultConfig {
         applicationId "com.example.opti_app"
         minSdkVersion flutter.minSdkVersion
@@ -37,7 +53,7 @@ android {
         versionCode 1
         versionName "1.0"
     }
-    
+
     signingConfigs {
         release {
             keyAlias 'upload'
@@ -46,11 +62,11 @@ android {
             storePassword 'google'
         }
     }
-    
+
     buildTypes {
         release {
             signingConfig signingConfigs.release
-            minifyEnabled true // Enable code shrinking to match shrinkResources
+            minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
@@ -58,9 +74,23 @@ android {
 }
 
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.8.22" // Specify Kotlin version
+    // Dépendance Kotlin
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.8.22"
+    
+    // Exemple de dépendance pour Google Play Services (authentification)
     implementation 'com.google.android.gms:play-services-auth:20.7.0'
-    implementation 'com.facebook.android:facebook-login:16.1.3' // Use a stable version
+    
+    // SDK Facebook pour la connexion
+    implementation 'com.facebook.android:facebook-login:16.1.3'
+    
+    // Import du Firebase BoM pour gérer les versions des SDK Firebase
+    implementation platform('com.google.firebase:firebase-bom:33.10.0')
+    // Exemple : Firebase Analytics (sans version explicite grâce au BoM)
+    implementation 'com.google.firebase:firebase-analytics'
+    
+    // Dépendance OneSignal
+    // La plage de version permet de choisir une version compatible tout en excluant les modules en conflit
+    implementation('com.onesignal:OneSignal:[4.8.5, 4.99.99]')
 }
 
 flutter {

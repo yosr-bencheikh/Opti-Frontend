@@ -9,8 +9,8 @@ import 'package:opti_app/Presentation/controllers/cart_item_controller.dart';
 import 'package:opti_app/Presentation/controllers/navigation_controller.dart';
 import 'package:opti_app/Presentation/controllers/opticien_controller.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
-import 'package:opti_app/domain/entities/product_entity.dart';
 import 'package:opti_app/Presentation/controllers/wishlist_controller.dart';
+import 'package:opti_app/domain/entities/product_entity.dart';
 import 'package:opti_app/domain/entities/user.dart';
 import 'package:opti_app/domain/entities/wishlist_item.dart';
 
@@ -43,7 +43,8 @@ class HomeScreen extends GetView<AuthController> {
 
         final user = controller.currentUser;
         if (user == null) {
-          return const Center(child: Text('Loading user data...'));
+          return const Center(
+              child: Text('Chargement des données utilisateur...'));
         }
 
         return CustomScrollView(
@@ -75,7 +76,6 @@ class HomeScreen extends GetView<AuthController> {
   }
 
   Widget _buildAppBar(BuildContext context, User user) {
-    // Same as before, no changes needed
     return SliverAppBar(
       expandedHeight: 120,
       floating: false,
@@ -109,7 +109,7 @@ class HomeScreen extends GetView<AuthController> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Hello, ${user.prenom}',
+                        'Bonjour, ${user.prenom}',
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -134,7 +134,8 @@ class HomeScreen extends GetView<AuthController> {
                     if (userEmail != null) {
                       Get.to(() => WishlistPage(userEmail: userEmail));
                     } else {
-                      Get.snackbar('Error', 'Please log in first');
+                      Get.snackbar(
+                          'Erreur', 'Veuillez vous connecter d\'abord');
                     }
                   },
                 ),
@@ -146,7 +147,6 @@ class HomeScreen extends GetView<AuthController> {
     );
   }
 
-  // Updated search bar with functionality
   Widget _buildSearchBar() {
     return Container(
       margin: const EdgeInsets.all(16),
@@ -168,7 +168,7 @@ class HomeScreen extends GetView<AuthController> {
           isSearching.value = value.isNotEmpty;
         },
         decoration: InputDecoration(
-          hintText: 'Search products or stores...',
+          hintText: 'Rechercher des produits ou des magasins...',
           prefixIcon: const Icon(Icons.search, color: Colors.grey),
           suffixIcon: Obx(() => searchQuery.value.isNotEmpty
               ? IconButton(
@@ -176,7 +176,6 @@ class HomeScreen extends GetView<AuthController> {
                   onPressed: () {
                     searchQuery.value = '';
                     isSearching.value = false;
-                    // Clear focus
                     FocusManager.instance.primaryFocus?.unfocus();
                   },
                 )
@@ -189,19 +188,16 @@ class HomeScreen extends GetView<AuthController> {
     );
   }
 
-  // New method to build search results
   Widget _buildSearchResults() {
     return Obx(() {
       final query = searchQuery.value.toLowerCase();
 
-      // Filter products
       final filteredProducts = productController.products
           .where((product) =>
               product.name.toLowerCase().contains(query) ||
               (product.marque?.toLowerCase() ?? '').contains(query))
           .toList();
 
-      // Filter opticians
       final filteredOpticians = opticienController.opticiensList
           .where((optician) =>
               optician.nom.toLowerCase().contains(query) ||
@@ -212,7 +208,8 @@ class HomeScreen extends GetView<AuthController> {
         return Container(
           padding: const EdgeInsets.all(16),
           child: const Center(
-            child: Text('No results found. Try a different search term.'),
+            child: Text(
+                'Aucun résultat trouvé. Essayez un autre terme de recherche.'),
           ),
         );
       }
@@ -220,12 +217,11 @@ class HomeScreen extends GetView<AuthController> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Products section
           if (filteredProducts.isNotEmpty) ...[
             const Padding(
               padding: EdgeInsets.all(16),
               child: Text(
-                'Products',
+                'Produits',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -308,9 +304,9 @@ class HomeScreen extends GetView<AuthController> {
                                     product.marque!.isNotEmpty)
                                   Text(
                                     product.marque!,
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                       fontSize: 12,
-                                      color: Colors.grey[700],
+                                      color: Colors.grey,
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
@@ -326,13 +322,11 @@ class HomeScreen extends GetView<AuthController> {
               ),
             ),
           ],
-
-          // Opticians section
           if (filteredOpticians.isNotEmpty) ...[
             const Padding(
               padding: EdgeInsets.all(16),
               child: Text(
-                'Optical Stores',
+                'Magasins Optiques',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -376,7 +370,7 @@ class HomeScreen extends GetView<AuthController> {
                         Get.to(() =>
                             OpticianProductsScreen(opticianId: optician.id));
                       },
-                      child: const Text('View Products'),
+                      child: const Text('Voir les Produits'),
                     ),
                   ),
                 );
@@ -388,9 +382,7 @@ class HomeScreen extends GetView<AuthController> {
     });
   }
 
-  // The rest of your methods remain the same
   Widget _buildPromotionalBanner() {
-    // Keep your existing implementation
     return Column(
       children: [
         SizedBox(
@@ -445,7 +437,7 @@ class HomeScreen extends GetView<AuthController> {
         const Padding(
           padding: EdgeInsets.all(16),
           child: Text(
-            'Popular Products',
+            'Produits Populaires',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -460,11 +452,11 @@ class HomeScreen extends GetView<AuthController> {
             }
 
             if (productController.error != null) {
-              return Center(child: Text('Error: ${productController.error}'));
+              return Center(child: Text('Erreur: ${productController.error}'));
             }
 
             if (productController.products.isEmpty) {
-              return const Center(child: Text('No products available'));
+              return const Center(child: Text('Aucun produit disponible'));
             }
 
             return ListView.builder(
@@ -473,6 +465,7 @@ class HomeScreen extends GetView<AuthController> {
               itemCount: productController.products.length,
               itemBuilder: (context, index) {
                 final product = productController.products[index];
+
                 return GestureDetector(
                   onTap: () {
                     Get.to(() => ProductDetailsScreen(product: product));
@@ -495,7 +488,6 @@ class HomeScreen extends GetView<AuthController> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Image section
                         Container(
                           height: 98,
                           decoration: BoxDecoration(
@@ -554,7 +546,6 @@ class HomeScreen extends GetView<AuthController> {
                                   ),
                                 ],
                               ),
-                              // Dynamic Rating and Review Count
                               Row(
                                 children: [
                                   Icon(Icons.star,
@@ -575,7 +566,6 @@ class HomeScreen extends GetView<AuthController> {
                                   ),
                                 ],
                               ),
-                              // Shopping cart and wishlist buttons
                               Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
@@ -587,14 +577,13 @@ class HomeScreen extends GetView<AuthController> {
                                     onPressed: () {
                                       if (product.id == null ||
                                           product.id!.isEmpty) {
-                                        Get.snackbar(
-                                            'Error', 'Invalid product data');
+                                        Get.snackbar('Erreur',
+                                            'Données produit invalides');
                                         return;
                                       }
                                       showProductDialog(context, product);
                                     },
                                   ),
-                                  // Wishlist button
                                   Obx(() {
                                     final isInWishlist = wishlistController
                                         .isProductInWishlist(product.id!);
@@ -611,8 +600,8 @@ class HomeScreen extends GetView<AuthController> {
                                         final userEmail =
                                             controller.currentUser?.email;
                                         if (userEmail == null) {
-                                          Get.snackbar(
-                                              'Error', 'Please log in first');
+                                          Get.snackbar('Erreur',
+                                              'Veuillez vous connecter d\'abord');
                                           return;
                                         }
 
@@ -631,15 +620,15 @@ class HomeScreen extends GetView<AuthController> {
                                           }
                                         } catch (e) {
                                           Get.snackbar(
-                                            'Error',
-                                            'Failed to update wishlist: ${e.toString()}',
+                                            'Erreur',
+                                            'Échec de la mise à jour de la liste de souhaits: ${e.toString()}',
                                             backgroundColor: Colors.red[100],
                                             colorText: Colors.red[900],
                                           );
                                         }
                                       },
                                     );
-                                  })
+                                  }),
                                 ],
                               ),
                             ],
@@ -658,7 +647,6 @@ class HomeScreen extends GetView<AuthController> {
   }
 
   Widget _buildOpticalStores() {
-    // Keep your existing implementation
     return Obx(() {
       if (opticienController.isLoading.value) {
         return const Center(child: CircularProgressIndicator());
@@ -667,7 +655,7 @@ class HomeScreen extends GetView<AuthController> {
       final opticians = opticienController.opticiensList;
 
       if (opticians.isEmpty) {
-        return const Center(child: Text('No opticians found.'));
+        return const Center(child: Text('Aucun opticien trouvé.'));
       }
 
       return Column(
@@ -676,7 +664,7 @@ class HomeScreen extends GetView<AuthController> {
           const Padding(
             padding: EdgeInsets.all(16),
             child: Text(
-              'Optical Stores',
+              'Magasins Optiques',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -717,11 +705,10 @@ class HomeScreen extends GetView<AuthController> {
                   subtitle: Text(optician.email),
                   trailing: ElevatedButton(
                     onPressed: () {
-                      // Navigate to the OpticianProductsScreen and pass the optician ID
                       Get.to(() =>
                           OpticianProductsScreen(opticianId: optician.id));
                     },
-                    child: const Text('View Products'),
+                    child: const Text('Voir les Produits'),
                   ),
                 ),
               );
@@ -733,18 +720,17 @@ class HomeScreen extends GetView<AuthController> {
   }
 
   Widget _buildBottomNavBar() {
-    // Keep your existing implementation
     return Obx(() => BottomNavigationBar(
           type: BottomNavigationBarType.fixed,
           currentIndex: navigationController.selectedIndex.value,
           selectedItemColor: Colors.blue,
           unselectedItemColor: Colors.grey,
           items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-            BottomNavigationBarItem(icon: Icon(Icons.store), label: 'Stores'),
+            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Accueil'),
+            BottomNavigationBarItem(icon: Icon(Icons.store), label: 'Magasins'),
             BottomNavigationBarItem(
-                icon: Icon(Icons.shopping_cart), label: 'Cart'),
-            BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+                icon: Icon(Icons.list_alt), label: 'Commandes'),
+            BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
           ],
           onTap: navigationController.changePage,
         ));
@@ -753,16 +739,15 @@ class HomeScreen extends GetView<AuthController> {
 
 // Keep the existing showProductDialog method unchanged
 Future<void> showProductDialog(BuildContext context, Product product) async {
-  // Reactive quantity variable
   final RxInt quantity = 1.obs;
   final CartItemController cartController = Get.find<CartItemController>();
   final AuthController authController = Get.find<AuthController>();
 
-  // Function to add the product to the cart
   Future<void> _addToCart() async {
     final userId = authController.currentUserId.value;
     if (userId.isEmpty) {
-      Get.snackbar('Error', 'Please log in to add items to cart',
+      Get.snackbar('Erreur',
+          'Veuillez vous connecter pour ajouter des articles au panier',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
           colorText: Colors.white);
@@ -770,7 +755,7 @@ Future<void> showProductDialog(BuildContext context, Product product) async {
     }
 
     if (product.id?.isEmpty ?? true) {
-      Get.snackbar('Error', 'Invalid product information',
+      Get.snackbar('Erreur', 'Informations produit invalides',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
           colorText: Colors.white);
@@ -787,19 +772,19 @@ Future<void> showProductDialog(BuildContext context, Product product) async {
         totalPrice: totalPrice,
       );
       Navigator.of(context).pop(); // Close the dialog
-      Get.snackbar('Success', '${product.name} added to cart',
+      Get.snackbar('Succès', '${product.name} ajouté au panier',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.green,
           colorText: Colors.white);
     } catch (e) {
-      Get.snackbar('Error', 'Failed to add item to cart: ${e.toString()}',
+      Get.snackbar('Erreur',
+          'Échec de l\'ajout de l\'article au panier: ${e.toString()}',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
           colorText: Colors.white);
     }
   }
 
-  // Show the dialog
   showDialog(
     context: context,
     builder: (BuildContext dialogContext) {
@@ -828,7 +813,7 @@ Future<void> showProductDialog(BuildContext context, Product product) async {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Price: \$${product.prix.toStringAsFixed(2)}',
+                  'Prix: \$${product.prix.toStringAsFixed(2)}',
                   style: const TextStyle(fontSize: 16),
                 ),
                 const SizedBox(height: 16),
@@ -839,7 +824,8 @@ Future<void> showProductDialog(BuildContext context, Product product) async {
                       icon: const Icon(Icons.remove),
                       onPressed: () {
                         if (quantity.value > 1) {
-                          quantity.value--; // Decrease quantity
+                          quantity.value =
+                              quantity.value--; // Decrease quantity
                         }
                       },
                     ),
@@ -870,11 +856,11 @@ Future<void> showProductDialog(BuildContext context, Product product) async {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Cancel'),
+            child: const Text('Annuler'),
           ),
           ElevatedButton(
             onPressed: _addToCart,
-            child: const Text('Add to Cart'),
+            child: const Text('Ajouter au Panier'),
           ),
         ],
       );

@@ -7,12 +7,14 @@ import 'package:get/get.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
 
 import 'package:opti_app/Presentation/utils/jwt_utils.dart';
 import 'package:opti_app/data/models/user_model.dart';
 import 'package:opti_app/domain/entities/user.dart';
 import 'package:opti_app/domain/repositories/auth_repository.dart';
+import 'package:opti_app/notification_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:opti_app/data/data_sources/auth_remote_datasource.dart';
 import 'package:opti_app/data/repositories/auth_repository_impl.dart';
@@ -40,6 +42,7 @@ class AuthController extends GetxController {
 
   User? get currentUser => _currentUser.value;
   set currentUser(User? value) => _currentUser.value = value;
+  final NotificationService notificationService = NotificationService();
 
   // Constructor with named parameters
   AuthController({
@@ -50,6 +53,7 @@ class AuthController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    notificationService.initialize();
     loadUserFromPrefs();
     favorites =
         List.generate(productController.products.length, (index) => false);
@@ -368,84 +372,32 @@ class AuthController extends GetxController {
   }
 
   Future<void> loginWithEmail(String email, String password) async {
-    if (email.isEmpty || password.isEmpty) {
-      Get.snackbar('Error', 'Please enter email and password');
-      return;
-    }
-
-    isLoading.value = true;
-
     try {
-      debugPrint('Calling loginWithEmail function...');
-      final String loginResponseString =
-          await authRepository.loginWithEmail(email, password);
+      isLoading.value = true;
 
-      String token;
-      String? refreshToken;
+      // Call the repository to log in
+      final token = await authRepository.loginWithEmail(email, password);
 
-      if (loginResponseString.trim().startsWith('{')) {
-        final Map<String, dynamic> loginResponse =
-            json.decode(loginResponseString);
-        token = loginResponse['token'];
-        refreshToken = loginResponse['refreshToken'];
-      } else {
-        token = loginResponseString;
-        refreshToken = null;
-      }
-
-      debugPrint('Login successful, token: $token');
-
-      if (token.isEmpty) {
-        throw Exception('Empty token received from server');
-      }
-
+      // Decode the token to get user ID
       final Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
-      final String? userEmail = decodedToken['email'];
-      final String? userId = decodedToken['id']?.toString();
+      final String userId = decodedToken['id']?.toString() ?? '';
 
-      if (userId == null || userId.isEmpty) {
-        throw Exception('Invalid token: Unable to extract user ID');
-      }
-
-      if (userEmail == null || userEmail.isEmpty) {
-        throw Exception('Invalid token: Unable to extract email');
-      }
-
-      authToken.value = token;
+      // Save user ID and token
       currentUserId.value = userId;
+      authToken.value = token;
       isLoggedIn.value = true;
 
-      await Future.wait([
-        prefs.setString('token', token),
-        prefs.setString('userId', userId),
-        prefs.setString('userEmail', userEmail),
-        if (refreshToken != null && refreshToken.isNotEmpty)
-          prefs.setString('refreshToken', refreshToken),
-      ]);
+      // Set external user ID for OneSignal
+      await notificationService.setExternalUserId(userId);
+      OneSignal.login(userId);
 
-      if (refreshToken != null && refreshToken.isNotEmpty) {
-        await authRepository.refreshToken(refreshToken);
-      }
+      // Load user data
+      await loadUserData(email);
 
-      await loadUserData(userEmail);
-      Get.offAllNamed('/HomeScreen', arguments: {
-        'email': userEmail,
-      });
-    } catch (e, stackTrace) {
+      // Navigate to home screen
+      Get.offAllNamed('/HomeScreen', arguments: userId);
+    } catch (e) {
       debugPrint('Login error: $e');
-      debugPrint('Stack trace: $stackTrace');
-
-      authToken.value = '';
-      currentUserId.value = '';
-      isLoggedIn.value = false;
-
-      await Future.wait([
-        prefs.remove('token'),
-        prefs.remove('userId'),
-        prefs.remove('userEmail'),
-        prefs.remove('refreshToken'),
-      ]);
-
       Get.snackbar(
         'Error',
         'Login failed: ${e.toString()}',
@@ -460,45 +412,34 @@ class AuthController extends GetxController {
   Future<void> signUp(User newUser) async {
     isLoading.value = true;
     try {
+      // Call the repository to sign up
       final signupData = await authRepository.signUp(newUser);
 
+      // Extract token and user ID
       final token = signupData["token"] as String;
-      final email = JwtUtils.getEmailFromToken(token);
+      final String userId = signupData["userId"] as String;
 
-      await prefs.setString('token', token);
-      await prefs.setString('userEmail', email);
-
+      // Save user ID and token
+      currentUserId.value = userId;
       authToken.value = token;
       isLoggedIn.value = true;
 
-      await loadUserData(email);
+      // Set external user ID for OneSignal
+      await notificationService.setExternalUserId(userId);
 
-      Get.snackbar(
-        'Success',
-        'Signup successful!',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      // Load user data
+      await loadUserData(newUser.email);
 
-      Get.offAllNamed('/HomeScreen', arguments: email);
+      // Navigate to home screen
+      Get.offAllNamed('/HomeScreen', arguments: newUser.email);
     } catch (e) {
-      print('Sign Up error: $e');
-      if (e.toString().contains('User already exists')) {
-        Get.snackbar(
-          'Error',
-          'This email is already used. Please try another.',
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-          snackPosition: SnackPosition.BOTTOM,
-        );
-      } else {
-        Get.snackbar(
-          'Error',
-          'An error occurred: $e',
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-          snackPosition: SnackPosition.BOTTOM,
-        );
-      }
+      debugPrint('Sign Up error: $e');
+      Get.snackbar(
+        'Error',
+        'Signup failed: ${e.toString()}',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
     } finally {
       isLoading.value = false;
     }

@@ -20,7 +20,7 @@ class WishlistPage extends StatelessWidget {
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: const Text(
-          'Wishlist',
+          'Liste des favoris',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w600,
@@ -80,7 +80,7 @@ class WishlistPage extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'Your Wishlist is Empty',
+            'Votre liste  est vide',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w600,
@@ -89,7 +89,7 @@ class WishlistPage extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Start adding items to your wishlist',
+            'Ajoutez vos articles préférés à votre liste de favoris',
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey[600],
@@ -107,7 +107,7 @@ class WishlistPage extends StatelessWidget {
               ),
               elevation: 0,
             ),
-            child: const Text('Explore Products'),
+            child: const Text('Explorez les articles'),
           ),
         ],
       ),
@@ -158,8 +158,8 @@ class WishlistPage extends StatelessWidget {
               onDismissed: (direction) {
                 controller.removeFromWishlist(product.id!);
                 Get.snackbar(
-                  'Removed',
-                  'Item removed from wishlist',
+                  'Supprimé',
+                  'Article supprimé de la liste des favoris',
                   snackPosition: SnackPosition.BOTTOM,
                   backgroundColor: Colors.black87,
                   colorText: Colors.white,
@@ -247,7 +247,7 @@ class WishlistPage extends StatelessWidget {
                               elevation: 0,
                             ),
                             child: const Text(
-                              'Add to Cart',
+                              'Ajouter au panier',
                               style: TextStyle(fontSize: 14),
                             ),
                           ),
