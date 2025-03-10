@@ -15,7 +15,17 @@ class WishlistController extends GetxController {
 
   void initUser(String userEmail) {
     currentUserEmail = userEmail;
-    loadWishlistItems();
+    try {
+      loadWishlistItems();
+    } catch (e) {
+      print('Error initializing wishlist: $e');
+      Get.snackbar(
+        'Error',
+        'Unable to initialize wishlist. Please try again.',
+        backgroundColor: Colors.red[100],
+        colorText: Colors.red[900],
+      );
+    }
   }
 
   Future<void> loadWishlistItems() async {
@@ -44,6 +54,7 @@ class WishlistController extends GetxController {
       isLoading.value = false;
     }
   }
+  
   Future<void> refreshWishlist() async {
     try {
       if (currentUserEmail != null && currentUserEmail!.isNotEmpty) {
@@ -58,11 +69,13 @@ class WishlistController extends GetxController {
       print('Error refreshing wishlist: ${e.toString()}');
     }
   }
+  
   Future<void> removeFromWishlist(String productId) async {
     try {
       // Check authentication status before proceeding
       isLoading.value = true;
       await wishlistRemoteDataSource.removeFromWishlist(productId);
+      
       // Remove item locally to give immediate feedback
       wishlistItems.removeWhere((item) => item.productId == productId);
       updateWishlistState();
@@ -96,6 +109,8 @@ class WishlistController extends GetxController {
           colorText: Colors.red[900],
         );
       }
+      // Rethrow to handle in UI layer if needed
+      throw e;
     } finally {
       isLoading.value = false;
     }
@@ -134,7 +149,7 @@ class WishlistController extends GetxController {
     }
   }
 
-// Add this to your WishlistController class
+  // Add this to your WishlistController class
   void synchronizeWishlist() async {
     if (currentUserEmail != null && currentUserEmail!.isNotEmpty) {
       // Only reload if we're not already loading

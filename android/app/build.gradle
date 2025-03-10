@@ -75,7 +75,7 @@ android {
 
 dependencies {
     // Dépendance Kotlin
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.8.22"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.23"
     
     // Exemple de dépendance pour Google Play Services (authentification)
     implementation 'com.google.android.gms:play-services-auth:20.7.0'
@@ -84,7 +84,7 @@ dependencies {
     implementation 'com.facebook.android:facebook-login:16.1.3'
     
     // Import du Firebase BoM pour gérer les versions des SDK Firebase
-    implementation platform('com.google.firebase:firebase-bom:33.10.0')
+   implementation platform('com.google.firebase:firebase-bom:32.7.0')
     // Exemple : Firebase Analytics (sans version explicite grâce au BoM)
     implementation 'com.google.firebase:firebase-analytics'
     

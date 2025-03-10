@@ -1,11 +1,14 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:get/get.dart';
+import 'package:opti_app/data/data_sources/product_datasource.dart';
 import 'package:opti_app/data/repositories/product_repository_impl.dart';
-import 'package:opti_app/domain/entities/Opticien.dart';
+import 'package:opti_app/domain/entities/Boutique.dart';
 import 'package:opti_app/domain/entities/product_entity.dart';
 
 class ProductController extends GetxController {
   final ProductRepositoryImpl _repository;
+  final ProductDatasource _dataSource;
 
   // Convert to observable variables using .obs
   final RxList<Product> _products = <Product>[].obs;
@@ -13,7 +16,7 @@ class ProductController extends GetxController {
   final RxBool _isLoading = false.obs;
   final Rxn<String> _error = Rxn<String>();
 
-  ProductController(this._repository);
+  ProductController(this._repository, this._dataSource);
 
   // Getters for the observable variables
   List<Product> get products => _products;
@@ -115,12 +118,17 @@ class ProductController extends GetxController {
   }
 
   Future<void> loadProducts() async {
+    _isLoading.value = true;
+    _error.value = null;
+
     try {
       final products = await _repository.getProducts();
-      _products.assignAll(products);
-      print('Products fetched: ${_products.length}'); // Debugging line
+      _allProducts.assignAll(products); // Store all products in _allProducts
+      _products.assignAll(products); // Also update current display list
     } catch (e) {
-      print('Error fetching products: $e'); // Debugging line
+      _error.value = e.toString();
+    } finally {
+      _isLoading.value = false;
     }
   }
 
@@ -148,8 +156,8 @@ class ProductController extends GetxController {
       _isLoading.value = true;
       final newProduct = await _repository.createProduct(product);
 
-      // Ajouter le nouveau produit à la liste
-      _products.add(newProduct);
+      // Ajouter le nouveau produit à la liste en début de liste pour qu'il soit visible immédiatement
+      _products.insert(0, newProduct);
 
       // Forcer la mise à jour de l'interface
       _products.refresh();
@@ -163,24 +171,69 @@ class ProductController extends GetxController {
     }
   }
 
-  Future<void> updateProduct(String id, Product product) async {
-    try {
-      final updatedProduct = await _repository.updateProduct(id, product);
-      final index = _products.indexWhere((p) => p.id == id);
-      if (index != -1) {
-        _products[index] = updatedProduct;
-      }
-    } catch (e) {
-      _error.value = e.toString();
-    }
-  }
+ 
 
+  Future<bool> updateProduct(String id, Product product) async {
+  try {
+    _isLoading.value = true;
+    final updatedProduct = await _repository.updateProduct(id, product);
+    
+    // Mettre à jour dans la liste des produits
+    final index = _products.indexWhere((p) => p.id == id);
+    if (index != -1) {
+      _products[index] = updatedProduct;
+      // Forcer la mise à jour de l'interface
+      _products.refresh();
+    }
+    
+    // Mettre à jour également dans la liste complète des produits
+    final allIndex = _allProducts.indexWhere((p) => p.id == id);
+    if (allIndex != -1) {
+      _allProducts[allIndex] = updatedProduct;
+      _allProducts.refresh();
+    }
+    
+    return true;
+  } catch (e) {
+    _error.value = e.toString();
+    return false;
+  } finally {
+    _isLoading.value = false;
+  }
+}
   Future<void> deleteProduct(String id) async {
     try {
       await _repository.deleteProduct(id);
       _products.removeWhere((p) => p.id == id);
     } catch (e) {
       _error.value = e.toString();
+    }
+  }
+
+  Future<String> uploadImageWeb(
+      Uint8List imageBytes, String fileName, String productId) async {
+    try {
+      _isLoading.value = true;
+      _error.value = null;
+
+      // First, upload the image
+      final imageUrl =
+          await _dataSource.uploadImageWeb(imageBytes, fileName, productId);
+
+      // Don't try to create a product here - just return the image URL
+      // The product should be created later with all required fields
+      _isLoading.value = false;
+      Get.snackbar('Succès', 'Image téléchargée avec succès',
+          snackPosition: SnackPosition.BOTTOM);
+      return imageUrl;
+    } catch (e) {
+      _error.value = e.toString();
+      Get.snackbar(
+          'Erreur', 'Échec du téléchargement de l\'image: ${e.toString()}',
+          snackPosition: SnackPosition.BOTTOM);
+      throw Exception('Échec du téléchargement de l\'image: $e');
+    } finally {
+      _isLoading.value = false;
     }
   }
 

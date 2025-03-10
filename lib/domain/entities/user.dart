@@ -1,15 +1,15 @@
 import 'package:equatable/equatable.dart';
 
 class User extends Equatable {
-  final String? id; // Make id optional
+   String? id; // Make id optional
   String nom;
-  final String prenom;
+   String prenom;
   String email;
-  final String date;
-  final String region;
-  final String genre;
+   String date;
+   String region;
+   String genre;
   final String password;
-  final String phone;
+   String phone;
   String imageUrl;
   final String refreshTokens;
   String status;

@@ -1,8 +1,16 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:opti_app/domain/entities/user.dart';
 import 'package:http_parser/http_parser.dart';
 import 'dart:io';
+import 'package:flutter/foundation.dart' show compute, kIsWeb;
+
+import 'dart:typed_data';
+
+import 'package:dio/dio.dart' as dio_pkg;
+import 'package:http_parser/http_parser.dart';
+import 'dart:convert';
 
 abstract class UserDataSource {
   Future<void> addUser(User user);
@@ -17,10 +25,9 @@ abstract class UserDataSource {
 
 class UserDataSourceImpl implements UserDataSource {
   final http.Client client;
-  final String baseUrl = 'http://192.168.1.22:3000/api';
-
-  UserDataSourceImpl({required this.client});
-
+  final String baseUrl = 'http://localhost:3000/api';
+  final dio_pkg.Dio _dio;
+UserDataSourceImpl({required this.client}) : _dio = dio_pkg.Dio();
   @override
   Future<void> addUser(User user) async {
     try {
@@ -69,30 +76,41 @@ class UserDataSourceImpl implements UserDataSource {
     }
   }
 
-  @override
+@override
 Future<List<User>> getUsers() async {
   try {
-    print('Fetching users from: $baseUrl/users');
+    print('Début de la requête getUsers()');
+    
     final response = await client.get(
       Uri.parse('$baseUrl/users'),
       headers: {'Content-Type': 'application/json'},
-    );
-
-    print('Response status code: ${response.statusCode}');
-    print('Response body: ${response.body}');
-
+    ).timeout(const Duration(seconds: 8));
+    
+    print('Réponse reçue: ${response.statusCode}');
+    
     if (response.statusCode == 200) {
-      final List<dynamic> jsonList = json.decode(response.body);
-      return jsonList.map((json) => User.fromJson(json)).toList();
+      print('Décodage du corps de la réponse');
+      final users = await compute(_parseUsers, response.body);
+      print('${users.length} utilisateurs chargés');
+      return users;
     } else {
+      print('Erreur HTTP: ${response.statusCode}, Body: ${response.body}');
       throw Exception('Failed to load users: ${response.statusCode}');
     }
   } catch (e) {
-    print('Error fetching users: $e');
+    print('Exception dans getUsers(): $e');
+    if (e is TimeoutException) {
+      throw Exception('Le serveur met trop de temps à répondre');
+    }
     throw Exception('Error fetching users: $e');
   }
 }
 
+// Fonction isolée pour le décodage JSON (à définir en dehors de la classe)
+List<User> _parseUsers(String responseBody) {
+  final List<dynamic> jsonList = json.decode(responseBody);
+  return jsonList.map((json) => User.fromJson(json)).toList();
+}
 Future<User> getUserById(String userId) async {
   final response = await http.get(Uri.parse('$baseUrl/users/$userId'));
   if (response.statusCode == 200) {
@@ -135,6 +153,32 @@ Future<User> getUserById(String userId) async {
       throw Exception('Error deleting user: $e');
     }
   }
+  // Ajouter cette méthode à votre classe de contrôleur
+Future<String> uploadImageWeb(Uint8List imageBytes, String fileName, String email) async {
+  try {
+    final formData = dio_pkg.FormData.fromMap({
+      'image': dio_pkg.MultipartFile.fromBytes(
+        imageBytes,
+        filename: fileName,
+      ),
+      'email': email, // Ensure this matches the backend expectation
+    });
+
+    final response = await _dio.post(
+      '$baseUrl/upload',
+      data: formData,
+    );
+
+    if (response.statusCode == 200) {
+      return response.data['url'] ?? '';
+    } else {
+      throw Exception('Failed to upload image: ${response.statusCode}');
+    }
+  } catch (e) {
+    print('Error during web image upload: $e');
+    throw e;
+  }
+}
 
   @override
   Future<String> uploadImage(String filePath, String email) async {

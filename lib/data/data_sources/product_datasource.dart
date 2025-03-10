@@ -1,13 +1,18 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:dio/dio.dart'; // Assurez-vous d'importer Dio ici
 import 'package:http/http.dart' as http;
-import 'package:http/http.dart' as client;
 import 'package:http_parser/http_parser.dart';
-import 'package:opti_app/domain/entities/Opticien.dart';
+import 'package:opti_app/domain/entities/Boutique.dart';
 import 'package:opti_app/domain/entities/product_entity.dart';
 
+
+
 class ProductDatasource {
-  final String baseUrl = 'http://192.168.1.22:3000/api/products';
+  final String baseUrl = 'http://localhost:3000/api/products';
+  final Dio _dio = Dio(); // Créez une instance de Dio
+
   Future<List<Product>> getProductsByOptician(String opticianId) async {
     try {
       final response =
@@ -129,14 +134,69 @@ class ProductDatasource {
     }
   }
 
-  @override
   Future<Product> getProductById(String productId) async {
-    final response =
-        await client.get(Uri.parse('$baseUrl/products/$productId'));
+    final response = await http.get(Uri.parse('$baseUrl/products/$productId'));
     if (response.statusCode == 200) {
       return Product.fromJson(json.decode(response.body));
     } else {
-      throw Exception('Failed to load product');
+      throw Exception('Échec du chargement du produit');
+    }
+  }
+
+  Future<String> uploadImageWeb(
+      Uint8List imageBytes, String fileName, String productId) async {
+    try {
+      // Vérification des paramètres
+      if (imageBytes.isEmpty) {
+        throw Exception('Image bytes cannot be empty');
+      }
+
+      // Debug logs
+      print(
+          'Uploading image: fileName=$fileName, productId=$productId, bytesLength=${imageBytes.length}');
+
+      // IMPORTANT: Modifiez l'URL pour correspondre à la route définie sur le serveur
+      final uploadUrl = '$baseUrl/upload';
+      print('Upload URL: $uploadUrl');
+
+      final formData = FormData.fromMap({
+        'image': MultipartFile.fromBytes(
+          imageBytes,
+          filename: fileName,
+          contentType: MediaType.parse('image/jpeg'),
+        ),
+        'productId': productId,
+      });
+
+      final response = await Dio().post(
+        uploadUrl,
+        data: formData,
+        options: Options(
+          headers: {
+            'Accept': 'application/json',
+          },
+          receiveTimeout: const Duration(seconds: 30),
+          sendTimeout: const Duration(seconds: 30),
+          validateStatus: (status) {
+            print('Upload response status: $status');
+            return status != null && status < 500;
+          },
+        ),
+      );
+
+      print('Upload response: ${response.data}');
+
+      if (response.statusCode == 200) {
+        final imageUrl = response.data['imageUrl'];
+        print('Parsed imageUrl: $imageUrl');
+        return imageUrl ?? '';
+      } else {
+        throw Exception(
+            'Failed to upload image: ${response.statusCode} - ${response.data}');
+      }
+    } catch (e) {
+      print('Error uploading image: $e');
+      throw Exception('Failed to upload image: $e');
     }
   }
 
@@ -155,57 +215,53 @@ class ProductDatasource {
       throw Exception('Erreur lors de la récupération des opticiens: $e');
     }
   }
-  Future<Map<String, dynamic>> getProductRatings(String productId) async {
-  try {
-    final response = await http.get(
-      Uri.parse('$baseUrl/ratings/$productId'),
-      headers: {'Content-Type': 'application/json'},
-    );
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      return {
-        'averageRating': data['averageRating'] ?? 0.0,
-        'totalReviews': data['totalReviews'] ?? 0
-      };
-    } else {
-      throw Exception('Failed to load product ratings');
+  Future<Map<String, dynamic>> getProductRatings(String productId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/ratings/$productId'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return {
+          'averageRating': data['averageRating'] ?? 0.0,
+          'totalReviews': data['totalReviews'] ?? 0
+        };
+      } else {
+        throw Exception('Failed to load product ratings');
+      }
+    } catch (e) {
+      print('Error fetching product ratings: $e');
+      return {'averageRating': 0.0, 'totalReviews': 0};
     }
-  } catch (e) {
-    print('Error fetching product ratings: $e');
-    return {
-      'averageRating': 0.0,
-      'totalReviews': 0
-    };
   }
-}
 
 // Method to add a review
-Future<void> addProductReview({
-  required String productId, 
-  required String userId, 
-  required int rating, 
-  String? comment
-}) async {
-  try {
-    final response = await http.post(
-      Uri.parse('$baseUrl/reviews/add'),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode({
-        'productId': productId,
-        'userId': userId,
-        'rating': rating,
-        'comment': comment
-      }),
-    );
+  Future<void> addProductReview(
+      {required String productId,
+      required String userId,
+      required int rating,
+      String? comment}) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/reviews/add'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'productId': productId,
+          'userId': userId,
+          'rating': rating,
+          'comment': comment
+        }),
+      );
 
-    if (response.statusCode != 201) {
-      throw Exception('Failed to add review');
+      if (response.statusCode != 201) {
+        throw Exception('Failed to add review');
+      }
+    } catch (e) {
+      print('Error adding product review: $e');
+      rethrow;
     }
-  } catch (e) {
-    print('Error adding product review: $e');
-    rethrow;
   }
 }
-}
-

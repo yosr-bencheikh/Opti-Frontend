@@ -63,6 +63,17 @@ class AuthController extends GetxController {
     favorites[index] = !favorites[index];
   }
 
+  Future<void> debugSharedPrefs() async {
+    final keys = prefs.getKeys();
+    print("All keys in SharedPreferences: $keys");
+
+    final token = prefs.getString('token');
+    print("Token in prefs: $token");
+
+    final email = prefs.getString('userEmail');
+    print("Email in prefs: $email");
+  }
+
   void handleAuthenticationChanged(bool loggedIn) {
     if (loggedIn) {
       Future.microtask(() =>
@@ -72,7 +83,7 @@ class AuthController extends GetxController {
     }
   }
 
-  Future checkLoginStatus() async {
+  Future<void> checkLoginStatus() async {
     try {
       final String? token = prefs.getString('token');
       final String? userId = prefs.getString('userId');
@@ -105,6 +116,16 @@ class AuthController extends GetxController {
     } catch (e) {
       isLoggedIn.value = false;
       print('Error in checkLoginStatus: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> getUserByEmail(String email) async {
+    try {
+      final userData = await authRepository.getUserByEmail(email);
+      return userData;
+    } catch (e) {
+      print('Error getting user by email: $e');
+      throw e;
     }
   }
 
@@ -386,6 +407,10 @@ class AuthController extends GetxController {
       currentUserId.value = userId;
       authToken.value = token;
       isLoggedIn.value = true;
+
+      // Save token and email to SharedPreferences
+      await prefs.setString('token', token);
+      await prefs.setString('userEmail', email);
 
       // Set external user ID for OneSignal
       await notificationService.setExternalUserId(userId);
