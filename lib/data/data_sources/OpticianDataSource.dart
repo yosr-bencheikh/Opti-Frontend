@@ -15,12 +15,36 @@ abstract class OpticianDataSource {
   Future<String> uploadImage(String filePath, String email);
   Future<void> updateOpticianImage(String email, String imageUrl);
   Future<Optician> getOpticianByEmail(String email);
+  Future<String> loginWithEmail(String email, String password);
 }
 
 class OpticianDataSourceImpl implements OpticianDataSource {
   final String baseUrl = 'http://localhost:3000/api'; // Replace with your API base URL
   final dio_pkg.Dio _dio = dio_pkg.Dio(); // For web image upload
 
+ @override
+  Future<String> loginWithEmail(String email, String password) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'email': email,
+          'password': password,
+        }),
+      );
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data['token'];
+      } else {
+        throw Exception('Login failed: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Login failed: $e');
+    }
+  }
+  
   @override
   Future<List<Optician>> getOpticians() async {
     try {
@@ -180,19 +204,24 @@ Future<String> uploadImageWeb(Uint8List imageBytes, String fileName, String emai
 @override
 Future<Optician> getOpticianByEmail(String email) async {
   try {
-    final response = await http.get(Uri.parse('$baseUrl/opticians?email=$email'));
+    final response = await http.get(
+      Uri.parse('$baseUrl/opticians?email=$email'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
       if (data.isNotEmpty) {
-        return Optician.fromJson(data.first);
+        return Optician.fromJson(data[0]);
       } else {
-        throw Exception('Optician not found with email: $email');
+        throw Exception('Optician not found');
       }
     } else {
-      throw Exception('Failed to fetch optician: ${response.statusCode}');
+      throw Exception('Failed to get optician: ${response.statusCode}');
     }
   } catch (e) {
-    throw Exception('Failed to fetch optician: $e');
+    throw Exception('Failed to get optician: $e');
   }
 }
+
 }

@@ -5,6 +5,12 @@ import 'package:get/get_core/src/get_main.dart';
 import 'package:opti_app/Presentation/UI/screens/Opticien/Commande.dart';
 import 'package:opti_app/Presentation/UI/screens/Opticien/Product_Screen.dart';
 import 'package:opti_app/Presentation/UI/screens/Opticien/UserScreen.dart';
+import 'package:opti_app/Presentation/UI/screens/User/Monthly_sales_chart.dart';
+import 'package:opti_app/Presentation/UI/screens/User/Order_Pie_Chart.dart';
+import 'package:opti_app/Presentation/UI/screens/User/User_donut_chart.dart';
+import 'package:opti_app/Presentation/controllers/OpticianController.dart';
+import 'package:opti_app/Presentation/controllers/OrderController.dart';
+import 'package:opti_app/Presentation/controllers/product_controller.dart';
 
 // Main app
 class OpticianApp extends StatelessWidget {
@@ -43,6 +49,7 @@ class CustomSidebar extends StatelessWidget {
   
   @override
   Widget build(BuildContext context) {
+       final OpticianController opticianController = Get.find<OpticianController>();
     return Container(
       width: 200,
       color: const Color(0xFFFEF1E9),
@@ -84,13 +91,13 @@ class CustomSidebar extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 10),
-              const Text(
-                "Martin Dupont",
-                style: TextStyle(
+               Obx(() => Text(
+                opticianController.opticianName.value,
+                style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                 ),
-              ),
+              )),
               const Text(
                 "Opticien Principal",
                 style: TextStyle(
@@ -129,6 +136,15 @@ class CustomSidebar extends StatelessWidget {
             "Commandes", 
             currentPage == 'Orders',
             () => _navigateTo(context, '/Commande')
+          ),
+        const Spacer(), // Pour pousser le bouton de déconnexion vers le bas
+          // Bouton de déconnexion
+          _buildMenuItem(
+            context, 
+            Icons.logout, 
+            "Déconnexion", 
+            false,
+            () => opticianController.logout(),
           ),
         ],
       ),
@@ -191,6 +207,7 @@ void _navigateTo(BuildContext context, String routeName, {dynamic arguments}) {
 }
 
 class _DashboardScreenState extends State<OpticienDashboardScreen> {
+  final OpticianController opticianController = Get.find<OpticianController>();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -220,6 +237,14 @@ class _DashboardScreenState extends State<OpticienDashboardScreen> {
                       ),
                       Row(
                         children: [
+                           IconButton(
+                            icon: const Icon(Icons.logout),
+                            onPressed: () {
+                              opticianController.logout();
+                            },
+                            tooltip: 'Déconnexion',
+                          ),
+                          const SizedBox(width: 10),
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
@@ -245,300 +270,235 @@ class _DashboardScreenState extends State<OpticienDashboardScreen> {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Activity
+              // Popular Products Chart
                       Expanded(
-                        flex: 3,
-                        child: Container(
-                          padding: const EdgeInsets.all(15),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text(
-                                    "Activité",
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey[200],
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        const Text("01-07 Mars"),
-                                        const SizedBox(width: 5),
-                                        const Icon(Icons.arrow_drop_down, size: 15),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 15),
-                              SizedBox(
-                                height: 200,
-                                child: LineChart(
-                                  LineChartData(
-                                    gridData: FlGridData(show: false),
-                                    titlesData: FlTitlesData(
-                                      leftTitles: AxisTitles(
-                                        sideTitles: SideTitles(
-                                          showTitles: true,
-                                          reservedSize: 30,
-                                          getTitlesWidget: (value, meta) {
-                                            String text = '';
-                                            if (value == 0) {
-                                              text = '0';
-                                            } else if (value == 10) {
-                                              text = '10';
-                                            } else if (value == 20) {
-                                              text = '20';
-                                            } else if (value == 30) {
-                                              text = '30';
-                                            } else if (value == 40) {
-                                              text = '40';
-                                            }
-                                            return Text(
-                                              text,
-                                              style: const TextStyle(
-                                                color: Colors.grey,
-                                                fontSize: 12,
-                                              ),
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                      bottomTitles: AxisTitles(
-                                        sideTitles: SideTitles(
-                                          showTitles: true,
-                                          reservedSize: 30,
-                                          getTitlesWidget: (value, meta) {
-                                            String text = '';
-                                            if (value == 1) {
-                                              text = '01';
-                                            } else if (value == 2) {
-                                              text = '02';
-                                            } else if (value == 3) {
-                                              text = '03';
-                                            } else if (value == 4) {
-                                              text = '04';
-                                            } else if (value == 5) {
-                                              text = '05';
-                                            } else if (value == 6) {
-                                              text = '06';
-                                            } else if (value == 7) {
-                                              text = '07';
-                                            }
-                                            return Text(
-                                              text,
-                                              style: const TextStyle(
-                                                color: Colors.grey,
-                                                fontSize: 12,
-                                              ),
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                      rightTitles: const AxisTitles(
-                                        sideTitles: SideTitles(showTitles: false),
-                                      ),
-                                      topTitles: const AxisTitles(
-                                        sideTitles: SideTitles(showTitles: false),
-                                      ),
-                                    ),
-                                    borderData: FlBorderData(show: false),
-                                    lineBarsData: [
-                                      LineChartBarData(
-                                        spots: [
-                                          const FlSpot(1, 20),
-                                          const FlSpot(2, 35),
-                                          const FlSpot(3, 25),
-                                          const FlSpot(4, 15),
-                                          const FlSpot(5, 30),
-                                          const FlSpot(6, 25),
-                                          const FlSpot(7, 32),
-                                        ],
-                                        isCurved: true,
-                                        color: Colors.orange,
-                                        barWidth: 3,
-                                        isStrokeCapRound: true,
-                                        dotData: FlDotData(
-                                          show: true,
-                                          getDotPainter: (spot, percent, barData, index) {
-                                            if (index == 5) {
-                                              return FlDotCirclePainter(
-                                                radius: 4,
-                                                color: Colors.orange,
-                                                strokeWidth: 2,
-                                                strokeColor: Colors.white,
-                                              );
-                                            }
-                                            return FlDotCirclePainter(
-                                              radius: 0,
-                                              color: Colors.transparent,
-                                              strokeWidth: 0,
-                                              strokeColor: Colors.transparent,
-                                            );
-                                          },
-                                        ),
-                                        belowBarData: BarAreaData(
-                                          show: true,
-                                          color: Colors.orange.withOpacity(0.2),
-                                        ),
-                                      ),
-                                    ],
-                                    lineTouchData: LineTouchData(
-                                      touchTooltipData: LineTouchTooltipData(
-                                        getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
-                                          return touchedBarSpots.map((barSpot) {
-                                            return LineTooltipItem(
-                                              '${barSpot.y.toInt()} clients',
-                                              const TextStyle(color: Colors.black),
-                                            );
-                                          }).toList();
-                                        },
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionTitle('Top 5 Produits'),
+                    _buildProductsChart(),
+                  ],
+                ),
+              ),
                       const SizedBox(width: 20),
-                      // Top Performers
-                      Expanded(
-                        flex: 2,
-                        child: Container(
-                          padding: const EdgeInsets.all(15),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                "Produits populaires",
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 15),
-                              _buildProductItem("Lunettes Ray-Ban", "@rayban", "39%"),
-                              _buildProductItem("Lentilles Acuvue", "@acuvue", "25%"),
-                              _buildProductItem("Oakley Sport", "@oakley", "18%"),
-                              const SizedBox(height: 10),
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.pushReplacement(
-                                    context,
-                                    MaterialPageRoute(builder: (context) => ProductsScreen()),
-                                  );
-                                },
-                                child: Row(
-                                  children: [
-                                    const Text("Voir Plus"),
-                                    const SizedBox(width: 5),
-                                    const Icon(Icons.arrow_forward, size: 16),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                    // User Repartition Chart
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionTitle('Répartition des utilisateurs'),
+                    UserDistributionChart(),
+                  ],
+                ),
+              ),
                     ],
                   ),
                   const SizedBox(height: 20),
                   // Channels
-                  Container(
-                    padding: const EdgeInsets.all(15),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE8F5F5),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Sources de clients",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 5),
-                        const Text(
-                          "Statistiques pour la période de 1 semaine",
-                          style: TextStyle(
-                            color: Colors.grey,
-                            fontSize: 12,
-                          ),
-                        ),
-                        const SizedBox(height: 15),
-                        Row(
-                          children: [
-                            _buildChannelCard("Référence médicale", "+5%", Colors.pink),
-                            const SizedBox(width: 15),
-                            _buildChannelCard("Site web", "-2%", Colors.blue),
-                            const SizedBox(width: 15),
-                            _buildChannelCard("Publicité", "+4%", Colors.deepOrange),
-                            const SizedBox(width: 15),
-                            _buildChannelCard("Renouvellement", "+3%", Colors.red),
-                            const SizedBox(width: 15),
-                            Container(
-                              padding: const EdgeInsets.all(15),
-                              decoration: BoxDecoration(
-                                color: Colors.teal,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Column(
-                                children: [
-                                  const Text(
-                                    "Stats\nComplètes",
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Container(
-                                    decoration: const BoxDecoration(
-                                      color: Colors.white,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(
-                                      Icons.arrow_forward,
-                                      color: Colors.teal,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
+                const SizedBox(height: 30),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Popular Products Chart
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionTitle('Répartition des commandes'),
+                    OrderStatusChart(),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 30),
+
+              // User Repartition Chart
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionTitle('Tendances des revenus mensuels'),
+                    MonthlySalesChart(),
+                  ],
+                ),
+              ),
+            ],
+          ),
                       ],
                     ),
                   ),
-                ],
+      )],
+              ),
+            );
+        
+      
+      
+    
+  }
+    Widget _buildSectionTitle(String title) => Padding(
+        padding: const EdgeInsets.only(bottom: 15),
+        child: Text(
+          title,
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+      );
+Widget _buildProductsChart() {
+    final orderController = Get.find<OrderController>();
+    final productController = Get.find<ProductController>();
+
+    return SizedBox(
+      height: 380,
+      child: Obx(() {
+        // Calculate product popularity
+        final Map<String, int> productPopularity = {};
+
+        // Aggregate product orders
+        for (final order in orderController.allOrders) {
+          for (final item in order.items) {
+            productPopularity.update(
+              item.productId,
+              (value) => value + item.quantity,
+              ifAbsent: () => item.quantity,
+            );
+          }
+        }
+
+        // Get top 5 products
+        final sortedProducts = productPopularity.entries.toList()
+          ..sort((a, b) => b.value.compareTo(a.value));
+
+        final top5Products = sortedProducts.take(5).toList();
+
+        return Card(
+          elevation: 3,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: BarChart(
+              BarChartData(
+                alignment: BarChartAlignment.spaceAround,
+                maxY: (top5Products.isNotEmpty
+                        ? top5Products.first.value.toDouble()
+                        : 100) *
+                    1.2,
+                barTouchData: BarTouchData(
+                  enabled: true,
+                  touchTooltipData: BarTouchTooltipData(
+                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                      if (groupIndex >= top5Products.length) return null;
+
+                      final productId = top5Products[groupIndex].key;
+                      final product = productController.products.firstWhere(
+                        (p) => p.id == productId,
+                      );
+
+                      return BarTooltipItem(
+                        '${product.name}\nOrders: ${rod.toY.toInt()}',
+                        const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                titlesData: FlTitlesData(
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 40,
+                      getTitlesWidget: (double value, TitleMeta meta) {
+                        final index = value.toInt();
+                        if (index >= top5Products.length) return const Text('');
+
+                        final productId = top5Products[index].key;
+                        final product = productController.products.firstWhere(
+                          (p) => p.id == productId,
+                        );
+
+                        return SideTitleWidget(
+                          angle: 0,
+                          space: 4,
+                          meta: meta,
+                          child: Text(
+                            product.name,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 40,
+                      getTitlesWidget: (double value, TitleMeta meta) {
+                        return Text(
+                          value.toInt().toString(),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  topTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  rightTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                ),
+                borderData: FlBorderData(show: false),
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  horizontalInterval: top5Products.isNotEmpty
+                      ? (top5Products.first.value ~/ 5).toDouble()
+                      : 10,
+                ),
+                barGroups: top5Products.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final product = entry.value;
+                  return BarChartGroupData(
+                    x: index,
+                    barRods: [
+                      BarChartRodData(
+                        toY: product.value.toDouble(),
+                        color: _getChartColor(index),
+                        width: 28,
+                        borderRadius: BorderRadius.circular(4),
+                        backDrawRodData: BackgroundBarChartRodData(
+                          show: true,
+                          toY: double.infinity,
+                          color: Colors.grey[200],
+                        ),
+                      ),
+                    ],
+                  );
+                }).toList(),
               ),
             ),
           ),
-        ],
-      ),
+        );
+      }),
     );
+  }
+  // Helper function for chart colors
+  Color _getChartColor(int index) {
+    final colors = [
+      Colors.blue,
+      Colors.orange,
+      Colors.green,
+      Colors.purple,
+      Colors.red,
+    ];
+
+    return colors[index % colors.length];
   }
 
   Widget _buildProductItem(String name, String handle, String percentage) {
