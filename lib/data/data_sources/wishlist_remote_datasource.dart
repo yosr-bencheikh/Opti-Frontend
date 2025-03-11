@@ -11,7 +11,8 @@ abstract class WishlistRemoteDataSource {
 
 class WishlistRemoteDataSourceImpl implements WishlistRemoteDataSource {
   final Dio dio;
-  final String baseUrl = 'http://192.168.1.22:3000/api'; // Update with your actual API base URL
+  final String baseUrl =
+      'http://localhost:3000/api'; // Update with your actual API base URL
 
   WishlistRemoteDataSourceImpl(this.dio);
 
@@ -115,7 +116,7 @@ class WishlistRemoteDataSourceImpl implements WishlistRemoteDataSource {
   Future<bool> isProductInWishlist(String userEmail, String productId) async {
     try {
       final token = await getToken();
-      
+
       final response = await dio.get(
         '$baseUrl/wishlist/check/$userEmail/$productId',
         options: token != null && token.isNotEmpty
@@ -127,7 +128,7 @@ class WishlistRemoteDataSourceImpl implements WishlistRemoteDataSource {
               )
             : null,
       );
-      
+
       if (response.statusCode == 200) {
         return response.data['isInWishlist'] ?? false;
       } else {

@@ -21,6 +21,7 @@ allprojects {
     repositories {
         google()
         mavenCentral()
+        jcenter()
     }
     
     // Add this resolution strategy

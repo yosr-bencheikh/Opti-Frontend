@@ -48,7 +48,7 @@ android {
 
     defaultConfig {
         applicationId "com.example.opti_app"
-        minSdkVersion flutter.minSdkVersion
+        minSdkVersion 31
         targetSdkVersion 35
         versionCode 1
         versionName "1.0"
