@@ -413,15 +413,7 @@ PlatformFile? _tempSelectedImage;
                   },
                 ),
                 SizedBox(height: 16),
-                TextFormField(
-                  controller: _imageUrlController,
-                  decoration: InputDecoration(
-                    labelText: 'URL de l\'image',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.image),
-                  ),
-                ),
-                SizedBox(height: 16),
+              
               ],
             ),
           ),
@@ -1351,13 +1343,7 @@ Widget _buildAdvancedFilters() {
                     const SizedBox(height: 16),
 
                     // Statut
-                    TextFormField(
-                      controller: _statusController,
-                      decoration: const InputDecoration(
-                        labelText: 'Statut',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
+                  
                   ],
                 ),
               ),

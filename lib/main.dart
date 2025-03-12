@@ -155,7 +155,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      initialRoute: '/LoginOpticien',
+      initialRoute: '/Admin_pannel',
       getPages: [
         GetPage(
           name: '/splash',
