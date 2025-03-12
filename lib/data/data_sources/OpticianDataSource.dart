@@ -11,15 +11,42 @@ abstract class OpticianDataSource {
   Future<Optician> addOptician(Optician optician);
   Future<Optician> updateOptician(Optician optician);
   Future<bool> deleteOptician(String id);
-  Future<String> uploadImageWeb(Uint8List imageBytes, String fileName, String email);
+  Future<String> uploadImageWeb(
+      Uint8List imageBytes, String fileName, String email);
   Future<String> uploadImage(String filePath, String email);
   Future<void> updateOpticianImage(String email, String imageUrl);
   Future<Optician> getOpticianByEmail(String email);
+  Future<String> loginWithEmail(String email, String password);
 }
 
 class OpticianDataSourceImpl implements OpticianDataSource {
-  final String baseUrl = 'http://localhost:3000/api'; // Replace with your API base URL
+  final String baseUrl =
+      'http://192.168.1.22:3000/api'; // Replace with your API base URL
   final dio_pkg.Dio _dio = dio_pkg.Dio(); // For web image upload
+
+  @override
+  Future<String> loginWithEmail(String email, String password) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/loginOpticien'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'email': email,
+          'password': password,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data['token'];
+      } else {
+        throw Exception(
+            'Login failed: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Login failed: $e');
+    }
+  }
 
   @override
   Future<List<Optician>> getOpticians() async {
@@ -91,80 +118,82 @@ class OpticianDataSourceImpl implements OpticianDataSource {
     }
   }
 
-Future<String> uploadImageWeb(Uint8List imageBytes, String fileName, String email) async {
-  try {
-    final formData = dio_pkg.FormData.fromMap({
-      'image': dio_pkg.MultipartFile.fromBytes(
-        imageBytes,
-        filename: fileName,
-      ),
-      'email': email,
-    });
+  Future<String> uploadImageWeb(
+      Uint8List imageBytes, String fileName, String email) async {
+    try {
+      final formData = dio_pkg.FormData.fromMap({
+        'image': dio_pkg.MultipartFile.fromBytes(
+          imageBytes,
+          filename: fileName,
+        ),
+        'email': email,
+      });
 
-    // Correction: utiliser la bonne route API
-    final response = await _dio.post(
-      '$baseUrl/upload-optician-image',
-      data: formData,
-    );
+      // Correction: utiliser la bonne route API
+      final response = await _dio.post(
+        '$baseUrl/upload-optician-image',
+        data: formData,
+      );
 
-    if (response.statusCode == 200) {
-      return response.data['imageUrl'] ?? '';  // Assurez-vous que la clé correspond à celle renvoyée par votre API
-    } else {
-      throw Exception('Failed to upload image: ${response.statusCode}');
+      if (response.statusCode == 200) {
+        return response.data['imageUrl'] ??
+            ''; // Assurez-vous que la clé correspond à celle renvoyée par votre API
+      } else {
+        throw Exception('Failed to upload image: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error during web image upload: $e');
+      throw e;
     }
-  } catch (e) {
-    print('Error during web image upload: $e');
-    throw e;
   }
-}
 
   Future<String> uploadImage(String filePath, String email) async {
-  try {
-    print('Starting image upload for email: $email, file: $filePath');
+    try {
+      print('Starting image upload for email: $email, file: $filePath');
 
-    // Check if file exists
-    final file = File(filePath);
-    if (!await file.exists()) {
-      throw Exception('File does not exist: $filePath');
+      // Check if file exists
+      final file = File(filePath);
+      if (!await file.exists()) {
+        throw Exception('File does not exist: $filePath');
+      }
+
+      // Correction: utiliser la bonne route API
+      final url = Uri.parse('$baseUrl/upload-optician-image');
+      var request = http.MultipartRequest('POST', url);
+
+      // Add the image file to the request
+      request.files.add(await http.MultipartFile.fromPath(
+          'image', // Assurez-vous que cela correspond au nom attendu par multer
+          filePath,
+          contentType: MediaType('image', 'jpeg')));
+
+      // Add email as a field
+      request.fields['email'] = email;
+
+      print('Sending upload request to: $url');
+      // Send the request
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      print('Upload response status: ${response.statusCode}');
+      print('Upload response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        final imageUrl = responseData['imageUrl'];
+
+        print('Image uploaded successfully. URL: $imageUrl');
+        return imageUrl; // Return the uploaded image URL
+      } else {
+        throw Exception(
+            'Image upload failed: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      print('Error in uploadImage method: $e');
+      throw Exception('Image upload failed: $e');
     }
-
-    // Correction: utiliser la bonne route API
-    final url = Uri.parse('$baseUrl/upload-optician-image');
-    var request = http.MultipartRequest('POST', url);
-
-    // Add the image file to the request
-    request.files.add(await http.MultipartFile.fromPath(
-      'image',  // Assurez-vous que cela correspond au nom attendu par multer
-      filePath,
-      contentType: MediaType('image', 'jpeg')
-    ));
-
-    // Add email as a field
-    request.fields['email'] = email;
-
-    print('Sending upload request to: $url');
-    // Send the request
-    final streamedResponse = await request.send();
-    final response = await http.Response.fromStream(streamedResponse);
-
-    print('Upload response status: ${response.statusCode}');
-    print('Upload response body: ${response.body}');
-
-    if (response.statusCode == 200) {
-      final responseData = json.decode(response.body);
-      final imageUrl = responseData['imageUrl'];
-
-      print('Image uploaded successfully. URL: $imageUrl');
-      return imageUrl; // Return the uploaded image URL
-    } else {
-      throw Exception(
-          'Image upload failed: ${response.statusCode} - ${response.body}');
-    }
-  } catch (e) {
-    print('Error in uploadImage method: $e');
-    throw Exception('Image upload failed: $e');
   }
-}
+
   @override
   Future<void> updateOpticianImage(String email, String imageUrl) async {
     try {
@@ -177,22 +206,26 @@ Future<String> uploadImageWeb(Uint8List imageBytes, String fileName, String emai
   }
 
   // Helper method to fetch optician by email
-@override
-Future<Optician> getOpticianByEmail(String email) async {
-  try {
-    final response = await http.get(Uri.parse('$baseUrl/opticians?email=$email'));
-    if (response.statusCode == 200) {
-      final List<dynamic> data = json.decode(response.body);
-      if (data.isNotEmpty) {
-        return Optician.fromJson(data.first);
+  @override
+  Future<Optician> getOpticianByEmail(String email) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/opticians?email=$email'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        if (data.isNotEmpty) {
+          return Optician.fromJson(data[0]);
+        } else {
+          throw Exception('Optician not found');
+        }
       } else {
-        throw Exception('Optician not found with email: $email');
+        throw Exception('Failed to get optician: ${response.statusCode}');
       }
-    } else {
-      throw Exception('Failed to fetch optician: ${response.statusCode}');
+    } catch (e) {
+      throw Exception('Failed to get optician: $e');
     }
-  } catch (e) {
-    throw Exception('Failed to fetch optician: $e');
   }
-}
 }

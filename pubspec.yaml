@@ -108,6 +108,7 @@ flutter:
     - assets/images/
     - assets/models/scene.gltf
     - assets/models/scene.bin
+    - assets/images/login_illustration.png
 
 
   #   - images/a_dot_ham.jpeg

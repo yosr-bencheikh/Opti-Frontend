@@ -26,4 +26,13 @@ class OpticianRepositoryImpl implements OpticianRepository {
   Future<void> deleteOptician(String email) async {
     await _dataSource.deleteOptician(email);
   }
+
+    @override
+  Future<String> loginWithEmail(String email, String password) async {
+    try {
+      return await _dataSource.loginWithEmail(email, password);
+    } catch (e) {
+      throw Exception('Login failed: $e');
+    }
+  }
 }

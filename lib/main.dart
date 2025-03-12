@@ -7,6 +7,7 @@ import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:opti_app/AuthBinding.dart';
 import 'package:opti_app/Presentation/UI/screens/Admin/admin_panel.dart';
 import 'package:opti_app/Presentation/UI/screens/Opticien/Commande.dart';
+import 'package:opti_app/Presentation/UI/screens/Opticien/LoginScreen.dart';
 import 'package:opti_app/Presentation/UI/screens/Opticien/OpticienDashboardApp.dart';
 import 'package:opti_app/Presentation/UI/screens/Opticien/Product_Screen.dart';
 import 'package:opti_app/Presentation/UI/screens/Opticien/UserScreen.dart';
@@ -154,7 +155,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      initialRoute:'/Admin_pannel',
+      initialRoute: '/splash',
       getPages: [
         GetPage(
           name: '/splash',
@@ -241,7 +242,7 @@ class MyApp extends StatelessWidget {
         ),
         GetPage(
             name: '/OpticienDashboard',
-            page: () => OpticienDashboardScreen(),
+            page: () => OpticianDashboardScreen(),
             binding: AuthBinding()),
         GetPage(
           name: '/products',
@@ -256,6 +257,11 @@ class MyApp extends StatelessWidget {
         GetPage(
           name: '/Commande',
           page: () => AdminOrdersPage(),
+          binding: AuthBinding(),
+        ),
+        GetPage(
+          name: '/LoginOpticien',
+          page: () => LoginScreenOpticien(),
           binding: AuthBinding(),
         ),
       ],

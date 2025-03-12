@@ -396,10 +396,8 @@ class AuthController extends GetxController {
     try {
       isLoading.value = true;
 
-      // Call the repository to log in
       final token = await authRepository.loginWithEmail(email, password);
 
-      // Decode the token to get user ID
       final Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
       final String userId = decodedToken['id']?.toString() ?? '';
 

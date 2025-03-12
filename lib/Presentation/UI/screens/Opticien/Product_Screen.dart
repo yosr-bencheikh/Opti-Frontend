@@ -187,21 +187,7 @@ Widget build(BuildContext context) {
                 ),
               ),
               const SizedBox(width: 12),
-              FilledButton.icon(
-                onPressed: () => _showAddProductDialog(context),
-                icon: const Icon(Icons.person_add),
-            label: const Text('Nouveau produit'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Color.fromARGB(255, 84, 151, 198),
-              foregroundColor: Colors.white,
-              elevation: 2,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
             
-                ),
-              ),
             ],
           ),
         ],
@@ -1038,213 +1024,12 @@ Widget build(BuildContext context) {
     );
   }
 
-void _showAddProductDialog(BuildContext context) {
-  final formKey = GlobalKey<FormState>();
-  String? uploadedImageUrl;
-  
-  // Create product object with empty fields
-  Product product = Product(
-    name: '',
-    description: '',
-    category: '',
-    marque: '',
-    couleur: '',
-    prix: 0,
-    quantiteStock: 0,
-    image: '',
-    typeVerre: '',
-    opticienId: '',
-    averageRating: 0.0,
-    totalReviews: 0,
-  );
-
-  showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (context) => AlertDialog(
-      title: const Text('Ajouter un produit'),
-      content: SingleChildScrollView(
-        child: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Image picker
-              FilePickerExample(
-                onImagePicked: (image) {
-                  _tempSelectedImage = image;
-                },
-              ),
-              const SizedBox(height: 16),
-              
-              // Required fields
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Nom du produit *'),
-                validator: (value) => value?.isEmpty ?? true ? 'Ce champ est requis' : null,
-                onSaved: (value) => product.name = value ?? '',
-              ),
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Description *'),
-                validator: (value) => value?.isEmpty ?? true ? 'Ce champ est requis' : null,
-                onSaved: (value) => product.description = value ?? '',
-              ),
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Catégorie *'),
-                validator: (value) => value?.isEmpty ?? true ? 'Ce champ est requis' : null,
-                onSaved: (value) => product.category = value ?? '',
-              ),
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Marque *'),
-                validator: (value) => value?.isEmpty ?? true ? 'Ce champ est requis' : null,
-                onSaved: (value) => product.marque = value ?? '',
-              ),
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Couleur *'),
-                validator: (value) => value?.isEmpty ?? true ? 'Ce champ est requis' : null,
-                onSaved: (value) => product.couleur = value ?? '',
-              ),
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Type de verre *'),
-                validator: (value) => value?.isEmpty ?? true ? 'Ce champ est requis' : null,
-                onSaved: (value) => product.typeVerre = value ?? '',
-              ),
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Prix *'),
-                keyboardType: TextInputType.number,
-                validator: (value) => value?.isEmpty ?? true ? 'Ce champ est requis' : null,
-                onSaved: (value) => product.prix = double.tryParse(value ?? '0') ?? 0,
-              ),
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Quantité en stock *'),
-                keyboardType: TextInputType.number,
-                validator: (value) => value?.isEmpty ?? true ? 'Ce champ est requis' : null,
-                onSaved: (value) => product.quantiteStock = int.tryParse(value ?? '0') ?? 0,
-              ),
-              
-              // Opticien dropdown
-              DropdownButtonFormField<String>(
-                decoration: const InputDecoration(labelText: 'Boutique *'),
-                items: productController.opticiens.map((opticien) {
-                  return DropdownMenuItem<String>(
-                    value: opticien.id,
-                    child: Text(opticien.nom ?? 'Sans nom'),
-                  );
-                }).toList(),
-                validator: (value) => value?.isEmpty ?? true ? 'Veuillez sélectionner un opticien' : null,
-                onChanged: (value) {
-                  product.opticienId = value ?? '';
-                },
-                onSaved: (value) {
-                  product.opticienId = value ?? '';
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Annuler'),
-        ),
-        ElevatedButton(
-          onPressed: () async {
-            if (formKey.currentState?.validate() ?? false) {
-              formKey.currentState?.save();
-              
-              // Afficher l'indicateur de chargement dans le bouton
-              BuildContext dialogContext = context;
-              bool isLoading = true;
-              
-              showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (BuildContext context) {
-                  return StatefulBuilder(
-                    builder: (context, setState) {
-                      return AlertDialog(
-                        title: const Text('Ajout en cours'),
-                        content: Row(
-                          children: [
-                            const CircularProgressIndicator(),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Text('Ajout du produit "${product.name}"...'),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-                  );
-                },
-              );
-              
-              try {
-                // Upload image first if selected
-                if (_tempSelectedImage != null && _tempSelectedImage!.bytes != null) {
-                  final imageUrl = await productController.uploadImageWeb(
-                    _tempSelectedImage!.bytes!,
-                    _tempSelectedImage!.name,
-                    '', // Empty productId for now
-                  );
-                  product.image = imageUrl; // Set the image URL
-                }
-                
-                // Now create the product with all fields populated
-                final success = await productController.addProduct(product);
-                
-                if (success) {
-                  // Fermer la boîte de dialogue de chargement
-                  Navigator.of(context).pop();
-                  
-                  // Fermer la boîte de dialogue du formulaire
-                  Navigator.of(dialogContext).pop();
-                  
-                  ScaffoldMessenger.of(dialogContext).showSnackBar(
-                    const SnackBar(
-                      content: Text('Produit ajouté avec succès'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                } else {
-                  // Fermer la boîte de dialogue de chargement
-                  Navigator.of(context).pop();
-                  
-                  ScaffoldMessenger.of(dialogContext).showSnackBar(
-                    SnackBar(
-                      content: Text('Erreur: ${productController.error}'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              } catch (e) {
-                // Fermer la boîte de dialogue de chargement
-                Navigator.of(context).pop();
-                
-                ScaffoldMessenger.of(dialogContext).showSnackBar(
-                  SnackBar(
-                    content: Text('Erreur: $e'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
-            }
-          },
-          child: const Text('Enregistrer'),
-        ),
-      ],
-    ),
-  );
-}
 
 void _showEditProductDialog(BuildContext context, Product product) {
   final formKey = GlobalKey<FormState>();
-  // Variable pour stocker l'image temporairement sélectionnée
   PlatformFile? _tempSelectedImage;
-  
-  // Variable d'état pour contrôler l'affichage des images
   bool hasNewImage = false;
-  
+
   showDialog(
     context: context,
     barrierDismissible: false,
@@ -1258,9 +1043,8 @@ void _showEditProductDialog(BuildContext context, Product product) {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Affichage conditionnel: soit la nouvelle image, soit l'ancienne
+                  // Affichage conditionnel de l'image
                   if (hasNewImage && _tempSelectedImage != null)
-                    // Afficher la nouvelle image sélectionnée
                     Container(
                       height: 120,
                       width: double.infinity,
@@ -1272,10 +1056,9 @@ void _showEditProductDialog(BuildContext context, Product product) {
                               _tempSelectedImage!.bytes!,
                               fit: BoxFit.contain,
                             )
-                          : Center(child: Text('Aperçu non disponible')),
+                          : const Center(child: Text('Aperçu non disponible')),
                     )
                   else if (product.image.isNotEmpty)
-                    // Afficher l'image actuelle du produit
                     Container(
                       height: 120,
                       width: double.infinity,
@@ -1288,18 +1071,17 @@ void _showEditProductDialog(BuildContext context, Product product) {
                       ),
                     )
                   else
-                    // Aucune image disponible
                     Container(
                       height: 120,
                       width: double.infinity,
                       decoration: BoxDecoration(
                         border: Border.all(color: Colors.grey),
                       ),
-                      child: Center(child: Text('Aucune image')),
+                      child: const Center(child: Text('Aucune image')),
                     ),
                   const SizedBox(height: 8),
-                  
-                  // Image picker pour choisir une nouvelle image
+
+                  // Sélection d'une nouvelle image
                   FilePickerExample(
                     onImagePicked: (image) {
                       setState(() {
@@ -1308,12 +1090,12 @@ void _showEditProductDialog(BuildContext context, Product product) {
                       });
                     },
                   ),
-                  
+
                   // Bouton pour revenir à l'image précédente
                   if (hasNewImage && product.image.isNotEmpty)
                     TextButton.icon(
-                      icon: Icon(Icons.restore),
-                      label: Text('Revenir à l\'image précédente'),
+                      icon: const Icon(Icons.restore),
+                      label: const Text('Revenir à l\'image précédente'),
                       onPressed: () {
                         setState(() {
                           _tempSelectedImage = null;
@@ -1321,10 +1103,10 @@ void _showEditProductDialog(BuildContext context, Product product) {
                         });
                       },
                     ),
-                  
+
                   const SizedBox(height: 16),
-                  
-                  // Champs pour le formulaire (les mêmes que précédemment)
+
+                  // Formulaire de modification
                   TextFormField(
                     decoration: const InputDecoration(labelText: 'Nom du produit *'),
                     initialValue: product.name,
@@ -1375,18 +1157,28 @@ void _showEditProductDialog(BuildContext context, Product product) {
                     validator: (value) => value?.isEmpty ?? true ? 'Ce champ est requis' : null,
                     onSaved: (value) => product.quantiteStock = int.tryParse(value ?? '0') ?? 0,
                   ),
-                  
-                  // Opticien dropdown
+
+                  // Dropdown pour sélectionner la boutique
                   DropdownButtonFormField<String>(
                     decoration: const InputDecoration(labelText: 'Boutique *'),
-                    value: product.opticienId,
-                    items: productController.opticiens.map((opticien) {
-                      return DropdownMenuItem<String>(
-                        value: opticien.id,
-                        child: Text(opticien.nom ?? 'Sans nom'),
-                      );
-                    }).toList(),
-                    validator: (value) => value?.isEmpty ?? true ? 'Veuillez sélectionner un opticien' : null,
+                    value: product.opticienId.isEmpty ||
+                            !productController.opticiens
+                                .any((opticien) => opticien.id == product.opticienId)
+                        ? null
+                        : product.opticienId,
+                    items: [
+                      const DropdownMenuItem<String>(
+                        value: null,
+                        child: Text('Sélectionnez une boutique'),
+                      ),
+                      ...productController.opticiens.map((opticien) {
+                        return DropdownMenuItem<String>(
+                          value: opticien.id,
+                          child: Text(opticien.nom),
+                        );
+                      }).toList(),
+                    ],
+                    validator: (value) => value?.isEmpty ?? true ? 'Veuillez sélectionner une boutique' : null,
                     onChanged: (value) {
                       product.opticienId = value ?? '';
                     },
@@ -1407,10 +1199,8 @@ void _showEditProductDialog(BuildContext context, Product product) {
               onPressed: () async {
                 if (formKey.currentState?.validate() ?? false) {
                   formKey.currentState?.save();
-                  
+
                   // Afficher l'indicateur de chargement
-                  BuildContext dialogContext = context;
-                  
                   showDialog(
                     context: context,
                     barrierDismissible: false,
@@ -1429,28 +1219,29 @@ void _showEditProductDialog(BuildContext context, Product product) {
                       );
                     },
                   );
-                  
+
                   try {
                     // Uploader la nouvelle image si sélectionnée
                     if (hasNewImage && _tempSelectedImage != null && _tempSelectedImage!.bytes != null) {
                       final imageUrl = await productController.uploadImageWeb(
                         _tempSelectedImage!.bytes!,
                         _tempSelectedImage!.name ?? 'image.jpg',
-                        product.id ?? '', // Utiliser l'ID existant du produit
+                        product.id ?? '',
                       );
-                      product.image = imageUrl; // Mettre à jour l'URL de l'image
+                      product.image = imageUrl;
                     }
-                    
-                    // Mettre à jour le produit avec tous les champs
+
+                    // Mettre à jour le produit
                     await productController.updateProduct(product.id!, product);
-                    
+
                     // Fermer la boîte de dialogue de chargement
                     Navigator.of(context).pop();
-                    
+
                     // Fermer la boîte de dialogue du formulaire
-                    Navigator.of(dialogContext).pop();
-                    
-                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                    Navigator.of(context).pop();
+
+                    // Afficher un message de succès
+                    ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Produit mis à jour avec succès'),
                         backgroundColor: Colors.green,
@@ -1459,8 +1250,9 @@ void _showEditProductDialog(BuildContext context, Product product) {
                   } catch (e) {
                     // Fermer la boîte de dialogue de chargement
                     Navigator.of(context).pop();
-                    
-                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+
+                    // Afficher un message d'erreur
+                    ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text('Erreur: $e'),
                         backgroundColor: Colors.red,
@@ -1473,11 +1265,10 @@ void _showEditProductDialog(BuildContext context, Product product) {
             ),
           ],
         );
-      }
+      },
     ),
   );
 }
-
 Widget _buildProductForm(GlobalKey<FormState> formKey, Product product,
     {required bool isEditing}) {
   return Form(

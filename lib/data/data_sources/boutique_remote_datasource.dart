@@ -15,7 +15,7 @@ class BoutiqueRemoteDataSourceImpl implements BoutiqueRemoteDataSource {
 
   BoutiqueRemoteDataSourceImpl({
     required this.client,
-    this.baseUrl = 'http://localhost:3000',
+    this.baseUrl = 'http://192.168.1.22:3000',
   });
 
   @override
@@ -65,7 +65,8 @@ class BoutiqueRemoteDataSourceImpl implements BoutiqueRemoteDataSource {
       print('Response body: ${response.body}');
 
       if (response.statusCode != 201) {
-        throw Exception('Server returned ${response.statusCode}: ${response.body}');
+        throw Exception(
+            'Server returned ${response.statusCode}: ${response.body}');
       }
     } catch (e) {
       print('Error adding optician: $e');
@@ -91,7 +92,8 @@ class BoutiqueRemoteDataSourceImpl implements BoutiqueRemoteDataSource {
       print('Response body: ${response.body}');
 
       if (response.statusCode != 200) {
-        throw Exception('Server returned ${response.statusCode}: ${response.body}');
+        throw Exception(
+            'Server returned ${response.statusCode}: ${response.body}');
       }
     } catch (e) {
       print('Error updating optician: $e');
@@ -116,7 +118,8 @@ class BoutiqueRemoteDataSourceImpl implements BoutiqueRemoteDataSource {
       print('Response body: ${response.body}');
 
       if (response.statusCode != 200) {
-        throw Exception('Server returned ${response.statusCode}: ${response.body}');
+        throw Exception(
+            'Server returned ${response.statusCode}: ${response.body}');
       }
     } catch (e) {
       print('Error deleting optician: $e');

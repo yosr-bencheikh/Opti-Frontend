@@ -7,10 +7,8 @@ import 'package:http_parser/http_parser.dart';
 import 'package:opti_app/domain/entities/Boutique.dart';
 import 'package:opti_app/domain/entities/product_entity.dart';
 
-
-
 class ProductDatasource {
-  final String baseUrl = 'http://localhost:3000/api/products';
+  final String baseUrl = 'http://192.168.1.22:3000/api/products';
   final Dio _dio = Dio(); // Créez une instance de Dio
 
   Future<List<Product>> getProductsByOptician(String opticianId) async {

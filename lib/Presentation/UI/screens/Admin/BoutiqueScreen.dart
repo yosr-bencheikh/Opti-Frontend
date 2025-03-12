@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:opti_app/Presentation/controllers/boutique_controller.dart';
+import 'package:opti_app/core/constants/regions.dart';
 import 'package:opti_app/domain/entities/Boutique.dart';
 
 class BoutiqueScreen extends StatefulWidget {
@@ -17,11 +18,11 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
   final ImagePicker _picker = ImagePicker();
   File? _imageFile;
   TextEditingController _searchController = TextEditingController();
-  
+
   // Pagination variables
   int _currentPage = 0;
   final int _itemsPerPage = 10;
-  
+
   @override
   void initState() {
     super.initState();
@@ -29,38 +30,39 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
 
   List<Opticien> get _filteredOpticiens {
     List<Opticien> filteredList = opticienController.opticiensList;
-    
+
     // Apply search filter
     if (_searchController.text.isNotEmpty) {
       final query = _searchController.text.toLowerCase();
       filteredList = filteredList.where((opticien) {
         return opticien.nom.toLowerCase().contains(query) ||
             opticien.adresse.toLowerCase().contains(query) ||
+            opticien.ville.toLowerCase().contains(query) || // New field
             opticien.email.toLowerCase().contains(query) ||
             opticien.phone.toLowerCase().contains(query) ||
             opticien.description.toLowerCase().contains(query);
       }).toList();
     }
-    
+
     return filteredList;
   }
-  
+
   // Get paginated data
   List<Opticien> get _paginatedOpticiens {
     final filteredList = _filteredOpticiens;
     final startIndex = _currentPage * _itemsPerPage;
-    
+
     if (startIndex >= filteredList.length) {
       return [];
     }
-    
-    final endIndex = (startIndex + _itemsPerPage < filteredList.length) 
-        ? startIndex + _itemsPerPage 
+
+    final endIndex = (startIndex + _itemsPerPage < filteredList.length)
+        ? startIndex + _itemsPerPage
         : filteredList.length;
-        
+
     return filteredList.sublist(startIndex, endIndex);
   }
-  
+
   int get _pageCount {
     return (_filteredOpticiens.length / _itemsPerPage).ceil();
   }
@@ -69,8 +71,8 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[50],
-      body: Obx(() =>
-        Column(
+      body: Obx(
+        () => Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildHeader(),
@@ -84,9 +86,12 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
   }
 
   Widget _buildHeader() {
-     // Calculer les indices pour l'affichage
-  final startIndex = _filteredOpticiens.isEmpty ? 0 : _currentPage * _itemsPerPage + 1;
-  final endIndex = _paginatedOpticiens.isEmpty ? 0 : startIndex + _paginatedOpticiens.length - 1;
+    // Calculer les indices pour l'affichage
+    final startIndex =
+        _filteredOpticiens.isEmpty ? 0 : _currentPage * _itemsPerPage + 1;
+    final endIndex = _paginatedOpticiens.isEmpty
+        ? 0
+        : startIndex + _paginatedOpticiens.length - 1;
     return Container(
       padding: const EdgeInsets.fromLTRB(32, 40, 32, 20),
       decoration: BoxDecoration(
@@ -111,39 +116,38 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
                   Text(
                     'Gestion des Boutiques',
                     style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                  letterSpacing: 0.5,
-                ),
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                      letterSpacing: 0.5,
+                    ),
                   ),
                   const SizedBox(height: 8),
-                
-                // Ajout du texte pour afficher le nombre de boutiques
-                Text(
-                  '  ${_filteredOpticiens.length} boutiques trouvés',
-                  style: TextStyle(
-                  fontSize: 14,
-                  color: const Color(0xFF757575),
-                  fontWeight: FontWeight.w500,
-                ),
-                ),
-              
+
+                  // Ajout du texte pour afficher le nombre de boutiques
+                  Text(
+                    '  ${_filteredOpticiens.length} boutiques trouvés',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: const Color(0xFF757575),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ],
               ),
               ElevatedButton.icon(
                 onPressed: () => _showAddBoutiqueDialog(context),
                 icon: const Icon(Icons.person_add),
-            label: const Text('Nouveau boutique'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Color.fromARGB(255, 84, 151, 198),
-              foregroundColor: Colors.white,
-              elevation: 2,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            
+                label: const Text('Nouveau boutique'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color.fromARGB(255, 84, 151, 198),
+                  foregroundColor: Colors.white,
+                  elevation: 2,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
               ),
             ],
@@ -163,22 +167,25 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
                 });
               },
               decoration: InputDecoration(
-                    hintText: 'Rechercher un boutique',
-                    prefixIcon: Icon(Icons.search, color:  Color.fromARGB(255, 84, 151, 198)),
-                    filled: true,
-                    fillColor: Color(0xFFF5F7FA),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide.none,
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(color: Color.fromARGB(255, 84, 151, 198), width: 2),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-                    hintStyle: TextStyle(color: Color(0xFF757575)),
-                  ),
-                  style: TextStyle(color: const Color(0xFF212121), fontSize: 15),
+                hintText: 'Rechercher un boutique',
+                prefixIcon: Icon(Icons.search,
+                    color: Color.fromARGB(255, 84, 151, 198)),
+                filled: true,
+                fillColor: Color(0xFFF5F7FA),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(
+                      color: Color.fromARGB(255, 84, 151, 198), width: 2),
+                ),
+                contentPadding:
+                    const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                hintStyle: TextStyle(color: Color(0xFF757575)),
+              ),
+              style: TextStyle(color: const Color(0xFF212121), fontSize: 15),
             ),
           ),
         ],
@@ -219,7 +226,8 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
               child: const Text('Réessayer'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF3A7BD5),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
             ),
           ],
@@ -293,6 +301,7 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
                     columns: const [
                       DataColumn(label: Text('Nom')),
                       DataColumn(label: Text('Adresse')),
+                      DataColumn(label: Text('Ville')), // New column
                       DataColumn(label: Text('Téléphone')),
                       DataColumn(label: Text('Email')),
                       DataColumn(label: Text('Description')),
@@ -316,6 +325,16 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
                               constraints: const BoxConstraints(maxWidth: 200),
                               child: Text(
                                 opticien.adresse,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                          DataCell(
+                            Container(
+                              constraints: const BoxConstraints(maxWidth: 150),
+                              child: Text(
+                                opticien
+                                    .ville, // Add this line for the new column
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -363,14 +382,14 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
       ),
     );
   }
-  
+
   Widget _buildPagination() {
     final totalPages = _pageCount;
-    
+
     if (totalPages <= 1) {
       return const SizedBox.shrink();
     }
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
       decoration: BoxDecoration(
@@ -408,7 +427,8 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
               ),
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
                   color: Colors.grey[100],
                   borderRadius: BorderRadius.circular(4),
@@ -459,7 +479,7 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
       ],
     );
   }
-  
+
   void _showAddBoutiqueDialog(BuildContext context) {
     final formKey = GlobalKey<FormState>();
     final nomController = TextEditingController();
@@ -468,7 +488,8 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
     final emailController = TextEditingController();
     final descriptionController = TextEditingController();
     final openingHoursController = TextEditingController();
-    
+    final villeController = TextEditingController();
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -514,7 +535,8 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
                           label: 'Nom',
                           hint: 'Entrez le nom de la boutique',
                           prefixIcon: Icons.store,
-                          validator: (value) => value?.isEmpty ?? true ? 'Champ requis' : null,
+                          validator: (value) =>
+                              value?.isEmpty ?? true ? 'Champ requis' : null,
                         ),
                         const SizedBox(height: 16),
                         _buildFormField(
@@ -522,15 +544,27 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
                           label: 'Adresse',
                           hint: 'Entrez l\'adresse complète',
                           prefixIcon: Icons.location_on,
-                          validator: (value) => value?.isEmpty ?? true ? 'Champ requis' : null,
+                          validator: (value) =>
+                              value?.isEmpty ?? true ? 'Champ requis' : null,
                         ),
+                        _buildFormField(
+                          controller: villeController,
+                          label: 'Ville',
+                          hint: 'Sélectionnez la ville',
+                          prefixIcon: Icons.location_city,
+                          validator: (value) =>
+                              value?.isEmpty ?? true ? 'Champ requis' : null,
+                          isDropdown: true, // Indicate that this is a dropdown
+                        ),
+                        const SizedBox(height: 16),
                         const SizedBox(height: 16),
                         _buildFormField(
                           controller: phoneController,
                           label: 'Téléphone',
                           hint: 'Ex: +33 1 23 45 67 89',
                           prefixIcon: Icons.phone,
-                          validator: (value) => value?.isEmpty ?? true ? 'Champ requis' : null,
+                          validator: (value) =>
+                              value?.isEmpty ?? true ? 'Champ requis' : null,
                         ),
                         const SizedBox(height: 16),
                         _buildFormField(
@@ -540,7 +574,8 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
                           prefixIcon: Icons.email,
                           validator: (value) {
                             if (value?.isEmpty ?? true) return 'Champ requis';
-                            if (!GetUtils.isEmail(value!)) return 'Email invalide';
+                            if (!GetUtils.isEmail(value!))
+                              return 'Email invalide';
                             return null;
                           },
                         ),
@@ -551,7 +586,8 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
                           hint: 'Décrivez la boutique en quelques mots',
                           prefixIcon: Icons.description,
                           maxLines: 3,
-                          validator: (value) => value?.isEmpty ?? true ? 'Champ requis' : null,
+                          validator: (value) =>
+                              value?.isEmpty ?? true ? 'Champ requis' : null,
                         ),
                         const SizedBox(height: 16),
                         _buildFormField(
@@ -559,7 +595,8 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
                           label: 'Horaires d\'ouverture',
                           hint: 'Ex: Lun-Ven: 9h-18h, Sam: 9h-12h',
                           prefixIcon: Icons.access_time,
-                          validator: (value) => value?.isEmpty ?? true ? 'Champ requis' : null,
+                          validator: (value) =>
+                              value?.isEmpty ?? true ? 'Champ requis' : null,
                         ),
                       ],
                     ),
@@ -573,7 +610,8 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
                   OutlinedButton(
                     onPressed: () => Navigator.pop(dialogContext),
                     style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -586,31 +624,36 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
                       if (formKey.currentState?.validate() ?? false) {
                         // Create a new Opticien with the form data
                         final opticien = Opticien(
-                          id: '',  // ID will be assigned by the server
+                          id: '', // ID will be assigned by the server
                           nom: nomController.text,
                           adresse: adresseController.text,
+                          ville: villeController.text, // New field
                           phone: phoneController.text,
                           email: emailController.text,
                           description: descriptionController.text,
                           opening_hours: openingHoursController.text,
                         );
-                        
+
                         // Close the dialog first to avoid context issues
                         Navigator.pop(dialogContext);
-                        
+
                         // Add the optician
-                        final success = await opticienController.addOpticien(opticien);
-                        
+                        final success =
+                            await opticienController.addOpticien(opticien);
+
                         // Show a snackbar with the result
                         if (!context.mounted) return;
                         final scaffold = ScaffoldMessenger.of(context);
                         scaffold.showSnackBar(
                           SnackBar(
                             content: Text(
-                              success ? 'Boutique ajoutée avec succès' : 'Erreur: ${opticienController.error.value}',
+                              success
+                                  ? 'Boutique ajoutée avec succès'
+                                  : 'Erreur: ${opticienController.error.value}',
                               style: const TextStyle(color: Colors.white),
                             ),
-                            backgroundColor: success ? Colors.green : Colors.red,
+                            backgroundColor:
+                                success ? Colors.green : Colors.red,
                             behavior: SnackBarBehavior.floating,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
@@ -629,7 +672,8 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF3A7BD5),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -655,50 +699,106 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
     required IconData prefixIcon,
     required String? Function(String?) validator,
     int maxLines = 1,
+    bool isDropdown = false, // New parameter to check if it's a dropdown
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: Colors.blueGrey[700],
+    if (isDropdown) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Colors.blueGrey[700],
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
-            prefixIcon: Icon(prefixIcon, color: Colors.grey[500], size: 20),
-            contentPadding: const EdgeInsets.all(16),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey.shade300),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            value: controller.text.isNotEmpty ? controller.text : null,
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+              prefixIcon: Icon(prefixIcon, color: Colors.grey[500], size: 20),
+              contentPadding: const EdgeInsets.all(16),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide:
+                    const BorderSide(color: Color(0xFF3A7BD5), width: 1.5),
+              ),
+              errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.red.shade300),
+              ),
+              filled: true,
+              fillColor: Colors.grey[50],
             ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey.shade300),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Color(0xFF3A7BD5), width: 1.5),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.red.shade300),
-            ),
-            filled: true,
-            fillColor: Colors.grey[50],
+            items: Regions.list.map((String region) {
+              return DropdownMenuItem<String>(
+                value: region,
+                child: Text(region),
+              );
+            }).toList(),
+            onChanged: (String? newValue) {
+              controller.text = newValue ?? ''; // Update the controller text
+            },
           ),
-          validator: validator,
-          maxLines: maxLines,
-        ),
-      ],
-    );
+        ],
+      );
+    } else {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Colors.blueGrey[700],
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: controller,
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+              prefixIcon: Icon(prefixIcon, color: Colors.grey[500], size: 20),
+              contentPadding: const EdgeInsets.all(16),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide:
+                    const BorderSide(color: Color(0xFF3A7BD5), width: 1.5),
+              ),
+              errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.red.shade300),
+              ),
+              filled: true,
+              fillColor: Colors.grey[50],
+            ),
+            validator: validator,
+            maxLines: maxLines,
+          ),
+        ],
+      );
+    }
   }
 
   void _showEditBoutiqueDialog(BuildContext context, Opticien opticien) {
@@ -707,8 +807,11 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
     final adresseController = TextEditingController(text: opticien.adresse);
     final phoneController = TextEditingController(text: opticien.phone);
     final emailController = TextEditingController(text: opticien.email);
-    final descriptionController = TextEditingController(text: opticien.description);
-    final openingHoursController = TextEditingController(text: opticien.opening_hours);
+    final descriptionController =
+        TextEditingController(text: opticien.description);
+    final openingHoursController =
+        TextEditingController(text: opticien.opening_hours);
+    final villeController = TextEditingController(text: opticien.ville);
 
     showDialog(
       context: context,
@@ -754,7 +857,8 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
                           label: 'Nom',
                           hint: 'Entrez le nom de la boutique',
                           prefixIcon: Icons.store,
-                          validator: (value) => value?.isEmpty ?? true ? 'Champ requis' : null,
+                          validator: (value) =>
+                              value?.isEmpty ?? true ? 'Champ requis' : null,
                         ),
                         const SizedBox(height: 16),
                         _buildFormField(
@@ -762,7 +866,17 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
                           label: 'Adresse',
                           hint: 'Entrez l\'adresse complète',
                           prefixIcon: Icons.location_on,
-                          validator: (value) => value?.isEmpty ?? true ? 'Champ requis' : null,
+                          validator: (value) =>
+                              value?.isEmpty ?? true ? 'Champ requis' : null,
+                        ),
+                        _buildFormField(
+                          controller: villeController,
+                          label: 'Ville',
+                          hint: 'Sélectionnez la ville',
+                          prefixIcon: Icons.location_city,
+                          validator: (value) =>
+                              value?.isEmpty ?? true ? 'Champ requis' : null,
+                          isDropdown: true, // Indicate that this is a dropdown
                         ),
                         const SizedBox(height: 16),
                         _buildFormField(
@@ -770,7 +884,8 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
                           label: 'Téléphone',
                           hint: 'Ex: +33 1 23 45 67 89',
                           prefixIcon: Icons.phone,
-                          validator: (value) => value?.isEmpty ?? true ? 'Champ requis' : null,
+                          validator: (value) =>
+                              value?.isEmpty ?? true ? 'Champ requis' : null,
                         ),
                         const SizedBox(height: 16),
                         _buildFormField(
@@ -780,7 +895,8 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
                           prefixIcon: Icons.email,
                           validator: (value) {
                             if (value?.isEmpty ?? true) return 'Champ requis';
-                            if (!GetUtils.isEmail(value!)) return 'Email invalide';
+                            if (!GetUtils.isEmail(value!))
+                              return 'Email invalide';
                             return null;
                           },
                         ),
@@ -791,7 +907,8 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
                           hint: 'Décrivez la boutique en quelques mots',
                           prefixIcon: Icons.description,
                           maxLines: 3,
-                          validator: (value) => value?.isEmpty ?? true ? 'Champ requis' : null,
+                          validator: (value) =>
+                              value?.isEmpty ?? true ? 'Champ requis' : null,
                         ),
                         const SizedBox(height: 16),
                         _buildFormField(
@@ -799,7 +916,8 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
                           label: 'Horaires d\'ouverture',
                           hint: 'Ex: Lun-Ven: 9h-18h, Sam: 9h-12h',
                           prefixIcon: Icons.access_time,
-                          validator: (value) => value?.isEmpty ?? true ? 'Champ requis' : null,
+                          validator: (value) =>
+                              value?.isEmpty ?? true ? 'Champ requis' : null,
                         ),
                       ],
                     ),
@@ -813,7 +931,8 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
                   OutlinedButton(
                     onPressed: () => Navigator.pop(dialogContext),
                     style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -829,28 +948,33 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
                           id: opticien.id,
                           nom: nomController.text,
                           adresse: adresseController.text,
+                          ville: villeController.text, // New field
                           phone: phoneController.text,
                           email: emailController.text,
                           description: descriptionController.text,
                           opening_hours: openingHoursController.text,
                         );
-                        
+
                         // Close the dialog first to avoid context issues
                         Navigator.pop(dialogContext);
-                        
+
                         // Update the optician
-                        final success = await opticienController.updateOpticien(opticien.id, updatedOpticien);
-                        
+                        final success = await opticienController.updateOpticien(
+                            opticien.id, updatedOpticien);
+
                         // Show a snackbar with the result
                         if (!context.mounted) return;
                         final scaffold = ScaffoldMessenger.of(context);
                         scaffold.showSnackBar(
                           SnackBar(
                             content: Text(
-                              success ? 'Boutique mise à jour avec succès' : 'Erreur: ${opticienController.error.value}',
+                              success
+                                  ? 'Boutique mise à jour avec succès'
+                                  : 'Erreur: ${opticienController.error.value}',
                               style: const TextStyle(color: Colors.white),
                             ),
-                            backgroundColor: success ? Colors.green : Colors.red,
+                            backgroundColor:
+                                success ? Colors.green : Colors.red,
                             behavior: SnackBarBehavior.floating,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
@@ -869,7 +993,8 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF3A7BD5),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -888,7 +1013,6 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
     );
   }
 
-
   void _showDeleteConfirmation(BuildContext context, Opticien opticien) {
     showDialog(
       context: context,
@@ -905,17 +1029,18 @@ class _BoutiqueScreenState extends State<BoutiqueScreen> {
             onPressed: () async {
               // Close the dialog first to avoid context issues
               Navigator.pop(dialogContext);
-              
+
               // Delete the optician
-              final success = await opticienController.deleteOpticien(opticien.id);
-              
+              final success =
+                  await opticienController.deleteOpticien(opticien.id);
+
               // Show a snackbar with the result
               final scaffold = ScaffoldMessenger.of(context);
               scaffold.showSnackBar(
                 SnackBar(
-                  content: Text(success 
-                    ? 'Boutique supprimée avec succès' 
-                    : 'Erreur: ${opticienController.error.value}'),
+                  content: Text(success
+                      ? 'Boutique supprimée avec succès'
+                      : 'Erreur: ${opticienController.error.value}'),
                   backgroundColor: success ? Colors.green : Colors.red,
                 ),
               );

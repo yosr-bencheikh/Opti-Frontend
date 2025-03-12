@@ -1,48 +1,580 @@
-import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:opti_app/Presentation/UI/screens/Opticien/Commande.dart';
-import 'package:opti_app/Presentation/UI/screens/Opticien/Product_Screen.dart';
-import 'package:opti_app/Presentation/UI/screens/Opticien/UserScreen.dart';
+import 'package:http/http.dart' as http;
 
-// Main app
-class OpticianApp extends StatelessWidget {
-  const OpticianApp({Key? key}) : super(key: key);
+import 'package:opti_app/Presentation/UI/screens/User/Monthly_sales_chart.dart';
+import 'package:opti_app/Presentation/UI/screens/User/Order_Pie_Chart.dart';
 
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
+import 'package:opti_app/Presentation/UI/screens/User/User_donut_chart.dart';
+import 'package:opti_app/Presentation/controllers/OpticianController.dart';
+
+import 'package:opti_app/Presentation/controllers/OrderController.dart';
+import 'package:opti_app/Presentation/controllers/boutique_controller.dart';
+import 'package:opti_app/Presentation/controllers/product_controller.dart';
+import 'package:opti_app/Presentation/controllers/user_controller.dart';
+import 'package:opti_app/data/data_sources/OrderDataSource.dart';
+import 'package:opti_app/data/data_sources/boutique_remote_datasource.dart';
+import 'package:opti_app/data/data_sources/product_datasource.dart';
+import 'package:opti_app/data/data_sources/user_datasource.dart';
+import 'package:opti_app/data/repositories/OrderRepositoryImpl.dart';
+import 'package:opti_app/data/repositories/boutique_repository_impl.dart';
+import 'package:opti_app/data/repositories/product_repository_impl.dart';
+
+import 'package:opti_app/domain/repositories/OrderRepository.dart';
+import 'package:opti_app/domain/repositories/OpticianRepository.dart';
+import 'package:opti_app/data/repositories/OpticianRepositoryImpl.dart';
+import 'package:opti_app/data/data_sources/OpticianDataSource.dart';
+import 'package:opti_app/domain/repositories/boutique_repository.dart';
+import 'package:opti_app/domain/repositories/product_repository.dart';
+
+void main() {
+  // Initialize controllers before app starts
+  final client = http.Client();
+  Get.put<http.Client>(client); // Register UserDataSource and UserController
+  final userDataSource = UserDataSourceImpl(client: client);
+  Get.put<UserDataSource>(userDataSource);
+  final userController = UserController(userDataSource);
+  Get.put<UserController>(userController);
+
+  final orderDataSource = OrderDataSourceImpl(client: client);
+  Get.put<OrderDataSource>(orderDataSource);
+  final orderRepository = OrderRepositoryImpl(dataSource: orderDataSource);
+  Get.put<OrderRepository>(orderRepository);
+  Get.put<OrderController>(OrderController(orderRepository: orderRepository));
+
+  final opticienRemoteDataSource = OpticianDataSourceImpl();
+  Get.put<OpticianDataSource>(opticienRemoteDataSource);
+  final opticienRepository = OpticianRepositoryImpl(opticienRemoteDataSource);
+  Get.put<OpticianRepository>(opticienRepository);
+  Get.put<OpticianController>(OpticianController());
+
+  final boutiqueRemoteDataSource = BoutiqueRemoteDataSourceImpl(client: client);
+  Get.put<BoutiqueRemoteDataSource>(boutiqueRemoteDataSource);
+  final boutiqueRepository = BoutiqueRepositoryImpl(boutiqueRemoteDataSource);
+  Get.put<BoutiqueRepository>(boutiqueRepository);
+  Get.put<BoutiqueController>(
+    BoutiqueController(boutiqueRepository: boutiqueRepository),
+  );
+
+  final productRemoteDataSource = ProductDatasource();
+  Get.put<ProductDatasource>(productRemoteDataSource);
+  final productRepository =
+      ProductRepositoryImpl(dataSource: productRemoteDataSource);
+  Get.put<ProductRepository>(productRepository);
+  Get.put<ProductController>(
+      ProductController(productRepository, productRemoteDataSource));
+
+  runApp(
+    GetMaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'OptiVision Dashboard',
       theme: ThemeData(
         primarySwatch: Colors.blue,
         fontFamily: 'Poppins',
       ),
-      home: const OpticienDashboardScreen(),
-    );
-  }
+      home: const OpticianDashboardScreen(),
+    ),
+  );
 }
 
 // Dashboard screen
-class OpticienDashboardScreen extends StatefulWidget {
-  const OpticienDashboardScreen({Key? key}) : super(key: key);
+class OpticianDashboardScreen extends StatefulWidget {
+  const OpticianDashboardScreen({Key? key}) : super(key: key);
 
   @override
-  State<OpticienDashboardScreen> createState() => _DashboardScreenState();
+  State<OpticianDashboardScreen> createState() =>
+      _OpticianDashboardScreenState();
 }
 
-// Reusable sidebar component
+class _OpticianDashboardScreenState extends State<OpticianDashboardScreen> {
+  final UserController userController = Get.find<UserController>();
+  final ProductController productController = Get.find<ProductController>();
+  final BoutiqueController boutiqueController = Get.find<BoutiqueController>();
+  final OrderController orderController = Get.find<OrderController>();
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchData(); // Fetch data when the screen is initialized
+  }
+
+  Future<void> _fetchData() async {
+    await userController.fetchUsers();
+    await productController.loadProducts();
+    await boutiqueController.getOpticien();
+    await orderController.loadAllOrders();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F5F5),
+      body: Row(
+        children: [
+          // Sidebar
+          CustomSidebar(currentPage: 'Dashboard'), // Use CustomSidebar here
+
+          // Main Content
+          Expanded(
+            child: SingleChildScrollView(
+              // Make the body scrollable
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHeader(context),
+                  const SizedBox(height: 20),
+                  _buildStatsGrid(userController, productController,
+                      boutiqueController, orderController),
+                  const SizedBox(height: 30),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Popular Products Chart
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildSectionTitle('Top 5 Produits'),
+                            _buildProductsChart(),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 30),
+
+                      // User Repartition Chart
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildSectionTitle('Répartition des utilisateurs'),
+                            UserDistributionChart(),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 30),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Order Status Chart
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildSectionTitle('Répartition des commandes'),
+                            OrderStatusChart(),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 30),
+
+                      // Monthly Sales Chart
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildSectionTitle(
+                                'Tendances des revenus mensuels'),
+                            MonthlySalesChart(),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title) => Padding(
+        padding: const EdgeInsets.only(bottom: 15),
+        child: Text(
+          title,
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+      );
+
+  Widget _buildHeader(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        const Text(
+          'Tableau de bord',
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        ),
+        // Other header elements...
+      ],
+    );
+  }
+
+  Widget _buildStatsGrid(
+      UserController userController,
+      ProductController productController,
+      BoutiqueController boutiqueController,
+      OrderController orderController) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final crossAxisCount = constraints.maxWidth < 600
+            ? 1
+            : constraints.maxWidth < 900
+                ? 2
+                : 4;
+
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            crossAxisSpacing: 20,
+            mainAxisSpacing: 20,
+            childAspectRatio: 2,
+          ),
+          itemCount: 4,
+          itemBuilder: (context, index) {
+            final stats = [
+              {
+                'title': 'Utilisateurs',
+                'widget': Obx(() =>
+                    _buildStatValue(userController.users.length.toString())),
+                'color': const Color(0xFF7BACD4),
+                'icon': Icons.people
+              },
+              {
+                'title': 'Produits',
+                'widget': Obx(() => _buildStatValue(
+                    productController.products.length.toString())),
+                'color': Colors.purple,
+                'icon': Icons.shopping_bag
+              },
+              {
+                'title': 'Boutiques',
+                'widget': Obx(() => _buildStatValue(boutiqueController
+                    .opticiensList.length
+                    .toString())), // Dynamic value
+                'color': Colors.orange,
+                'icon': Icons.store
+              },
+              {
+                'title': 'Commandes',
+                'widget': Obx(() => _buildStatValue(
+                      // Add Obx here
+                      orderController.allOrders.length.toString(),
+                    )),
+                'color': Colors.green,
+                'icon': Icons.receipt_long
+              },
+            ][index];
+            return Card(
+              elevation: 3,
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: stats['color'] as Color,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child:
+                          Icon(stats['icon'] as IconData, color: Colors.white),
+                    ),
+                    const SizedBox(width: 15),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          stats['title'] as String,
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                        stats['widget'] as Widget,
+                      ],
+                    )
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildStatValue(String value) {
+    return Text(
+      value,
+      style: const TextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
+      ),
+    );
+  }
+
+  Widget _buildProductsChart() {
+    final orderController = Get.find<OrderController>();
+    final productController = Get.find<ProductController>();
+
+    return SizedBox(
+      height: 380,
+      child: Obx(() {
+        // Calculate product popularity
+        final Map<String, int> productPopularity = {};
+
+        // Aggregate product orders
+        for (final order in orderController.allOrders) {
+          for (final item in order.items) {
+            productPopularity.update(
+              item.productId,
+              (value) => value + item.quantity,
+              ifAbsent: () => item.quantity,
+            );
+          }
+        }
+
+        // Get top 5 products
+        final sortedProducts = productPopularity.entries.toList()
+          ..sort((a, b) => b.value.compareTo(a.value));
+
+        final top5Products = sortedProducts.take(5).toList();
+
+        return Card(
+          elevation: 3,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: BarChart(
+              BarChartData(
+                alignment: BarChartAlignment.spaceAround,
+                maxY: (top5Products.isNotEmpty
+                        ? top5Products.first.value.toDouble()
+                        : 100) *
+                    1.2,
+                barTouchData: BarTouchData(
+                  enabled: true,
+                  touchTooltipData: BarTouchTooltipData(
+                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                      if (groupIndex >= top5Products.length) return null;
+
+                      final productId = top5Products[groupIndex].key;
+                      final product = productController.products.firstWhere(
+                        (p) => p.id == productId,
+                      );
+
+                      return BarTooltipItem(
+                        '${product.name}\nOrders: ${rod.toY.toInt()}',
+                        const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                titlesData: FlTitlesData(
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 40,
+                      getTitlesWidget: (double value, TitleMeta meta) {
+                        final index = value.toInt();
+                        if (index >= top5Products.length) return const Text('');
+
+                        final productId = top5Products[index].key;
+                        final product = productController.products.firstWhere(
+                          (p) => p.id == productId,
+                        );
+
+                        return SideTitleWidget(
+                          angle: 0,
+                          space: 4,
+                          meta: meta,
+                          child: Text(
+                            product.name,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 40,
+                      getTitlesWidget: (double value, TitleMeta meta) {
+                        return Text(
+                          value.toInt().toString(),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  topTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  rightTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                ),
+                borderData: FlBorderData(show: false),
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  horizontalInterval: top5Products.isNotEmpty
+                      ? (top5Products.first.value ~/ 5).toDouble()
+                      : 10,
+                ),
+                barGroups: top5Products.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final product = entry.value;
+                  return BarChartGroupData(
+                    x: index,
+                    barRods: [
+                      BarChartRodData(
+                        toY: product.value.toDouble(),
+                        color: _getChartColor(index),
+                        width: 28,
+                        borderRadius: BorderRadius.circular(4),
+                        backDrawRodData: BackgroundBarChartRodData(
+                          show: true,
+                          toY: double.infinity,
+                          color: Colors.grey[200],
+                        ),
+                      ),
+                    ],
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  // Helper function for chart colors
+  Color _getChartColor(int index) {
+    final colors = [
+      Colors.blue,
+      Colors.orange,
+      Colors.green,
+      Colors.purple,
+      Colors.red,
+    ];
+
+    return colors[index % colors.length];
+  }
+}
+
+// Navigation Drawer
+class NavigationDrawer extends StatelessWidget {
+  final int selectedIndex;
+  final ValueChanged<int> onItemSelected;
+
+  const NavigationDrawer({
+    super.key,
+    required this.selectedIndex,
+    required this.onItemSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 250, // Fixed width for the drawer
+      color: const Color.fromARGB(255, 113, 160, 201),
+      child: Column(
+        children: [
+          const SizedBox(height: 40),
+          const Text(
+            'Admin Panel',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 40),
+          ...[
+            'Dashboard',
+            'Utilisateurs',
+            'Opticiens',
+            'Boutiques',
+            'Produits',
+            'Commandes',
+          ].asMap().entries.map(
+            (entry) {
+              final index = entry.key;
+              final title = entry.value;
+              return ListTile(
+                leading: Icon(
+                  _getIcon(index),
+                  color: selectedIndex == index ? Colors.white : Colors.white70,
+                ),
+                title: Text(
+                  title,
+                  style: TextStyle(
+                    color:
+                        selectedIndex == index ? Colors.white : Colors.white70,
+                    fontWeight: selectedIndex == index
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+                  ),
+                ),
+                onTap: () => onItemSelected(index),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _getIcon(int index) {
+    switch (index) {
+      case 0:
+        return Icons.dashboard;
+      case 1:
+        return Icons.people;
+      case 2:
+        return Icons.visibility_sharp;
+      case 3:
+        return Icons.store;
+      case 4:
+        return Icons.shopping_bag;
+      case 5:
+        return Icons.receipt_long;
+      default:
+        return Icons.error;
+    }
+  }
+}
+
 class CustomSidebar extends StatelessWidget {
   final String currentPage;
-  
+
   const CustomSidebar({
     Key? key,
     required this.currentPage,
   }) : super(key: key);
-  
+
   @override
   Widget build(BuildContext context) {
+    final OpticianController opticianController =
+        Get.find<OpticianController>();
     return Container(
       width: 200,
       color: const Color(0xFFFEF1E9),
@@ -84,13 +616,13 @@ class CustomSidebar extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 10),
-              const Text(
-                "Martin Dupont",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
+              Obx(() => Text(
+                    opticianController.opticianName.value,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  )),
               const Text(
                 "Opticien Principal",
                 style: TextStyle(
@@ -102,33 +634,30 @@ class CustomSidebar extends StatelessWidget {
           ),
           const SizedBox(height: 40),
           // Navigation Menu
-                          _buildMenuItem(
-                    context, 
-                    Icons.dashboard, 
-                    "Dashboard", 
-                    currentPage == 'Dashboard',
-                    () => _navigateTo(context, '/OpticienDashboard')
-                  ),
-                          _buildMenuItem(
-                    context, 
-                    Icons.shopping_bag, 
-                    "Produits", 
-                    currentPage == 'Products',
-                    () => _navigateTo(context, '/products') 
-                  ),
           _buildMenuItem(
-            context, 
-            Icons.people, 
-            "Utilisateurs", 
-            currentPage == 'Users',
-            () => _navigateTo(context, '/users')
-          ),
+              context,
+              Icons.dashboard,
+              "Dashboard",
+              currentPage == 'Dashboard',
+              () => _navigateTo(context, '/OpticienDashboard')),
           _buildMenuItem(
-            context, 
-            Icons.shopping_cart, 
-            "Commandes", 
-            currentPage == 'Orders',
-            () => _navigateTo(context, '/Commande')
+              context,
+              Icons.shopping_bag,
+              "Produits",
+              currentPage == 'Products',
+              () => _navigateTo(context, '/products')),
+          _buildMenuItem(context, Icons.people, "Utilisateurs",
+              currentPage == 'Users', () => _navigateTo(context, '/users')),
+          _buildMenuItem(context, Icons.shopping_cart, "Commandes",
+              currentPage == 'Orders', () => _navigateTo(context, '/Commande')),
+          const Spacer(), // Pour pousser le bouton de déconnexion vers le bas
+          // Bouton de déconnexion
+          _buildMenuItem(
+            context,
+            Icons.logout,
+            "Déconnexion",
+            false,
+            () => opticianController.logout(),
           ),
         ],
       ),
@@ -136,18 +665,14 @@ class CustomSidebar extends StatelessWidget {
   }
 
   // Helper function to navigate to a new screen
-void _navigateTo(BuildContext context, String routeName, {dynamic arguments}) {
-  Get.offNamed(routeName, arguments: arguments);
-}
+  void _navigateTo(BuildContext context, String routeName,
+      {dynamic arguments}) {
+    Get.offNamed(routeName, arguments: arguments);
+  }
 
   // Menu item widget with navigation
-  Widget _buildMenuItem(
-    BuildContext context, 
-    IconData icon, 
-    String label, 
-    bool isActive,
-    VoidCallback onTap
-  ) {
+  Widget _buildMenuItem(BuildContext context, IconData icon, String label,
+      bool isActive, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -184,448 +709,6 @@ void _navigateTo(BuildContext context, String routeName, {dynamic arguments}) {
                 ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _DashboardScreenState extends State<OpticienDashboardScreen> {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      body: Row(
-        children: [
-          // Sidebar
-          CustomSidebar(currentPage: 'Dashboard'),
-          
-          // Main Content
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        "Dashboard",
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: const Row(
-                              children: [
-                                Icon(Icons.notifications, color: Colors.red),
-                                SizedBox(width: 5),
-                                Text("3"),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          const Icon(Icons.settings),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-              
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Activity
-                      Expanded(
-                        flex: 3,
-                        child: Container(
-                          padding: const EdgeInsets.all(15),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text(
-                                    "Activité",
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey[200],
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        const Text("01-07 Mars"),
-                                        const SizedBox(width: 5),
-                                        const Icon(Icons.arrow_drop_down, size: 15),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 15),
-                              SizedBox(
-                                height: 200,
-                                child: LineChart(
-                                  LineChartData(
-                                    gridData: FlGridData(show: false),
-                                    titlesData: FlTitlesData(
-                                      leftTitles: AxisTitles(
-                                        sideTitles: SideTitles(
-                                          showTitles: true,
-                                          reservedSize: 30,
-                                          getTitlesWidget: (value, meta) {
-                                            String text = '';
-                                            if (value == 0) {
-                                              text = '0';
-                                            } else if (value == 10) {
-                                              text = '10';
-                                            } else if (value == 20) {
-                                              text = '20';
-                                            } else if (value == 30) {
-                                              text = '30';
-                                            } else if (value == 40) {
-                                              text = '40';
-                                            }
-                                            return Text(
-                                              text,
-                                              style: const TextStyle(
-                                                color: Colors.grey,
-                                                fontSize: 12,
-                                              ),
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                      bottomTitles: AxisTitles(
-                                        sideTitles: SideTitles(
-                                          showTitles: true,
-                                          reservedSize: 30,
-                                          getTitlesWidget: (value, meta) {
-                                            String text = '';
-                                            if (value == 1) {
-                                              text = '01';
-                                            } else if (value == 2) {
-                                              text = '02';
-                                            } else if (value == 3) {
-                                              text = '03';
-                                            } else if (value == 4) {
-                                              text = '04';
-                                            } else if (value == 5) {
-                                              text = '05';
-                                            } else if (value == 6) {
-                                              text = '06';
-                                            } else if (value == 7) {
-                                              text = '07';
-                                            }
-                                            return Text(
-                                              text,
-                                              style: const TextStyle(
-                                                color: Colors.grey,
-                                                fontSize: 12,
-                                              ),
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                      rightTitles: const AxisTitles(
-                                        sideTitles: SideTitles(showTitles: false),
-                                      ),
-                                      topTitles: const AxisTitles(
-                                        sideTitles: SideTitles(showTitles: false),
-                                      ),
-                                    ),
-                                    borderData: FlBorderData(show: false),
-                                    lineBarsData: [
-                                      LineChartBarData(
-                                        spots: [
-                                          const FlSpot(1, 20),
-                                          const FlSpot(2, 35),
-                                          const FlSpot(3, 25),
-                                          const FlSpot(4, 15),
-                                          const FlSpot(5, 30),
-                                          const FlSpot(6, 25),
-                                          const FlSpot(7, 32),
-                                        ],
-                                        isCurved: true,
-                                        color: Colors.orange,
-                                        barWidth: 3,
-                                        isStrokeCapRound: true,
-                                        dotData: FlDotData(
-                                          show: true,
-                                          getDotPainter: (spot, percent, barData, index) {
-                                            if (index == 5) {
-                                              return FlDotCirclePainter(
-                                                radius: 4,
-                                                color: Colors.orange,
-                                                strokeWidth: 2,
-                                                strokeColor: Colors.white,
-                                              );
-                                            }
-                                            return FlDotCirclePainter(
-                                              radius: 0,
-                                              color: Colors.transparent,
-                                              strokeWidth: 0,
-                                              strokeColor: Colors.transparent,
-                                            );
-                                          },
-                                        ),
-                                        belowBarData: BarAreaData(
-                                          show: true,
-                                          color: Colors.orange.withOpacity(0.2),
-                                        ),
-                                      ),
-                                    ],
-                                    lineTouchData: LineTouchData(
-                                      touchTooltipData: LineTouchTooltipData(
-                                        getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
-                                          return touchedBarSpots.map((barSpot) {
-                                            return LineTooltipItem(
-                                              '${barSpot.y.toInt()} clients',
-                                              const TextStyle(color: Colors.black),
-                                            );
-                                          }).toList();
-                                        },
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 20),
-                      // Top Performers
-                      Expanded(
-                        flex: 2,
-                        child: Container(
-                          padding: const EdgeInsets.all(15),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                "Produits populaires",
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 15),
-                              _buildProductItem("Lunettes Ray-Ban", "@rayban", "39%"),
-                              _buildProductItem("Lentilles Acuvue", "@acuvue", "25%"),
-                              _buildProductItem("Oakley Sport", "@oakley", "18%"),
-                              const SizedBox(height: 10),
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.pushReplacement(
-                                    context,
-                                    MaterialPageRoute(builder: (context) => ProductsScreen()),
-                                  );
-                                },
-                                child: Row(
-                                  children: [
-                                    const Text("Voir Plus"),
-                                    const SizedBox(width: 5),
-                                    const Icon(Icons.arrow_forward, size: 16),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  // Channels
-                  Container(
-                    padding: const EdgeInsets.all(15),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE8F5F5),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Sources de clients",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 5),
-                        const Text(
-                          "Statistiques pour la période de 1 semaine",
-                          style: TextStyle(
-                            color: Colors.grey,
-                            fontSize: 12,
-                          ),
-                        ),
-                        const SizedBox(height: 15),
-                        Row(
-                          children: [
-                            _buildChannelCard("Référence médicale", "+5%", Colors.pink),
-                            const SizedBox(width: 15),
-                            _buildChannelCard("Site web", "-2%", Colors.blue),
-                            const SizedBox(width: 15),
-                            _buildChannelCard("Publicité", "+4%", Colors.deepOrange),
-                            const SizedBox(width: 15),
-                            _buildChannelCard("Renouvellement", "+3%", Colors.red),
-                            const SizedBox(width: 15),
-                            Container(
-                              padding: const EdgeInsets.all(15),
-                              decoration: BoxDecoration(
-                                color: Colors.teal,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Column(
-                                children: [
-                                  const Text(
-                                    "Stats\nComplètes",
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Container(
-                                    decoration: const BoxDecoration(
-                                      color: Colors.white,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(
-                                      Icons.arrow_forward,
-                                      color: Colors.teal,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProductItem(String name, String handle, String percentage) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 15),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: Colors.grey[200],
-            child: const Icon(
-              Icons.shopping_bag,
-              color: Colors.grey,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  handle,
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            percentage,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildChannelCard(String name, String percentage, Color color) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 10),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.trending_up,
-                color: color,
-                size: 20,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              name,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 12,
-              ),
-            ),
-            const SizedBox(height: 5),
-            Text(
-              percentage,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: percentage.contains("+") ? Colors.green : Colors.red,
-              ),
-            ),
-          ],
         ),
       ),
     );
