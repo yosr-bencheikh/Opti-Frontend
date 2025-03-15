@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:image_picker/image_picker.dart';
@@ -30,6 +31,7 @@ class AuthController extends GetxController {
     serverClientId:
         "95644263598-p1ko0g4ds7ko6v6obqkdc38j76ndjmt2.apps.googleusercontent.com",
   );
+  final secureStorage = FlutterSecureStorage();
 
   var isLoading = false.obs;
   var isLoggedIn = false.obs;
@@ -171,35 +173,66 @@ class AuthController extends GetxController {
     try {
       print("Auto-login started...");
 
-      final String? token = prefs.getString('token');
+      // First check if we already have a currentUser in memory
+      if (_currentUser.value != null && authToken.value.isNotEmpty) {
+        print("User already loaded in memory");
+        isLoggedIn.value = true;
+        return true;
+      }
+      final allKeys = prefs.getKeys();
+      print("All keys in SharedPreferences: $allKeys");
+      // Then check SharedPreferences
+
       final String? email = prefs.getString('userEmail');
+      final String? token = await secureStorage.read(key: 'token');
 
+      // Debug info
+      print("Token from SharedPreferences: ${token?.substring(0, 10)}...");
+      print("Email from SharedPreferences: $email");
+
+      // Verify token exists
       if (token == null || email == null) {
-        print("No token found. Redirecting to login.");
+        print("No token or email found. Redirecting to login.");
         return false;
       }
 
-      print("Retrieved token: $token");
-      print("Retrieved email: $email");
-
-      final isValid = await authRepository.verifyToken(token).timeout(
-        Duration(seconds: 10),
-        onTimeout: () {
-          print("Token verification request timed out!");
+      // Check if token is expired
+      if (JwtDecoder.isExpired(token)) {
+        print("Token is expired. Attempting to refresh...");
+        try {
+          await _attemptTokenRefresh(email);
+          if (authToken.value.isEmpty) {
+            print("Token refresh failed.");
+            return false;
+          }
+        } catch (e) {
+          print("Token refresh error: $e");
           return false;
-        },
-      );
-
-      if (!isValid) {
-        print("Token is invalid.");
-        return false;
+        }
+      } else {
+        // Store the valid token
+        authToken.value = token;
       }
 
-      print("Token is valid. Loading user data...");
-      await loadUserData(email);
+      // Load user data
+      try {
+        print("Token is valid. Loading user data...");
+        await loadUserData(email);
 
-      print("Auto-login successful! Navigating to home screen.");
-      return true;
+        // Update auth status
+        isLoggedIn.value = true;
+
+        // Set OneSignal external user ID if available
+        if (currentUserId.value.isNotEmpty) {
+          await notificationService.setExternalUserId(currentUserId.value);
+        }
+
+        print("Auto-login successful!");
+        return true;
+      } catch (e) {
+        print("Error loading user data: $e");
+        return false;
+      }
     } catch (e) {
       print("Auto-login error: $e");
       return false;
@@ -406,9 +439,13 @@ class AuthController extends GetxController {
       authToken.value = token;
       isLoggedIn.value = true;
 
-      // Save token and email to SharedPreferences
       await prefs.setString('token', token);
+      print(
+          "Token saved in SharedPreferences: ${prefs.getString('token')}"); // Verify it was saved
       await prefs.setString('userEmail', email);
+      await prefs.setString('userId', userId);
+      print("SharedPreferences keys after saving: ${prefs.getKeys()}");
+      await secureStorage.write(key: 'token', value: token);
 
       // Set external user ID for OneSignal
       await notificationService.setExternalUserId(userId);

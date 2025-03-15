@@ -15,23 +15,27 @@ class NotificationService {
 
   void initialize() {
     if (!kIsWeb) {
-      // Only initialize OneSignal on mobile platforms
       try {
+        // Initialize OneSignal with your App ID
         OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
         OneSignal.initialize("e2715d8a-cf44-4523-8078-dbe2285a792b");
-        // Request notification permissions
-        OneSignal.Notifications.requestPermission(true);
 
-        // Add this to debug subscription status
-        _logSubscriptionStatus();
+        // Add a slight delay before requesting permissions
+        Future.delayed(Duration(milliseconds: 500), () {
+          OneSignal.Notifications.requestPermission(true);
+          OneSignal.User.pushSubscription.optIn();
+          _logSubscriptionStatus();
+        });
       } catch (e) {
         print("Error initializing OneSignal: $e");
       }
+
+      // Set up notification listeners
+      OneSignal.Notifications.addForegroundWillDisplayListener((event) {
+        // Display notification with customizations as needed
+        event.notification.display();
+      });
     }
-    OneSignal.Notifications.addForegroundWillDisplayListener((event) {
-      event.preventDefault(); // Prevent default notification display
-      event.notification.display(); // Manually display the notification
-    });
   }
 
   Future<void> _logSubscriptionStatus() async {

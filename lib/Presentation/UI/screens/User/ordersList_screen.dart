@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -226,7 +225,9 @@ class OrdersListPage extends StatelessWidget {
             BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Accueil'),
             BottomNavigationBarItem(icon: Icon(Icons.store), label: 'Magasins'),
             BottomNavigationBarItem(
-                icon: Icon(Icons.list_alt), label: 'Commandes',),
+              icon: Icon(Icons.list_alt),
+              label: 'Commandes',
+            ),
             BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
           ],
           onTap: navigationController.changePage,
@@ -383,7 +384,7 @@ class OrdersListPage extends StatelessWidget {
   }
 
   void _cancelOrder(Order order) {
-    orderController.cancelOrder(order.id!).then((success) {
+    orderController.deleteOrder(order.id!).then((success) {
       if (success) {
         Get.back(); // Close the bottom sheet
       }

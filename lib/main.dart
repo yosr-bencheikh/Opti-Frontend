@@ -139,6 +139,7 @@ Future<void> main() async {
   Get.put(sendCodeToEmail);
   Get.put(NavigationController(), permanent: true);
   NotificationService().initialize();
+  
 
   runApp(const MyApp());
 }
@@ -155,7 +156,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      initialRoute: '/Admin_pannel',
+      initialRoute: '/splash',
       getPages: [
         GetPage(
           name: '/splash',
@@ -259,11 +260,12 @@ class MyApp extends StatelessWidget {
           page: () => AdminOrdersPage(),
           binding: AuthBinding(),
         ),
-        GetPage(
-          name: '/LoginOpticien',
-          page: () => LoginScreenOpticien(),
-          binding: AuthBinding(),
-        ),
+        if (kIsWeb)
+          GetPage(
+            name: '/LoginOpticien',
+            page: () => LoginScreenOpticien(),
+            binding: AuthBinding(),
+          ),
       ],
     );
   }

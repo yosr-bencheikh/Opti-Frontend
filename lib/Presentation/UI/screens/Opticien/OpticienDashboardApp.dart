@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 
-import 'package:opti_app/Presentation/UI/screens/User/Monthly_sales_chart.dart';
-import 'package:opti_app/Presentation/UI/screens/User/Order_Pie_Chart.dart';
+import 'package:opti_app/Presentation/UI/screens/Admin/Monthly_sales_chart.dart';
+import 'package:opti_app/Presentation/UI/screens/Admin/Order_Pie_Chart.dart';
 
 import 'package:opti_app/Presentation/UI/screens/User/User_donut_chart.dart';
 import 'package:opti_app/Presentation/controllers/OpticianController.dart';

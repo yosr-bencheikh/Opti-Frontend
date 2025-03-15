@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:opti_app/Presentation/UI/screens/User/Augmented_faces.dart';
 import 'package:opti_app/Presentation/UI/screens/User/camera_screen.dart';
 import 'package:opti_app/Presentation/UI/screens/User/home_screen.dart';
 import 'package:opti_app/Presentation/UI/screens/User/reviews_screen.dart';
@@ -151,9 +152,9 @@ class ProductDetailsScreen extends GetView<ProductController> {
           ? Matrix4.identity()
           : Matrix4.translationValues(0, -5, 0),
       child: GestureDetector(
-        onTap: () {
+      /*  onTap: () {
           _launchARExperience(context);
-        },
+        },*/
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
@@ -195,12 +196,12 @@ class ProductDetailsScreen extends GetView<ProductController> {
     );
   }
 
-  void _launchARExperience(BuildContext context) {
+  /*void _launchARExperience(BuildContext context) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => CameraScreen()),
+      MaterialPageRoute(builder: (context) => AugmentedFacesScreen()),
     );
-  }
+  }*/
 
   Widget _buildProductInfo() {
     return Padding(

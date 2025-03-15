@@ -69,7 +69,7 @@ class ProductDatasource {
 
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('http://localhost:3000/upload'),
+        Uri.parse('http://192.168.1.22:3000/upload'),
       );
 
       var multipartFile = await http.MultipartFile.fromPath(
