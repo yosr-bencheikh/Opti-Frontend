@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:opti_app/Presentation/UI/screens/User/Augmented_faces.dart';
 import 'package:opti_app/Presentation/UI/screens/User/camera_screen.dart';
 import 'package:opti_app/Presentation/UI/screens/User/home_screen.dart';
 import 'package:opti_app/Presentation/UI/screens/User/reviews_screen.dart';
@@ -198,7 +199,7 @@ class ProductDetailsScreen extends GetView<ProductController> {
   void _launchARExperience(BuildContext context) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => CameraScreen()),
+      MaterialPageRoute(builder: (context) => AugmentedFacesScreen()),
     );
   }
 

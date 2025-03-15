@@ -139,6 +139,7 @@ Future<void> main() async {
   Get.put(sendCodeToEmail);
   Get.put(NavigationController(), permanent: true);
   NotificationService().initialize();
+  
 
   runApp(const MyApp());
 }
@@ -259,11 +260,12 @@ class MyApp extends StatelessWidget {
           page: () => AdminOrdersPage(),
           binding: AuthBinding(),
         ),
-        GetPage(
-          name: '/LoginOpticien',
-          page: () => LoginScreenOpticien(),
-          binding: AuthBinding(),
-        ),
+        if (kIsWeb)
+          GetPage(
+            name: '/LoginOpticien',
+            page: () => LoginScreenOpticien(),
+            binding: AuthBinding(),
+          ),
       ],
     );
   }

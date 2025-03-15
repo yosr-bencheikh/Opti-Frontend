@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:opti_app/Presentation/UI/screens/Admin/optician_product_screen.dart';
+import 'package:opti_app/Presentation/UI/screens/User/optician_product_screen.dart';
 import 'package:opti_app/Presentation/UI/screens/User/cart_screen.dart';
 import 'package:opti_app/Presentation/UI/screens/User/product_details_screen.dart';
 import 'package:opti_app/Presentation/UI/screens/User/wishlist_page.dart';

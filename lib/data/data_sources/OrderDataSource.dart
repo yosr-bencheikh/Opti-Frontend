@@ -11,9 +11,11 @@ abstract class OrderDataSource {
   Future<Map> createOrder(Map orderData);
   Future<List<Map>> getUserOrders(String userId);
   Future<Map> getOrderById(String id);
-  Future<bool> updateOrderStatus(String id, String status);
+  Future<bool> updateOrderStatus(String id, String status,
+      {String? cancellationReason}); // Add cancellationReason
   Future<bool> cancelOrder(String id);
   Future<List<Order>> getAllOrders();
+  Future<bool> deleteOrder(String id);
 }
 
 // Implementation of the OrderDataSource interface
@@ -111,13 +113,28 @@ class OrderDataSourceImpl implements OrderDataSource {
   }
 
   @override
-  Future<bool> updateOrderStatus(String id, String status) async {
+  Future<bool> updateOrderStatus(
+    String id,
+    String status, {
+    String?
+        cancellationReason, // Add cancellationReason as an optional parameter
+  }) async {
     try {
+      // Prepare the request body
+      final Map<String, dynamic> requestBody = {
+        'status': status,
+      };
+
+      // Include cancellation reason if the status is "Annulée"
+      if (status == 'Annulée' && cancellationReason != null) {
+        requestBody['cancellationReason'] = cancellationReason;
+      }
+
       final response = await client
           .patch(
             Uri.parse('$baseUrl/orders/$id/status'),
             headers: {'Content-Type': 'application/json'},
-            body: json.encode({'status': status}),
+            body: json.encode(requestBody), // Include the request body
           )
           .timeout(const Duration(seconds: 15));
 
@@ -139,6 +156,26 @@ class OrderDataSourceImpl implements OrderDataSource {
       return response.statusCode == 200;
     } catch (e) {
       developer.log('Error cancelling order: $e', error: e);
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> deleteOrder(String id) async {
+    try {
+      developer.log('Deleting order: $id');
+
+      final response = await client.delete(
+        Uri.parse('$baseUrl/orders/$id/delete'),
+        headers: {'Content-Type': 'application/json'},
+      ).timeout(const Duration(seconds: 15));
+
+      developer
+          .log('Delete order response status code: ${response.statusCode}');
+
+      return response.statusCode == 200;
+    } catch (e) {
+      developer.log('Error deleting order: $e', error: e);
       return false;
     }
   }

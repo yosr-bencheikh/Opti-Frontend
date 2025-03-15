@@ -3,6 +3,7 @@ plugins {
     id 'org.jetbrains.kotlin.android'
     id 'com.google.gms.google-services'
     id 'dev.flutter.flutter-gradle-plugin'
+    
 }
 
 configurations {
@@ -48,7 +49,7 @@ android {
 
     defaultConfig {
         applicationId "com.example.opti_app"
-        minSdkVersion 31
+        minSdkVersion 24
         targetSdkVersion 35
         versionCode 1
         versionName "1.0"
@@ -91,6 +92,9 @@ dependencies {
     // Dépendance OneSignal
     // La plage de version permet de choisir une version compatible tout en excluant les modules en conflit
     implementation('com.onesignal:OneSignal:[4.8.5, 4.99.99]')
+       implementation("androidx.core:core-ktx:1.13.1") {
+        exclude group: 'com.android.support', module: 'support-compat'
+    }
 }
 
 flutter {

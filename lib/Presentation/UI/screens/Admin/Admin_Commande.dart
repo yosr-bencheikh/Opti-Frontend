@@ -21,7 +21,12 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
     'Completée',
     'Annulée'
   ];
-
+  final List<String> cancellationReasons = [
+    'Rupture de stock',
+    'Client indisponible',
+    'Problème de paiement',
+    'Autre raison',
+  ];
   String? _selectedUserId;
   DateTime? _selectedUserTimestamp;
 
@@ -308,15 +313,19 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
                                                 _showOrderDetails(order),
                                             iconSize: 24,
                                           ),
-                                          _buildActionButton(
-                                            icon: Icons.edit,
-                                            color: Colors.amber.shade700,
-                                            tooltip: 'Modifier le statut',
-                                            onPressed: () =>
-                                                _showStatusUpdateDialog(order),
-                                            iconSize: 24,
-                                          ),
-                                          if (order.status == 'En attente') ...[
+                                          if (order.status !=
+                                              'Annulée') // Hide edit if canceled
+                                            _buildActionButton(
+                                              icon: Icons.edit,
+                                              color: Colors.amber.shade700,
+                                              tooltip: 'Modifier le statut',
+                                              onPressed: () =>
+                                                  _showStatusUpdateDialog(
+                                                      order),
+                                              iconSize: 24,
+                                            ),
+                                          if (order.status ==
+                                              'En attente') // Accept only for pending
                                             _buildActionButton(
                                               icon: Icons.check_circle,
                                               color: Colors.green.shade600,
@@ -326,16 +335,17 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
                                                       order, 'Confirmée'),
                                               iconSize: 24,
                                             ),
+                                          if (order.status !=
+                                              'Annulée') // Show cancel unless already canceled
                                             _buildActionButton(
                                               icon: Icons.cancel,
                                               color: Colors.red.shade600,
-                                              tooltip: 'Refuser',
+                                              tooltip: 'Annuler',
                                               onPressed: () =>
-                                                  _updateOrderStatus(
-                                                      order, 'Annulée'),
+                                                  _showCancellationReasonDialog(
+                                                      order),
                                               iconSize: 24,
                                             ),
-                                          ],
                                         ],
                                       ),
                                     ),
@@ -503,87 +513,288 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
     );
   }
 
+  void _showCancellationReasonDialog(Order order) {
+    String? selectedReason;
+    final TextEditingController customReasonController =
+        TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text('Choisir la raison d\'annulation'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Predefined reasons
+                    ...cancellationReasons.map((reason) {
+                      return RadioListTile<String>(
+                        title: Text(reason),
+                        value: reason,
+                        groupValue: selectedReason,
+                        onChanged: (value) {
+                          setState(() {
+                            selectedReason = value;
+                          });
+                        },
+                      );
+                    }).toList(),
+
+                    // Custom reason text field
+                    if (selectedReason == 'Autre raison')
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: TextField(
+                          controller: customReasonController,
+                          decoration: InputDecoration(
+                            labelText: 'Entrez la raison',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text('Annuler'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    final reason = selectedReason == 'Autre raison'
+                        ? customReasonController.text
+                        : selectedReason;
+                    if (reason != null && reason.isNotEmpty) {
+                      Navigator.pop(context);
+                      _updateOrderStatus(order, 'Annulée',
+                          cancellationReason: reason);
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                              'Veuillez sélectionner ou entrer une raison.'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  },
+                  child: Text('Confirmer'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  List<String> getAllowedStatuses(String currentStatus) {
+    List<String> allowed = [];
+    switch (currentStatus) {
+      case 'En attente':
+        allowed.add('Confirmée');
+        break;
+      case 'Confirmée':
+        allowed.add('En livraison');
+        break;
+      case 'En livraison':
+        allowed.add('Completée');
+        break;
+      case 'Annulée':
+        return []; // No changes allowed
+      case 'Completée':
+        break; // Handled in completed orders section
+    }
+    // Always allow cancellation unless already canceled
+    if (currentStatus != 'Annulée' && currentStatus != 'Completée') {
+      allowed.add('Annulée');
+    }
+    return allowed;
+  }
+
   Widget _buildStatsRow() {
     // Count orders by status
     int pendingCount = 0;
     int confirmedCount = 0;
-    int deliveredCount = 0;
-    int cancelledCount = 0;
     int deliveryCount = 0;
     int completedCount = 0;
+    int cancelledCount = 0;
 
     for (var order in orderController.allOrders) {
-      if (order.status == 'En attente') pendingCount++;
-      if (order.status == 'Confirmée') confirmedCount++;
-      if (order.status == 'En livraison') deliveryCount++;
-      if (order.status == 'Completée') completedCount++;
-      if (order.status == 'Annulée') cancelledCount++;
+      switch (order.status) {
+        case 'En attente':
+          pendingCount++;
+          break;
+        case 'Confirmée':
+          confirmedCount++;
+          break;
+        case 'En livraison':
+          deliveryCount++;
+          break;
+        case 'Completée':
+          completedCount++;
+          break;
+        case 'Annulée':
+          cancelledCount++;
+          break;
+      }
     }
 
-    return Container(
-      height: 100,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center, // Center the cards
         children: [
-          _buildStatCard('En attente', pendingCount, Colors.orange),
-          _buildStatCard('Confirmées', confirmedCount, Colors.blue),
-          _buildStatCard('En livraison', deliveryCount, Colors.purple),
-          _buildStatCard('Completée', completedCount, Colors.green),
-          _buildStatCard('Annulées', cancelledCount, Colors.red),
-          _buildStatCard('Total', orderController.allOrders.length,
-              Colors.indigo.shade700),
+          _buildStatCard(
+            title: 'En attente',
+            count: pendingCount,
+            color: Colors.orange,
+            icon: Icons.hourglass_top,
+          ),
+          _buildStatCard(
+            title: 'Confirmées',
+            count: confirmedCount,
+            color: Colors.blue,
+            icon: Icons.check_circle_outline,
+          ),
+          _buildTotalCard(
+            count: orderController.allOrders.length,
+          ), // Total card in the center
+          _buildStatCard(
+            title: 'En livraison',
+            count: deliveryCount,
+            color: Colors.purple,
+            icon: Icons.local_shipping,
+          ),
+          _buildStatCard(
+            title: 'Completée',
+            count: completedCount,
+            color: Colors.green,
+            icon: Icons.done_all,
+          ),
+          _buildStatCard(
+            title: 'Annulées',
+            count: cancelledCount,
+            color: Colors.red,
+            icon: Icons.cancel_outlined,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildStatCard(String title, int count, Color color) {
-    return Card(
-      elevation: 2,
-      margin: EdgeInsets.only(right: 16),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade200),
-      ),
-      child: Container(
-        width: 140,
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade700,
-                fontWeight: FontWeight.w500,
-              ),
+  Widget _buildStatCard({
+    required String title,
+    required int count,
+    required Color color,
+    required IconData icon,
+  }) {
+    return Container(
+      width: 120, // Smaller width for status cards
+      margin: EdgeInsets.symmetric(horizontal: 8), // Add horizontal spacing
+      child: Card(
+        elevation: 8, // Increased elevation for a more pronounced shadow
+        shape: RoundedRectangleBorder(
+          borderRadius:
+              BorderRadius.circular(20), // More pronounced rounded corners
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                color.withOpacity(0.2),
+                color.withOpacity(0.1),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-            SizedBox(height: 8),
-            Row(
+            borderRadius:
+                BorderRadius.circular(20), // Match the card's border radius
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 12,
-                  height: 12,
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.2),
-                    border: Border.all(color: color, width: 2),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                ),
-                SizedBox(width: 8),
-                Text(
-                  count.toString(),
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey.shade800,
-                  ),
+                Icon(icon, color: color, size: 28), // Slightly larger icon
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 14, // Slightly larger font size
+                        color: Colors.grey.shade700,
+                        fontWeight: FontWeight.w600, // Bolder font weight
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      count.toString(),
+                      style: TextStyle(
+                        fontSize: 24, // Slightly larger font size
+                        fontWeight: FontWeight.bold,
+                        color: color,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTotalCard({required int count}) {
+    return Container(
+      width: 160, // Larger width for the total card
+      margin: EdgeInsets.symmetric(horizontal: 8), // Add horizontal spacing
+      child: Card(
+        elevation: 6,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15),
+        ),
+        color: Colors.indigo.shade700,
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.shopping_cart_checkout,
+                  color: Colors.white.withOpacity(0.8),
+                  size: 32), // Larger icon
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Total Commandes',
+                    style: TextStyle(
+                      fontSize: 14, // Larger font size
+                      color: Colors.white.withOpacity(0.9),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    count.toString(),
+                    style: TextStyle(
+                      fontSize: 28, // Larger font size
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -666,6 +877,8 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
   }
 
   void _showStatusUpdateDialog(Order order) {
+    final allowedStatuses = getAllowedStatuses(order.status);
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -674,7 +887,7 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
           width: double.minPositive,
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            children: statusOptions.map((status) {
+            children: allowedStatuses.map((status) {
               return ListTile(
                 title: Text(status),
                 leading: CircleAvatar(
@@ -685,8 +898,14 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
                 selected: order.status == status,
                 selectedTileColor: Colors.grey.shade100,
                 onTap: () {
-                  Navigator.pop(context);
-                  _updateOrderStatus(order, status);
+                  Navigator.pop(context); // Close the status dialog
+                  if (status == 'Annulée') {
+                    // Show the cancellation reason dialog
+                    _showCancellationReasonDialog(order);
+                  } else {
+                    // Update the status directly
+                    _updateOrderStatus(order, status);
+                  }
                 },
               );
             }).toList(),
@@ -696,14 +915,8 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text('Annuler'),
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.grey.shade700,
-            ),
           ),
         ],
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
       ),
     );
   }
@@ -783,9 +996,14 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
     }
   }
 
-  void _updateOrderStatus(Order order, String newStatus) async {
-    final success =
-        await orderController.updateOrderStatus(order.id!, newStatus);
+  void _updateOrderStatus(Order order, String newStatus,
+      {String? cancellationReason}) async {
+    final success = await orderController.updateOrderStatus(
+      order.id!,
+      newStatus,
+      cancellationReason: cancellationReason,
+    );
+
     if (success) {
       orderController.updateLocalOrderStatus(order.id!, newStatus);
 
@@ -796,7 +1014,12 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
               Icon(Icons.check_circle, color: Colors.white),
               SizedBox(width: 12),
               Expanded(
-                  child: Text('Statut de la commande mis à jour: $newStatus')),
+                child: Text(
+                  cancellationReason != null
+                      ? 'Commande annulée: $cancellationReason'
+                      : 'Statut de la commande mis à jour: $newStatus',
+                ),
+              ),
             ],
           ),
           backgroundColor: Colors.green.shade600,
@@ -1061,7 +1284,7 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
                                 ),
                                 onPressed: () {
                                   Navigator.pop(context);
-                                  _updateOrderStatus(order, 'Annulée');
+                                  _showCancellationReasonDialog(order);
                                 },
                               ),
                             ),

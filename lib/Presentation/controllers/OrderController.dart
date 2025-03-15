@@ -362,67 +362,74 @@ void updateLocalOrderStatus(String orderId, String newStatus) {
       isLoading.value = false;
     }
   }
+Future<bool> updateOrderStatus(
+  String orderId, 
+  String status, {
+  String? cancellationReason, // Add cancellationReason as an optional parameter
+}) async {
+  try {
+    isLoading.value = true;
+    developer.log('Updating order status: $orderId to $status');
 
-  Future<bool> updateOrderStatus(String orderId, String status) async {
-    try {
-      isLoading.value = true;
-      developer.log('Updating order status: $orderId to $status');
+    // Call the repository to update the order status with cancellation reason
+    final success = await orderRepository.updateOrderStatus(
+      orderId, 
+      status, 
+      cancellationReason: cancellationReason, // Pass cancellationReason
+    );
 
-      // Call the repository directly to update the order status
-      final success = await orderRepository.updateOrderStatus(orderId, status);
-
-      if (success) {
-        // Refresh the order details if it's the current order
-        if (currentOrder.value?.id == orderId) {
-          await getOrderDetails(orderId);
-        }
-
-        // Refresh user orders list
-        if (currentOrder.value?.userId != null) {
-          await loadUserOrders(currentOrder.value!.userId);
-        }
-
-        Get.snackbar(
-          'Succès',
-          'Statut de commande mis à jour avec succès',
-          duration: const Duration(seconds: 3),
-        );
-
-        developer.log('Order status updated successfully');
-      } else {
-        Get.snackbar(
-          'Erreur',
-          'Impossible de mettre à jour le statut de la commande',
-          duration: const Duration(seconds: 3),
-        );
-
-        developer.log('Failed to update order status');
+    if (success) {
+      // Refresh the order details if it's the current order
+      if (currentOrder.value?.id == orderId) {
+        await getOrderDetails(orderId);
       }
 
-      return success;
-    } catch (e) {
-      developer.log('Error updating order status: $e', error: e);
-
-      String errorMessage =
-          'Une erreur est survenue lors de la mise à jour du statut.';
-
-      if (e.toString().contains('timed out') ||
-          e.toString().contains('SocketException') ||
-          e.toString().contains('Connection refused')) {
-        errorMessage =
-            'Impossible de se connecter au serveur. Vérifiez votre connexion internet.';
+      // Refresh user orders list
+      if (currentOrder.value?.userId != null) {
+        await loadUserOrders(currentOrder.value!.userId);
       }
 
       Get.snackbar(
-        'Erreur',
-        errorMessage,
+        'Succès',
+        'Statut de commande mis à jour avec succès',
         duration: const Duration(seconds: 3),
       );
-      return false;
-    } finally {
-      isLoading.value = false;
+
+      developer.log('Order status updated successfully');
+    } else {
+      Get.snackbar(
+        'Erreur',
+        'Impossible de mettre à jour le statut de la commande',
+        duration: const Duration(seconds: 3),
+      );
+
+      developer.log('Failed to update order status');
     }
+
+    return success;
+  } catch (e) {
+    developer.log('Error updating order status: $e', error: e);
+
+    String errorMessage =
+        'Une erreur est survenue lors de la mise à jour du statut.';
+
+    if (e.toString().contains('timed out') ||
+        e.toString().contains('SocketException') ||
+        e.toString().contains('Connection refused')) {
+      errorMessage =
+          'Impossible de se connecter au serveur. Vérifiez votre connexion internet.';
+    }
+
+    Get.snackbar(
+      'Erreur',
+      errorMessage,
+      duration: const Duration(seconds: 3),
+    );
+    return false;
+  } finally {
+    isLoading.value = false;
   }
+}
 
   Future<void> setAddress(String address, dynamic selectedLatitude,
       dynamic selectedLongitude) async {
@@ -487,4 +494,65 @@ void updateLocalOrderStatus(String orderId, String newStatus) {
   void setPaymentMethod(String method) {
     selectedPaymentMethod.value = method;
   }
+  // Add this method to your OrderController class
+
+Future<bool> deleteOrder(String orderId) async {
+  try {
+    isLoading.value = true;
+    developer.log('Permanently deleting order: $orderId');
+
+    // Call the repository to delete the order
+    final success = await orderRepository.deleteOrder(orderId);
+
+    if (success) {
+      // Remove the deleted order from both userOrders and allOrders lists
+      userOrders.removeWhere((order) => order.id == orderId);
+      allOrders.removeWhere((order) => order.id == orderId);
+
+      // Clear the current order if it matches the deleted order
+      if (currentOrder.value?.id == orderId) {
+        currentOrder.value = null;
+      }
+
+      Get.snackbar(
+        'Succès',
+        'Commande supprimée définitivement',
+        duration: const Duration(seconds: 3),
+      );
+
+      developer.log('Order permanently deleted successfully');
+    } else {
+      Get.snackbar(
+        'Erreur',
+        'Impossible de supprimer définitivement la commande',
+        duration: const Duration(seconds: 3),
+      );
+
+      developer.log('Failed to delete order');
+    }
+
+    return success;
+  } catch (e) {
+    developer.log('Error deleting order: $e', error: e);
+
+    String errorMessage =
+        'Une erreur est survenue lors de la suppression définitive de la commande.';
+
+    if (e.toString().contains('timed out') ||
+        e.toString().contains('SocketException') ||
+        e.toString().contains('Connection refused')) {
+      errorMessage =
+          'Impossible de se connecter au serveur. Vérifiez votre connexion internet.';
+    }
+
+    Get.snackbar(
+      'Erreur',
+      errorMessage,
+      duration: const Duration(seconds: 3),
+    );
+    return false;
+  } finally {
+    isLoading.value = false;
+  }
+}
 }
