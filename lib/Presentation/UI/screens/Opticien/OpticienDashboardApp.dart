@@ -1,213 +1,46 @@
-import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:opti_app/Presentation/UI/screens/Opticien/Commande.dart';
-import 'package:opti_app/Presentation/UI/screens/Opticien/Product_Screen.dart';
-import 'package:opti_app/Presentation/UI/screens/Opticien/UserScreen.dart';
+import 'package:http/http.dart' as http;
+
 import 'package:opti_app/Presentation/UI/screens/User/Monthly_sales_chart.dart';
 import 'package:opti_app/Presentation/UI/screens/User/Order_Pie_Chart.dart';
+
 import 'package:opti_app/Presentation/UI/screens/User/User_donut_chart.dart';
 import 'package:opti_app/Presentation/controllers/OpticianController.dart';
+
 import 'package:opti_app/Presentation/controllers/OrderController.dart';
+import 'package:opti_app/Presentation/controllers/boutique_controller.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
-
-// Main app
-class OpticianApp extends StatelessWidget {
-  const OpticianApp({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'OptiVision Dashboard',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        fontFamily: 'Poppins',
-      ),
-      home: const OpticienDashboardScreen(),
-    );
-  }
-}
-
+import 'package:opti_app/Presentation/controllers/user_controller.dart';
 // Dashboard screen
-class OpticienDashboardScreen extends StatefulWidget {
-  const OpticienDashboardScreen({Key? key}) : super(key: key);
+class OpticianDashboardScreen extends StatefulWidget {
+  const OpticianDashboardScreen({Key? key}) : super(key: key);
 
   @override
-  State<OpticienDashboardScreen> createState() => _DashboardScreenState();
+  State<OpticianDashboardScreen> createState() =>
+      _OpticianDashboardScreenState();
 }
 
-// Reusable sidebar component
-class CustomSidebar extends StatelessWidget {
-  final String currentPage;
-  
-  const CustomSidebar({
-    Key? key,
-    required this.currentPage,
-  }) : super(key: key);
-  
+class _OpticianDashboardScreenState extends State<OpticianDashboardScreen> {
+  final UserController userController = Get.find<UserController>();
+  final ProductController productController = Get.find<ProductController>();
+  final BoutiqueController boutiqueController = Get.find<BoutiqueController>();
+  final OrderController orderController = Get.find<OrderController>();
+
   @override
-  Widget build(BuildContext context) {
-       final OpticianController opticianController = Get.find<OpticianController>();
-    return Container(
-      width: 200,
-      color: const Color(0xFFFEF1E9),
-      padding: const EdgeInsets.symmetric(vertical: 20),
-      child: Column(
-        children: [
-          // Logo
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              children: [
-                Container(
-                  width: 30,
-                  height: 30,
-                  child: const Center(),
-                ),
-                const SizedBox(width: 8),
-                const Text(
-                  "OptiVision",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-          // Profile
-          Column(
-            children: [
-              const CircleAvatar(
-                radius: 40,
-                backgroundColor: Colors.white,
-                child: Icon(
-                  Icons.person,
-                  size: 40,
-                  color: Colors.grey,
-                ),
-              ),
-              const SizedBox(height: 10),
-               Obx(() => Text(
-                opticianController.opticianName.value,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              )),
-              const Text(
-                "Opticien Principal",
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 40),
-          // Navigation Menu
-                          _buildMenuItem(
-                    context, 
-                    Icons.dashboard, 
-                    "Dashboard", 
-                    currentPage == 'Dashboard',
-                    () => _navigateTo(context, '/OpticienDashboard')
-                  ),
-                          _buildMenuItem(
-                    context, 
-                    Icons.shopping_bag, 
-                    "Produits", 
-                    currentPage == 'Products',
-                    () => _navigateTo(context, '/products') 
-                  ),
-          _buildMenuItem(
-            context, 
-            Icons.people, 
-            "Utilisateurs", 
-            currentPage == 'Users',
-            () => _navigateTo(context, '/users')
-          ),
-          _buildMenuItem(
-            context, 
-            Icons.shopping_cart, 
-            "Commandes", 
-            currentPage == 'Orders',
-            () => _navigateTo(context, '/Commande')
-          ),
-        const Spacer(), // Pour pousser le bouton de déconnexion vers le bas
-          // Bouton de déconnexion
-          _buildMenuItem(
-            context, 
-            Icons.logout, 
-            "Déconnexion", 
-            false,
-            () => opticianController.logout(),
-          ),
-        ],
-      ),
-    );
+  void initState() {
+    super.initState();
+    _fetchData(); // Fetch data when the screen is initialized
   }
 
-  // Helper function to navigate to a new screen
-void _navigateTo(BuildContext context, String routeName, {dynamic arguments}) {
-  Get.offNamed(routeName, arguments: arguments);
-}
-
-  // Menu item widget with navigation
-  Widget _buildMenuItem(
-    BuildContext context, 
-    IconData icon, 
-    String label, 
-    bool isActive,
-    VoidCallback onTap
-  ) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 15),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10),
-          color: isActive ? Colors.white : Colors.transparent,
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
-          child: Row(
-            children: [
-              Icon(
-                icon,
-                color: isActive ? Colors.black : Colors.grey,
-              ),
-              const SizedBox(width: 10),
-              Text(
-                label,
-                style: TextStyle(
-                  color: isActive ? Colors.black : Colors.grey,
-                  fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-                ),
-              ),
-              if (isActive)
-                Container(
-                  margin: const EdgeInsets.only(left: 5),
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.red,
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
+  Future<void> _fetchData() async {
+    await userController.fetchUsers();
+    await productController.loadProducts();
+    await boutiqueController.getOpticien();
+    await orderController.loadAllOrders();
   }
-}
 
-class _DashboardScreenState extends State<OpticienDashboardScreen> {
-  final OpticianController opticianController = Get.find<OpticianController>();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -215,133 +48,212 @@ class _DashboardScreenState extends State<OpticienDashboardScreen> {
       body: Row(
         children: [
           // Sidebar
-          CustomSidebar(currentPage: 'Dashboard'),
-          
+          CustomSidebar(currentPage: 'Dashboard'), // Use CustomSidebar here
+
           // Main Content
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
+            child: SingleChildScrollView(
+              // Make the body scrollable
+              padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        "Dashboard",
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Row(
-                        children: [
-                           IconButton(
-                            icon: const Icon(Icons.logout),
-                            onPressed: () {
-                              opticianController.logout();
-                            },
-                            tooltip: 'Déconnexion',
-                          ),
-                          const SizedBox(width: 10),
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: const Row(
-                              children: [
-                                Icon(Icons.notifications, color: Colors.red),
-                                SizedBox(width: 5),
-                                Text("3"),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          const Icon(Icons.settings),
-                        ],
-                      ),
-                    ],
-                  ),
+                  _buildHeader(context),
                   const SizedBox(height: 20),
-              
+                  _buildStatsGrid(userController, productController,
+                      boutiqueController, orderController),
+                  const SizedBox(height: 30),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-              // Popular Products Chart
+                      // Popular Products Chart
                       Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildSectionTitle('Top 5 Produits'),
-                    _buildProductsChart(),
-                  ],
-                ),
-              ),
-                      const SizedBox(width: 20),
-                    // User Repartition Chart
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildSectionTitle('Répartition des utilisateurs'),
-                    UserDistributionChart(),
-                  ],
-                ),
-              ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildSectionTitle('Top 5 Produits'),
+                            _buildProductsChart(),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 30),
+
+                      // User Repartition Chart
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildSectionTitle('Répartition des utilisateurs'),
+                            UserDistributionChart(),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 20),
-                  // Channels
-                const SizedBox(height: 30),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Popular Products Chart
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildSectionTitle('Répartition des commandes'),
-                    OrderStatusChart(),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 30),
+                  const SizedBox(height: 30),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Order Status Chart
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildSectionTitle('Répartition des commandes'),
+                            OrderStatusChart(),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 30),
 
-              // User Repartition Chart
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildSectionTitle('Tendances des revenus mensuels'),
-                    MonthlySalesChart(),
-                  ],
-                ),
-              ),
-            ],
-          ),
-                      ],
-                    ),
+                      // Monthly Sales Chart
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildSectionTitle(
+                                'Tendances des revenus mensuels'),
+                            MonthlySalesChart(),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-      )],
+                ],
               ),
-            );
-        
-      
-      
-    
+            ),
+          ),
+        ],
+      ),
+    );
   }
-    Widget _buildSectionTitle(String title) => Padding(
+
+  Widget _buildSectionTitle(String title) => Padding(
         padding: const EdgeInsets.only(bottom: 15),
         child: Text(
           title,
           style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
       );
-Widget _buildProductsChart() {
+
+  Widget _buildHeader(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        const Text(
+          'Tableau de bord',
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        ),
+        // Other header elements...
+      ],
+    );
+  }
+
+  Widget _buildStatsGrid(
+      UserController userController,
+      ProductController productController,
+      BoutiqueController boutiqueController,
+      OrderController orderController) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final crossAxisCount = constraints.maxWidth < 600
+            ? 1
+            : constraints.maxWidth < 900
+                ? 2
+                : 4;
+
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            crossAxisSpacing: 20,
+            mainAxisSpacing: 20,
+            childAspectRatio: 2,
+          ),
+          itemCount: 4,
+          itemBuilder: (context, index) {
+            final stats = [
+              {
+                'title': 'Utilisateurs',
+                'widget': Obx(() =>
+                    _buildStatValue(userController.users.length.toString())),
+                'color': const Color(0xFF7BACD4),
+                'icon': Icons.people
+              },
+              {
+                'title': 'Produits',
+                'widget': Obx(() => _buildStatValue(
+                    productController.products.length.toString())),
+                'color': Colors.purple,
+                'icon': Icons.shopping_bag
+              },
+              {
+                'title': 'Boutiques',
+                'widget': Obx(() => _buildStatValue(boutiqueController
+                    .opticiensList.length
+                    .toString())), // Dynamic value
+                'color': Colors.orange,
+                'icon': Icons.store
+              },
+              {
+                'title': 'Commandes',
+                'widget': Obx(() => _buildStatValue(
+                      // Add Obx here
+                      orderController.allOrders.length.toString(),
+                    )),
+                'color': Colors.green,
+                'icon': Icons.receipt_long
+              },
+            ][index];
+            return Card(
+              elevation: 3,
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: stats['color'] as Color,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child:
+                          Icon(stats['icon'] as IconData, color: Colors.white),
+                    ),
+                    const SizedBox(width: 15),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          stats['title'] as String,
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                        stats['widget'] as Widget,
+                      ],
+                    )
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildStatValue(String value) {
+    return Text(
+      value,
+      style: const TextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
+      ),
+    );
+  }
+
+  Widget _buildProductsChart() {
     final orderController = Get.find<OrderController>();
     final productController = Get.find<ProductController>();
 
@@ -488,6 +400,7 @@ Widget _buildProductsChart() {
       }),
     );
   }
+
   // Helper function for chart colors
   Color _getChartColor(int index) {
     final colors = [
@@ -500,92 +413,237 @@ Widget _buildProductsChart() {
 
     return colors[index % colors.length];
   }
+}
 
-  Widget _buildProductItem(String name, String handle, String percentage) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 15),
-      child: Row(
+// Navigation Drawer
+class NavigationDrawer extends StatelessWidget {
+  final int selectedIndex;
+  final ValueChanged<int> onItemSelected;
+
+  const NavigationDrawer({
+    super.key,
+    required this.selectedIndex,
+    required this.onItemSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 250, // Fixed width for the drawer
+      color: const Color.fromARGB(255, 113, 160, 201),
+      child: Column(
         children: [
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: Colors.grey[200],
-            child: const Icon(
-              Icons.shopping_bag,
-              color: Colors.grey,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  handle,
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            percentage,
-            style: const TextStyle(
+          const SizedBox(height: 40),
+          const Text(
+            'Admin Panel',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 24,
               fontWeight: FontWeight.bold,
             ),
+          ),
+          const SizedBox(height: 40),
+          ...[
+            'Dashboard',
+            'Utilisateurs',
+            'Opticiens',
+            'Boutiques',
+            'Produits',
+            'Commandes',
+          ].asMap().entries.map(
+            (entry) {
+              final index = entry.key;
+              final title = entry.value;
+              return ListTile(
+                leading: Icon(
+                  _getIcon(index),
+                  color: selectedIndex == index ? Colors.white : Colors.white70,
+                ),
+                title: Text(
+                  title,
+                  style: TextStyle(
+                    color:
+                        selectedIndex == index ? Colors.white : Colors.white70,
+                    fontWeight: selectedIndex == index
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+                  ),
+                ),
+                onTap: () => onItemSelected(index),
+              );
+            },
           ),
         ],
       ),
     );
   }
 
-  Widget _buildChannelCard(String name, String percentage, Color color) {
-    return Expanded(
+  IconData _getIcon(int index) {
+    switch (index) {
+      case 0:
+        return Icons.dashboard;
+      case 1:
+        return Icons.people;
+      case 2:
+        return Icons.visibility_sharp;
+      case 3:
+        return Icons.store;
+      case 4:
+        return Icons.shopping_bag;
+      case 5:
+        return Icons.receipt_long;
+      default:
+        return Icons.error;
+    }
+  }
+}
+
+class CustomSidebar extends StatelessWidget {
+  final String currentPage;
+
+  const CustomSidebar({
+    Key? key,
+    required this.currentPage,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final OpticianController opticianController =
+        Get.find<OpticianController>();
+    return Container(
+      width: 200,
+      color: const Color(0xFFFEF1E9),
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      child: Column(
+        children: [
+          // Logo
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              children: [
+                Container(
+                  width: 30,
+                  height: 30,
+                  child: const Center(),
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  "OptiVision",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          // Profile
+          Column(
+            children: [
+              const CircleAvatar(
+                radius: 40,
+                backgroundColor: Colors.white,
+                child: Icon(
+                  Icons.person,
+                  size: 40,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Obx(() => Text(
+                    opticianController.opticianName.value,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  )),
+              const Text(
+                "Opticien Principal",
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 40),
+          // Navigation Menu
+          _buildMenuItem(
+              context,
+              Icons.dashboard,
+              "Dashboard",
+              currentPage == 'Dashboard',
+              () => _navigateTo(context, '/OpticienDashboard')),
+          _buildMenuItem(
+              context,
+              Icons.shopping_bag,
+              "Produits",
+              currentPage == 'Products',
+              () => _navigateTo(context, '/products')),
+          _buildMenuItem(context, Icons.people, "Utilisateurs",
+              currentPage == 'Users', () => _navigateTo(context, '/users')),
+          _buildMenuItem(context, Icons.shopping_cart, "Commandes",
+              currentPage == 'Orders', () => _navigateTo(context, '/Commande')),
+          const Spacer(), // Pour pousser le bouton de déconnexion vers le bas
+          // Bouton de déconnexion
+          _buildMenuItem(
+            context,
+            Icons.logout,
+            "Déconnexion",
+            false,
+            () => opticianController.logout(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Helper function to navigate to a new screen
+  void _navigateTo(BuildContext context, String routeName,
+      {dynamic arguments}) {
+    Get.offNamed(routeName, arguments: arguments);
+  }
+
+  // Menu item widget with navigation
+  Widget _buildMenuItem(BuildContext context, IconData icon, String label,
+      bool isActive, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 10),
+        margin: const EdgeInsets.only(bottom: 15),
         decoration: BoxDecoration(
-          color: Colors.white,
           borderRadius: BorderRadius.circular(10),
+          color: isActive ? Colors.white : Colors.transparent,
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                shape: BoxShape.circle,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
+          child: Row(
+            children: [
+              Icon(
+                icon,
+                color: isActive ? Colors.black : Colors.grey,
               ),
-              child: Icon(
-                Icons.trending_up,
-                color: color,
-                size: 20,
+              const SizedBox(width: 10),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isActive ? Colors.black : Colors.grey,
+                  fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                ),
               ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              name,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 12,
-              ),
-            ),
-            const SizedBox(height: 5),
-            Text(
-              percentage,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: percentage.contains("+") ? Colors.green : Colors.red,
-              ),
-            ),
-          ],
+              if (isActive)
+                Container(
+                  margin: const EdgeInsets.only(left: 5),
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.red,
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );

@@ -9,7 +9,8 @@ class Product {
   int quantiteStock;
   String image;
   String? typeVerre;
-  String opticienId;
+  String boutiqueId;
+  String opticienId; // Added this field
   double averageRating;
   int totalReviews;
 
@@ -24,7 +25,8 @@ class Product {
     required this.quantiteStock,
     this.image = "",
     this.typeVerre,
-    required this.opticienId,
+    required this.boutiqueId,
+    this.opticienId = "", // Added with default value
     required this.averageRating,
     required this.totalReviews,
   });
@@ -44,7 +46,8 @@ class Product {
       quantiteStock: json['quantite_stock'] ?? 0,
       image: imageUrl ?? '', // Use the constructed image URL
       typeVerre: json['type_verre']?.toString() ?? '',
-      opticienId: json['opticienId']?.toString() ?? '',
+      boutiqueId: json['boutiqueId']?.toString() ?? '',
+      opticienId: json['opticienId']?.toString() ?? '', // Parse from JSON
       averageRating: (json['averageRating'] as num?)?.toDouble() ?? 0.0,
       totalReviews: json['totalReviews'] ?? 0,
     );
@@ -75,7 +78,8 @@ class Product {
       'quantite_stock': quantiteStock,
       'image': image,
       'type_verre': typeVerre,
-      'opticienId': opticienId,
+      'boutiqueId': boutiqueId,
+      'opticienId': opticienId, // Include in JSON
       'totalReviews': totalReviews,
       'averageRating': averageRating,
     };
@@ -92,7 +96,8 @@ class Product {
     int? quantiteStock,
     String? image,
     String? typeVerre,
-    String? opticienId,
+    String? boutiqueId,
+    String? opticienId, // Added to copyWith
     double? averageRating,
     int? totalReviews,
   }) {
@@ -107,7 +112,8 @@ class Product {
       quantiteStock: quantiteStock ?? this.quantiteStock,
       image: image ?? this.image,
       typeVerre: typeVerre ?? this.typeVerre,
-      opticienId: opticienId ?? this.opticienId,
+      boutiqueId: boutiqueId ?? this.boutiqueId,
+      opticienId: opticienId ?? this.opticienId, // Handle in copyWith
       averageRating: averageRating ?? this.averageRating,
       totalReviews: totalReviews ?? this.totalReviews,
     );

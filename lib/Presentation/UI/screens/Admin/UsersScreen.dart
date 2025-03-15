@@ -33,7 +33,7 @@ class _UsersScreenState extends State<UsersScreen> {
       GlobalKey<ScaffoldMessengerState>();
 
   // Palette de couleurs pour un design cohérent
-  final Color _primaryColor = const Color.fromARGB(255, 84, 151, 198);
+  final Color _primaryColor = const Color.fromARGB(255, 33, 199, 146);
   final Color _secondaryColor = const Color.fromARGB(255, 16, 16, 17);
   final Color _accentColor = const Color(0xFFFF4081);
   final Color _lightPrimaryColor = const Color(0xFFC5CAE9);
@@ -44,11 +44,9 @@ class _UsersScreenState extends State<UsersScreen> {
 
   // Pagination
   int _currentPage = 1;
-  int _usersPerPage = 10;
-  int get _startIndex => (_currentPage - 1) * _usersPerPage;
-  int get _endIndex => _startIndex + _usersPerPage > _filteredUsers.length
-      ? _filteredUsers.length
-      : _startIndex + _usersPerPage;
+  int _usersPerPage = 4;
+  int _startIndex = 0;
+  int _endIndex = 0;
 
   // Search and filtering
   final TextEditingController _searchController = TextEditingController();
@@ -72,7 +70,6 @@ class _UsersScreenState extends State<UsersScreen> {
   @override
   void initState() {
     super.initState();
-    _loadUsers();
 
     // Initialiser la recherche
     _searchController.addListener(_onSearchChanged);
@@ -90,6 +87,15 @@ class _UsersScreenState extends State<UsersScreen> {
         }
       });
     }
+
+    // Charger les utilisateurs et mettre à jour les indices une fois les données disponibles
+    _loadUsers().then((_) {
+      if (mounted) {
+        setState(() {
+          _updateIndices();
+        });
+      }
+    });
   }
 
   @override
@@ -390,7 +396,7 @@ class _UsersScreenState extends State<UsersScreen> {
               ),
               const SizedBox(height: 4),
               Text(
-                '${_controller.users.length} utilisateurs trouvés',
+                '${_controller.users.length} utilisateurs',
                 style: TextStyle(
                   fontSize: 14,
                   color: _textSecondaryColor,
@@ -400,7 +406,7 @@ class _UsersScreenState extends State<UsersScreen> {
             ],
           ),
           ElevatedButton.icon(
-            onPressed: () => _showAddUserDialog(),
+            onPressed: () => _showAddUserDialog(null),
             icon: const Icon(Icons.person_add),
             label: const Text('Nouvel utilisateur'),
             style: ElevatedButton.styleFrom(
@@ -692,7 +698,7 @@ class _UsersScreenState extends State<UsersScreen> {
                       value: null,
                       child: Text('Tous les genres'),
                     ),
-                    ...['Homme', 'Femme', 'Autre'].map((genre) {
+                    ...['Homme', 'Femme'].map((genre) {
                       return DropdownMenuItem<String>(
                         value: genre,
                         child: Text(genre),
@@ -907,7 +913,7 @@ class _UsersScreenState extends State<UsersScreen> {
               onSort: (_, __) => _sortBy('email'),
             ),
             DataColumn(
-              label: const Text('Date',
+              label: const Text('Date de naissance',
                   style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: Color.fromARGB(255, 10, 10, 10))),
@@ -998,7 +1004,13 @@ class _UsersScreenState extends State<UsersScreen> {
                 DataCell(Text(user.email,
                     style: const TextStyle(
                         color: Color.fromARGB(255, 13, 13, 13)))),
-                DataCell(Text(user.date,
+                // In your _buildContent method, update the DataCell for the date
+                DataCell(Text(
+                    // Parse the date string and format it to display only date
+                    user.date != null && user.date.isNotEmpty
+                        ? DateFormat('yyyy-MM-dd')
+                            .format(DateTime.parse(user.date))
+                        : 'N/A',
                     style: const TextStyle(
                         color: Color.fromARGB(255, 16, 16, 16)))),
                 DataCell(Text(user.phone,
@@ -1032,6 +1044,14 @@ class _UsersScreenState extends State<UsersScreen> {
     );
   }
 
+  void _updateIndices() {
+    _startIndex = (_currentPage - 1) * _usersPerPage;
+    _endIndex = _startIndex + _usersPerPage;
+    if (_endIndex > _filteredUsers.length) {
+      _endIndex = _filteredUsers.length;
+    }
+  }
+
   Widget _buildPagination() {
     if (_filteredUsers.isEmpty || _filteredUsers.length <= _usersPerPage) {
       return const SizedBox.shrink();
@@ -1043,33 +1063,23 @@ class _UsersScreenState extends State<UsersScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Displaying range and total
           Text(
             'Affichage de ${_startIndex + 1} à $_endIndex sur ${_filteredUsers.length} utilisateurs',
             style: TextStyle(
               color: Colors.grey[700],
             ),
           ),
-
-          // Page size selector
           Row(
             children: [
               const Text('Lignes par page: '),
               DropdownButton<int>(
                 value: _usersPerPage,
-                items: [5, 10, 20, 50, 100].map((value) {
+                items: [4, 10, 20, 50, 100].map((value) {
                   return DropdownMenuItem<int>(
                     value: value,
                     child: Text('$value'),
@@ -1079,33 +1089,37 @@ class _UsersScreenState extends State<UsersScreen> {
                   if (value != null) {
                     setState(() {
                       _usersPerPage = value;
-                      // Adjust current page if needed
                       int maxPage =
                           (_filteredUsers.length / _usersPerPage).ceil();
                       if (_currentPage > maxPage) {
                         _currentPage = maxPage;
                       }
+                      _updateIndices();
                     });
                   }
                 },
               ),
             ],
           ),
-
-          // Pagination controls
           Row(
             children: [
               IconButton(
                 icon: const Icon(Icons.first_page),
                 onPressed: _currentPage > 1
-                    ? () => setState(() => _currentPage = 1)
+                    ? () => setState(() {
+                          _currentPage = 1;
+                          _updateIndices();
+                        })
                     : null,
                 tooltip: 'Première page',
               ),
               IconButton(
                 icon: const Icon(Icons.navigate_before),
                 onPressed: _currentPage > 1
-                    ? () => setState(() => _currentPage--)
+                    ? () => setState(() {
+                          _currentPage--;
+                          _updateIndices();
+                        })
                     : null,
                 tooltip: 'Page précédente',
               ),
@@ -1127,14 +1141,20 @@ class _UsersScreenState extends State<UsersScreen> {
               IconButton(
                 icon: const Icon(Icons.navigate_next),
                 onPressed: _currentPage < totalPages
-                    ? () => setState(() => _currentPage++)
+                    ? () => setState(() {
+                          _currentPage++;
+                          _updateIndices();
+                        })
                     : null,
                 tooltip: 'Page suivante',
               ),
               IconButton(
                 icon: const Icon(Icons.last_page),
                 onPressed: _currentPage < totalPages
-                    ? () => setState(() => _currentPage = totalPages)
+                    ? () => setState(() {
+                          _currentPage = totalPages;
+                          _updateIndices();
+                        })
                     : null,
                 tooltip: 'Dernière page',
               ),
@@ -1145,245 +1165,446 @@ class _UsersScreenState extends State<UsersScreen> {
     );
   }
 
-Future<void> _showAddUserDialog() async {
-  final _formKey = GlobalKey<FormState>();
+  Future<void> _showAddUserDialog(User? user) async {
+    final _formKey = GlobalKey<FormState>();
 
-  // Form controllers
-  final TextEditingController _nomController = TextEditingController();
-  final TextEditingController _prenomController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _dateController = TextEditingController();
-  bool _isLoading = false;
+    // Form controllers
+    final TextEditingController _nomController = TextEditingController();
+    final TextEditingController _prenomController = TextEditingController();
+    final TextEditingController _emailController = TextEditingController();
+    final TextEditingController _phoneController = TextEditingController();
+    final TextEditingController _passwordController = TextEditingController();
+    final TextEditingController _dateController = TextEditingController(
+      text: user?.date != null
+          ? DateFormat('yyyy-MM-dd').format(DateTime.parse(user!.date))
+          : '',
+    );
+    bool _isLoading = false;
 
-  // Selection variables
-  String _selectedRegion = Regions.list.first;
-  String _selectedGenre = 'Homme';
-  DateTime _selectedDate = DateTime.now();
-  PlatformFile? _tempSelectedImage;
+    // Selection variables
+    String _selectedRegion = Regions.list.first;
+    String _selectedGenre = 'Homme';
+    DateTime _selectedDate =
+        DateTime.tryParse(user?.date ?? '') ?? DateTime.now();
+    PlatformFile? _tempSelectedImage;
 
-  // Format initial date
-  _dateController.text = DateFormat('yyyy-MM-dd').format(_selectedDate);
-
-  await showDialog(
-    context: context,
-    builder: (BuildContext dialogContext) => StatefulBuilder(
-      builder: (context, setState) {
-        return AlertDialog(
-          title: const Text('Ajouter un utilisateur'),
-          content: Container(
-            width: 600,
-            child: Form(
-              key: _formKey,
-              child: SingleChildScrollView(
+    await showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) => StatefulBuilder(
+        builder: (context, setState) {
+          return Dialog(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: 600,
+                maxHeight: MediaQuery.of(context).size.height * 0.8,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Profile image upload section
-                    Center(
-                      child: Column(
-                        children: [
-                          FilePickerExample(
-                            onImagePicked: (PlatformFile? file) {
-                              setState(() {
-                                _tempSelectedImage = file;
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 8),
-                          const Text('Photo de profil'),
-                        ],
+                    // Dialog title
+                    const Text(
+                      'Ajouter un utilisateur',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 16),
 
-                    // Name and surname fields
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: _nomController,
-                            decoration: const InputDecoration(
-                              labelText: 'Nom',
-                              border: OutlineInputBorder(),
-                            ),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Veuillez entrer un nom';
-                              }
-                              return null;
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: TextFormField(
-                            controller: _prenomController,
-                            decoration: const InputDecoration(
-                              labelText: 'Prénom',
-                              border: OutlineInputBorder(),
-                            ),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Veuillez entrer un prénom';
-                              }
-                              return null;
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Email field
-                    TextFormField(
-                      controller: _emailController,
-                      decoration: const InputDecoration(
-                        labelText: 'Email',
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.emailAddress,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Veuillez entrer un email';
-                        }
-                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                            .hasMatch(value)) {
-                          return 'Veuillez entrer un email valide';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Password field
-                    TextFormField(
-                      controller: _passwordController,
-                      decoration: const InputDecoration(
-                        labelText: 'Mot de passe',
-                        border: OutlineInputBorder(),
-                      ),
-                      obscureText: true,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Veuillez entrer un mot de passe';
-                        }
-                        if (value.length < 6) {
-                          return 'Le mot de passe doit contenir au moins 6 caractères';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Phone and date fields
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: _phoneController,
-                            decoration: const InputDecoration(
-                              labelText: 'Téléphone',
-                              border: OutlineInputBorder(),
-                            ),
-                            keyboardType: TextInputType.phone,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Veuillez entrer un numéro de téléphone';
-                              }
-                              return null;
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: () async {
-                              final DateTime? picked = await showDatePicker(
-                                context: context,
-                                initialDate: _selectedDate,
-                                firstDate: DateTime(1900),
-                                lastDate: DateTime.now(),
-                              );
-                              if (picked != null && picked != _selectedDate) {
-                                setState(() {
-                                  _selectedDate = picked;
-                                  _dateController.text =
-                                      DateFormat('yyyy-MM-dd')
-                                          .format(_selectedDate);
-                                });
-                              }
-                            },
-                            child: AbsorbPointer(
-                              child: TextFormField(
-                                controller: _dateController,
-                                decoration: const InputDecoration(
-                                  labelText: 'Date de naissance',
-                                  border: OutlineInputBorder(),
-                                  suffixIcon: Icon(Icons.calendar_today),
+                    // Form content in a scrollable container
+                    Flexible(
+                      child: Form(
+                        key: _formKey,
+                        child: SingleChildScrollView(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Profile image upload section
+                              Center(
+                                child: Column(
+                                  children: [
+                                    SizedBox(
+                                      height:
+                                          120, // Give explicit size to the file picker
+                                      child: FilePickerExample(
+                                        onImagePicked: (PlatformFile? file) {
+                                          setState(() {
+                                            _tempSelectedImage = file;
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    const Text('Photo de profil'),
+                                  ],
                                 ),
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Name and surname fields
+                              Row(
+                                children: [
+                                  Flexible(
+                                    flex: 1,
+                                    child: TextFormField(
+                                      controller: _nomController,
+                                      decoration: const InputDecoration(
+                                        labelText: 'Nom',
+                                        border: OutlineInputBorder(),
+                                        hintText: 'Entrez le nom de famille',
+                                        contentPadding: EdgeInsets.symmetric(
+                                            horizontal: 12, vertical: 16),
+                                      ),
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return 'Veuillez entrer un nom';
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Flexible(
+                                    flex: 1,
+                                    child: TextFormField(
+                                      controller: _prenomController,
+                                      decoration: const InputDecoration(
+                                        labelText: 'Prénom',
+                                        border: OutlineInputBorder(),
+                                        hintText: 'Entrez le prénom',
+                                        contentPadding: EdgeInsets.symmetric(
+                                            horizontal: 12, vertical: 16),
+                                      ),
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return 'Veuillez entrer un prénom';
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Email field
+                              TextFormField(
+                                controller: _emailController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Email',
+                                  border: OutlineInputBorder(),
+                                  hintText: 'exemple@gmail.com',
+                                  contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 16),
+                                ),
+                                keyboardType: TextInputType.emailAddress,
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
-                                    return 'Veuillez sélectionner une date';
+                                    return 'Veuillez entrer un email';
+                                  }
+                                  if (!value.endsWith('@gmail.com')) {
+                                    return 'L\'email doit être sous format @gmail.com';
                                   }
                                   return null;
                                 },
                               ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
+                              const SizedBox(height: 16),
 
-                    // Region and gender selection
-                    Row(
-                      children: [
-                        Expanded(
-                          child: DropdownButtonFormField<String>(
-                            decoration: const InputDecoration(
-                              labelText: 'Région',
-                              border: OutlineInputBorder(),
-                            ),
-                            value: _selectedRegion,
-                            items: Regions.list.map((region) {
-                              return DropdownMenuItem(
-                                value: region,
-                                child: Text(region),
-                              );
-                            }).toList(),
-                            onChanged: (value) {
-                              if (value != null) {
-                                setState(() {
-                                  _selectedRegion = value;
-                                });
-                              }
-                            },
+                              // Password field
+                              TextFormField(
+                                controller: _passwordController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Mot de passe',
+                                  border: OutlineInputBorder(),
+                                  hintText:
+                                      'Minimum 8 caractères avec majuscule, chiffre et caractère spécial',
+                                  contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 16),
+                                ),
+                                obscureText: true,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Veuillez entrer un mot de passe';
+                                  }
+                                  if (value.length < 8) {
+                                    return 'Le mot de passe doit contenir au moins 8 caractères';
+                                  }
+                                  if (!RegExp(r'[A-Z]').hasMatch(value)) {
+                                    return 'Le mot de passe doit contenir au moins une majuscule';
+                                  }
+                                  if (!RegExp(r'[0-9]').hasMatch(value)) {
+                                    return 'Le mot de passe doit contenir au moins un chiffre';
+                                  }
+                                  if (!RegExp(r'[!@/+_#$%^&*(),.?":{}|<>]')
+                                      .hasMatch(value)) {
+                                    return 'Le mot de passe doit contenir au moins un caractère spécial';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Phone and date fields
+                              Row(
+                                children: [
+                                  Flexible(
+                                    flex: 1,
+                                    child: TextFormField(
+                                      controller: _phoneController,
+                                      decoration: const InputDecoration(
+                                        labelText: 'Téléphone',
+                                        border: OutlineInputBorder(),
+                                        hintText: '8 chiffres',
+                                        contentPadding: EdgeInsets.symmetric(
+                                            horizontal: 12, vertical: 16),
+                                      ),
+                                      keyboardType: TextInputType.phone,
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return 'Veuillez entrer un numéro de téléphone';
+                                        }
+                                        if (value.length != 8 ||
+                                            !RegExp(r'^[0-9]{8}$')
+                                                .hasMatch(value)) {
+                                          return 'Le téléphone doit contenir exactement 8 chiffres';
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  // Date de naissance
+                                  Flexible(
+                                    flex: 1,
+                                    child: TextFormField(
+                                      controller: _dateController,
+                                      decoration: const InputDecoration(
+                                        labelText: 'Date de naissance',
+                                        border: OutlineInputBorder(),
+                                        suffixIcon: Icon(Icons.calendar_today),
+                                        contentPadding: EdgeInsets.symmetric(
+                                            horizontal: 12, vertical: 16),
+                                      ),
+                                      readOnly: true,
+                                      onTap: () async {
+                                        final DateTime? picked =
+                                            await showDatePicker(
+                                          context: context,
+                                          initialDate: _selectedDate,
+                                          firstDate: DateTime(1900),
+                                          lastDate: DateTime.now(),
+                                        );
+                                        if (picked != null &&
+                                            picked != _selectedDate) {
+                                          setState(() {
+                                            _selectedDate = picked;
+                                            _dateController.text =
+                                                DateFormat('yyyy-MM-dd')
+                                                    .format(_selectedDate);
+                                          });
+                                        }
+                                      },
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return 'Veuillez sélectionner une date';
+                                        }
+
+                                        // Vérifier que l'utilisateur a au moins 13 ans
+                                        final selectedDate =
+                                            DateTime.tryParse(value);
+                                        if (selectedDate != null) {
+                                          final today = DateTime.now();
+                                          final age = today.year -
+                                              selectedDate.year -
+                                              (today.month <
+                                                          selectedDate.month ||
+                                                      (today.month ==
+                                                              selectedDate
+                                                                  .month &&
+                                                          today.day <
+                                                              selectedDate.day)
+                                                  ? 1
+                                                  : 0);
+
+                                          if (age < 13) {
+                                            return 'L\'utilisateur doit avoir au moins 13 ans';
+                                          }
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Region and gender selection
+                              Row(
+                                children: [
+                                  Flexible(
+                                    flex: 1,
+                                    child: DropdownButtonFormField<String>(
+                                      decoration: const InputDecoration(
+                                        labelText: 'Région',
+                                        border: OutlineInputBorder(),
+                                        contentPadding: EdgeInsets.symmetric(
+                                            horizontal: 12, vertical: 16),
+                                      ),
+                                      value: _selectedRegion,
+                                      items: Regions.list.map((region) {
+                                        return DropdownMenuItem(
+                                          value: region,
+                                          child: Text(region),
+                                        );
+                                      }).toList(),
+                                      onChanged: (value) {
+                                        if (value != null) {
+                                          setState(() {
+                                            _selectedRegion = value;
+                                          });
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Flexible(
+                                    flex: 1,
+                                    child: DropdownButtonFormField<String>(
+                                      decoration: const InputDecoration(
+                                        labelText: 'Genre',
+                                        border: OutlineInputBorder(),
+                                        contentPadding: EdgeInsets.symmetric(
+                                            horizontal: 12, vertical: 16),
+                                      ),
+                                      value: _selectedGenre,
+                                      items: ['Homme', 'Femme'].map((genre) {
+                                        return DropdownMenuItem(
+                                          value: genre,
+                                          child: Text(genre),
+                                        );
+                                      }).toList(),
+                                      onChanged: (value) {
+                                        if (value != null) {
+                                          setState(() {
+                                            _selectedGenre = value;
+                                          });
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: DropdownButtonFormField<String>(
-                            decoration: const InputDecoration(
-                              labelText: 'Genre',
-                              border: OutlineInputBorder(),
-                            ),
-                            value: _selectedGenre,
-                            items: ['Homme', 'Femme', 'Autre'].map((genre) {
-                              return DropdownMenuItem(
-                                value: genre,
-                                child: Text(genre),
-                              );
-                            }).toList(),
-                            onChanged: (value) {
-                              if (value != null) {
-                                setState(() {
-                                  _selectedGenre = value;
-                                });
-                              }
-                            },
-                          ),
+                      ),
+                    ),
+
+                    // Action buttons
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Annuler'),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: _isLoading
+                              ? null
+                              : () async {
+                                  if (_formKey.currentState!.validate()) {
+                                    setState(() {
+                                      _isLoading = true;
+                                    });
+
+                                    try {
+                                      // Créer l'utilisateur
+                                      final newUser = User(
+                                        nom: _nomController.text,
+                                        prenom: _prenomController.text,
+                                        email: _emailController.text,
+                                        date: DateFormat('yyyy-MM-dd')
+                                            .format(_selectedDate),
+                                        region: _selectedRegion,
+                                        genre: _selectedGenre,
+                                        password: _passwordController.text,
+                                        phone: _phoneController.text,
+                                        status: 'Active',
+                                        imageUrl: 'imageUrl',
+                                      );
+
+                                      // Add user to database FIRST
+                                      final result =
+                                          await _controller.addUser(newUser);
+
+                                      // THEN, upload the image if available
+                                      if (_tempSelectedImage != null) {
+                                        final imageUrl =
+                                            await _uploadImageAndGetUrl(
+                                          _tempSelectedImage,
+                                          _emailController.text,
+                                        );
+                                        // Update the user with the new image URL
+                                        newUser.imageUrl = imageUrl;
+                                      }
+
+                                      // Retrieve the complete user with ID
+                                      final completeUser = await _authController
+                                          .getUserByEmail(newUser.email);
+
+                                      // Update the user ID
+                                      newUser.id = completeUser['_id'] ??
+                                          completeUser['id'] ??
+                                          '';
+
+                                      // Close the dialog
+                                      Navigator.pop(dialogContext);
+
+                                      // Update UI
+                                      if (mounted) {
+                                        setState(() {
+                                          _controller.fetchUsers();
+                                          _showSnackBar(
+                                              'Utilisateur ajouté avec succès');
+                                          // Force refresh of the UI
+                                          _controller.fetchUsers().then((_) {
+                                            if (mounted) {
+                                              setState(() {
+                                                _filterUsers();
+                                              });
+                                            }
+                                          }).catchError((error) {
+                                            print(
+                                                "Erreur lors du rafraîchissement des utilisateurs: $error");
+                                          });
+                                        });
+                                      }
+                                    } catch (e) {
+                                      _showSnackBar('Erreur: ${e.toString()}',
+                                          isError: true);
+                                    } finally {
+                                      if (mounted) {
+                                        setState(() {
+                                          _isLoading = false;
+                                        });
+                                      }
+                                    }
+                                  }
+                                },
+                          child: _isLoading
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2.0),
+                                )
+                              : const Text('Ajouter'),
                         ),
                       ],
                     ),
@@ -1391,427 +1612,439 @@ Future<void> _showAddUserDialog() async {
                 ),
               ),
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Annuler'),
-            ),
-            ElevatedButton(
-              onPressed: _isLoading // Désactiver le bouton si en cours de chargement
-                  ? null
-                  : () async {
-                      if (_formKey.currentState!.validate()) {
-                        setState(() {
-                          _isLoading = true; // Démarrer le chargement
-                        });
+          );
+        },
+      ),
+    );
 
-                        try {
-                          // Créer l'utilisateur
-                          final newUser = User(
-                            nom: _nomController.text,
-                            prenom: _prenomController.text,
-                            email: _emailController.text,
-                            date: _dateController.text,
-                            region: _selectedRegion,
-                            genre: _selectedGenre,
-                            password: _passwordController.text,
-                            phone: _phoneController.text,
-                            status: 'Active',
-                            imageUrl: 'imageUrl', // Commencer avec une image vide
-                          );
-
-                          // Add user to database FIRST
-                          final result = await _controller.addUser(newUser);
-
-                          // THEN, upload the image if available (after user is created)
-                          if (_tempSelectedImage != null) {
-                            final imageUrl = await _uploadImageAndGetUrl(
-                              _tempSelectedImage,
-                              _emailController.text,
-                            );
-                            // Update the user with the new image URL
-                            newUser.imageUrl = imageUrl;
-                          }
-
-                          // Retrieve the complete user with ID
-                          final completeUser =
-                              await _authController.getUserByEmail(newUser.email);
-
-                          // Update the user ID
-                          newUser.id =
-                              completeUser['_id'] ?? completeUser['id'] ?? '';
-
-                          // Close the dialog
-                          Navigator.pop(dialogContext);
-
-                          // Update UI
-                          if (mounted) {
-                            setState(() {
-                              _showSnackBar('Utilisateur ajouté avec succès');
-                              // Force refresh of the UI
-                              _controller.fetchUsers().then((_) {
-                                if (mounted) {
-                                  setState(() {
-                                    _filterUsers();
-                                  });
-                                }
-                              }).catchError((error) {
-                                print("Erreur lors du rafraîchissement des utilisateurs: $error");
-                              });
-                            });
-                          }
-                        } catch (e) {
-                          _showSnackBar('Erreur: ${e.toString()}', isError: true);
-                        } finally {
-                          if (mounted) {
-                            setState(() {
-                              _isLoading = false; // Arrêter le chargement
-                            });
-                          }
-                        }
-                      }
-                    },
-              child: const Text('Ajouter'),
-            )
-          ],
-        );
-      },
-    ),
-  );
-
-  // Force rebuild after dialog is closed
-  if (mounted) {
-    setState(() {});
+    // Force rebuild after dialog is closed
+    if (mounted) {
+      setState(() {});
+    }
   }
-}
+
   Future<void> _showEditDialog(User user) async {
-  final _formKey = GlobalKey<FormState>();
-  bool _isLoading = false;
+    final _formKey = GlobalKey<FormState>();
+    bool _isLoading = false;
 
-  // Créez une copie de l'utilisateur pour éviter de modifier l'original avant confirmation
-  final User userCopy = User(
-    id: user.id,
-    nom: user.nom,
-    prenom: user.prenom,
-    email: user.email,
-    phone: user.phone,
-    date: user.date,
-    region: user.region,
-    genre: user.genre,
-    imageUrl: user.imageUrl,
-    password: '', // Pas besoin de modifier le mot de passe dans l'édition
-    status: user.status,
-  );
+    // Créez une copie de l'utilisateur pour éviter de modifier l'original avant confirmation
+    final User userCopy = User(
+      id: user.id,
+      nom: user.nom,
+      prenom: user.prenom,
+      email: user.email,
+      phone: user.phone,
+      date: user.date,
+      region: user.region,
+      genre: user.genre,
+      imageUrl: user.imageUrl,
+      password: '', // Pas besoin de modifier le mot de passe dans l'édition
+      status: user.status,
+    );
 
-  // Initialisez les contrôleurs avec les données existantes de l'utilisateur
-  final TextEditingController _nomController = TextEditingController(text: userCopy.nom);
-  final TextEditingController _prenomController = TextEditingController(text: userCopy.prenom);
-  final TextEditingController _emailController = TextEditingController(text: userCopy.email);
-  final TextEditingController _phoneController = TextEditingController(text: userCopy.phone);
-  final TextEditingController _dateController = TextEditingController(text: userCopy.date);
+    // Initialisez les contrôleurs avec les données existantes de l'utilisateur
+    final TextEditingController _nomController =
+        TextEditingController(text: userCopy.nom);
+    final TextEditingController _prenomController =
+        TextEditingController(text: userCopy.prenom);
+    final TextEditingController _emailController =
+        TextEditingController(text: userCopy.email);
+    final TextEditingController _phoneController =
+        TextEditingController(text: userCopy.phone);
+    final TextEditingController _dateController = TextEditingController(
+      text: user?.date != null
+          ? DateFormat('yyyy-MM-dd').format(DateTime.parse(user!.date))
+          : '',
+    );
+    final TextEditingController _passwordController =
+        TextEditingController(); // Nouveau contrôleur pour le mot de passe
 
-  // Initialisez les valeurs sélectionnées
-  String _selectedRegion = userCopy.region;
-  String _selectedGenre = userCopy.genre;
-  DateTime _selectedDate = DateTime.tryParse(userCopy.date) ?? DateTime.now();
-  PlatformFile? _tempSelectedImage;
+    // Initialisez les valeurs sélectionnées
+    String _selectedRegion = userCopy.region;
+    String _selectedGenre = userCopy.genre;
+    DateTime _selectedDate =
+        DateTime.tryParse(user?.date ?? '') ?? DateTime.now();
+    PlatformFile? _tempSelectedImage;
 
-  await showDialog(
-    context: context,
-    builder: (BuildContext dialogContext) => StatefulBuilder(
-      builder: (context, setState) {
-        return AlertDialog(
-          title: const Text('Modifier l\'utilisateur'),
-          content: Container(
-            width: 600,
-            child: Form(
-              key: _formKey,
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Section de l'image de profil
-                    Center(
-                      child: Column(
+    await showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text('Modifier l\'utilisateur'),
+            content: Container(
+              width: 600,
+              child: Form(
+                key: _formKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Section de l'image de profil
+                      Center(
+                        child: Column(
+                          children: [
+                            FilePickerExample(
+                              onImagePicked: (PlatformFile? file) {
+                                setState(() {
+                                  _tempSelectedImage = file;
+                                });
+                              },
+                              initialImageUrl: userCopy.imageUrl,
+                            ),
+                            const SizedBox(height: 8),
+                            const Text('Photo de profil'),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Champs du formulaire
+                      Row(
                         children: [
-                          FilePickerExample(
-                            onImagePicked: (PlatformFile? file) {
-                              setState(() {
-                                _tempSelectedImage = file;
-                              });
-                            },
-                            initialImageUrl: userCopy.imageUrl,
+                          Expanded(
+                            child: TextFormField(
+                              controller: _nomController,
+                              decoration: const InputDecoration(
+                                labelText: 'Nom',
+                                border: OutlineInputBorder(),
+                                hintText: 'Entrez le nom de famille',
+                              ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Veuillez entrer un nom';
+                                }
+                                return null;
+                              },
+                            ),
                           ),
-                          const SizedBox(height: 8),
-                          const Text('Photo de profil'),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _prenomController,
+                              decoration: const InputDecoration(
+                                labelText: 'Prénom',
+                                border: OutlineInputBorder(),
+                                hintText: 'Entrez le prénom',
+                              ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Veuillez entrer un prénom';
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
                         ],
                       ),
-                    ),
-                    const SizedBox(height: 16),
+                      const SizedBox(height: 16),
 
-                    // Champs du formulaire
-                    Row(
-                      children: [
-                        Expanded(
+                      // Champ email
+                      TextFormField(
+                        controller: _emailController,
+                        decoration: const InputDecoration(
+                          labelText: 'Email',
+                          border: OutlineInputBorder(),
+                          hintText: 'exemple@gmail.com',
+                        ),
+                        keyboardType: TextInputType.emailAddress,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Veuillez entrer un email';
+                          }
+                          if (!value.endsWith('@gmail.com')) {
+                            return 'L\'email doit être sous format @gmail.com';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Champ de mot de passe (optionnel pour la modification)
+                      TextFormField(
+                        controller: _passwordController,
+                        decoration: const InputDecoration(
+                          labelText: 'Nouveau mot de passe (optionnel)',
+                          border: OutlineInputBorder(),
+                          hintText:
+                              'Minimum 8 caractères avec majuscule, chiffre et caractère spécial',
+                        ),
+                        obscureText: true,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return null; // Le mot de passe est optionnel lors de la modification
+                          }
+                          if (value.length < 8) {
+                            return 'Le mot de passe doit contenir au moins 8 caractères';
+                          }
+                          if (!RegExp(r'[A-Z]').hasMatch(value)) {
+                            return 'Le mot de passe doit contenir au moins une majuscule';
+                          }
+                          if (!RegExp(r'[0-9]').hasMatch(value)) {
+                            return 'Le mot de passe doit contenir au moins un chiffre';
+                          }
+                          if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]')
+                              .hasMatch(value)) {
+                            return 'Le mot de passe doit contenir au moins un caractère spécial';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Champ téléphone
+                      TextFormField(
+                        controller: _phoneController,
+                        decoration: const InputDecoration(
+                          labelText: 'Téléphone',
+                          border: OutlineInputBorder(),
+                          hintText: '8 chiffres',
+                        ),
+                        keyboardType: TextInputType.phone,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Veuillez entrer un numéro de téléphone';
+                          }
+                          if (value.length != 8 ||
+                              !RegExp(r'^[0-9]{8}$').hasMatch(value)) {
+                            return 'Le téléphone doit contenir exactement 8 chiffres';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Champ date de naissance
+                      GestureDetector(
+                        onTap: () async {
+                          final DateTime? picked = await showDatePicker(
+                            context: context,
+                            initialDate: _selectedDate,
+                            firstDate: DateTime(1900),
+                            lastDate: DateTime.now(),
+                          );
+                          if (picked != null && picked != _selectedDate) {
+                            setState(() {
+                              _selectedDate = picked;
+                              _dateController.text = DateFormat('yyyy-MM-dd')
+                                  .format(_selectedDate);
+                            });
+                          }
+                        },
+                        child: AbsorbPointer(
                           child: TextFormField(
-                            controller: _nomController,
+                            controller: _dateController,
                             decoration: const InputDecoration(
-                              labelText: 'Nom',
+                              labelText: 'Date de naissance',
                               border: OutlineInputBorder(),
+                              suffixIcon: Icon(Icons.calendar_today),
+                              hintText: 'Minimum 13 ans',
                             ),
                             validator: (value) {
                               if (value == null || value.isEmpty) {
-                                return 'Veuillez entrer un nom';
+                                return 'Veuillez sélectionner une date';
+                              }
+
+                              // Vérifier que l'utilisateur a au moins 13 ans
+                              final selectedDate = DateTime.tryParse(value);
+                              if (selectedDate != null) {
+                                final today = DateTime.now();
+                                final age = today.year -
+                                    selectedDate.year -
+                                    (today.month < selectedDate.month ||
+                                            (today.month ==
+                                                    selectedDate.month &&
+                                                today.day < selectedDate.day)
+                                        ? 1
+                                        : 0);
+
+                                if (age < 13) {
+                                  return 'L\'utilisateur doit avoir au moins 13 ans';
+                                }
                               }
                               return null;
                             },
                           ),
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: TextFormField(
-                            controller: _prenomController,
-                            decoration: const InputDecoration(
-                              labelText: 'Prénom',
-                              border: OutlineInputBorder(),
-                            ),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Veuillez entrer un prénom';
-                              }
-                              return null;
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Champ email
-                    TextFormField(
-                      controller: _emailController,
-                      decoration: const InputDecoration(
-                        labelText: 'Email',
-                        border: OutlineInputBorder(),
                       ),
-                      keyboardType: TextInputType.emailAddress,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Veuillez entrer un email';
-                        }
-                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                          return 'Veuillez entrer un email valide';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
+                      const SizedBox(height: 16),
 
-                    // Champ téléphone
-                    TextFormField(
-                      controller: _phoneController,
-                      decoration: const InputDecoration(
-                        labelText: 'Téléphone',
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.phone,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Veuillez entrer un numéro de téléphone';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Champ date de naissance
-                    GestureDetector(
-                      onTap: () async {
-                        final DateTime? picked = await showDatePicker(
-                          context: context,
-                          initialDate: _selectedDate,
-                          firstDate: DateTime(1900),
-                          lastDate: DateTime.now(),
-                        );
-                        if (picked != null && picked != _selectedDate) {
-                          setState(() {
-                            _selectedDate = picked;
-                            _dateController.text = DateFormat('yyyy-MM-dd').format(_selectedDate);
-                          });
-                        }
-                      },
-                      child: AbsorbPointer(
-                        child: TextFormField(
-                          controller: _dateController,
-                          decoration: const InputDecoration(
-                            labelText: 'Date de naissance',
-                            border: OutlineInputBorder(),
-                            suffixIcon: Icon(Icons.calendar_today),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Veuillez sélectionner une date';
-                            }
-                            return null;
-                          },
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Sélection de la région et du genre
-                    Row(
-                      children: [
-                        Expanded(
-                          child: DropdownButtonFormField<String>(
-                            decoration: const InputDecoration(
-                              labelText: 'Région',
-                              border: OutlineInputBorder(),
+                      // Sélection de la région et du genre
+                      Row(
+                        children: [
+                          Expanded(
+                            child: DropdownButtonFormField<String>(
+                              decoration: const InputDecoration(
+                                labelText: 'Région',
+                                border: OutlineInputBorder(),
+                              ),
+                              value: _selectedRegion,
+                              items: Regions.list.map((region) {
+                                return DropdownMenuItem(
+                                  value: region,
+                                  child: Text(region),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                if (value != null) {
+                                  setState(() {
+                                    _selectedRegion = value;
+                                  });
+                                }
+                              },
                             ),
-                            value: _selectedRegion,
-                            items: Regions.list.map((region) {
-                              return DropdownMenuItem(
-                                value: region,
-                                child: Text(region),
-                              );
-                            }).toList(),
-                            onChanged: (value) {
-                              if (value != null) {
-                                setState(() {
-                                  _selectedRegion = value;
-                                });
-                              }
-                            },
                           ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: DropdownButtonFormField<String>(
-                            decoration: const InputDecoration(
-                              labelText: 'Genre',
-                              border: OutlineInputBorder(),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: DropdownButtonFormField<String>(
+                              decoration: const InputDecoration(
+                                labelText: 'Genre',
+                                border: OutlineInputBorder(),
+                              ),
+                              value: _selectedGenre,
+                              items: ['Homme', 'Femme'].map((genre) {
+                                return DropdownMenuItem(
+                                  value: genre,
+                                  child: Text(genre),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                if (value != null) {
+                                  setState(() {
+                                    _selectedGenre = value;
+                                  });
+                                }
+                              },
                             ),
-                            value: _selectedGenre,
-                            items: ['Homme', 'Femme', 'Autre'].map((genre) {
-                              return DropdownMenuItem(
-                                value: genre,
-                                child: Text(genre),
-                              );
-                            }).toList(),
-                            onChanged: (value) {
-                              if (value != null) {
-                                setState(() {
-                                  _selectedGenre = value;
-                                });
-                              }
-                            },
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Annuler'),
-            ),
-            ElevatedButton(
-              onPressed: _isLoading
-                  ? null
-                  : () async {
-                      if (_formKey.currentState!.validate()) {
-                        // Démarrez le chargement
-                        setState(() {
-                          _isLoading = true;
-                        });
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Annuler'),
+              ),
+              ElevatedButton(
+                onPressed: _isLoading
+                    ? null
+                    : () async {
+                        if (_formKey.currentState!.validate()) {
+                          // Démarrez le chargement
+                          setState(() {
+                            _isLoading = true;
+                          });
 
-                        try {
-                          // Mettez à jour l'objet utilisateur avec les nouvelles valeurs
-                          userCopy.nom = _nomController.text;
-                          userCopy.prenom = _prenomController.text;
-                          userCopy.email = _emailController.text;
-                          userCopy.date = _dateController.text;
-                          userCopy.region = _selectedRegion;
-                          userCopy.genre = _selectedGenre;
-                          userCopy.phone = _phoneController.text;
+                          try {
+                            // Mettez à jour l'objet utilisateur avec les nouvelles valeurs
+                            userCopy.nom = _nomController.text;
+                            userCopy.prenom = _prenomController.text;
+                            userCopy.email = _emailController.text;
+                            userCopy.date = _dateController.text;
+                            userCopy.region = _selectedRegion;
+                            userCopy.genre = _selectedGenre;
+                            userCopy.phone = _phoneController.text;
 
-                          // Si une nouvelle image est sélectionnée, téléchargez-la
-                          if (_tempSelectedImage != null) {
-                            final imageUrl = await _uploadImageAndGetUrl(
-                              _tempSelectedImage,
-                              _emailController.text,
-                            );
-                            // Mettez à jour l'URL de l'image de l'utilisateur
-                            userCopy.imageUrl = imageUrl;
-                          }
+                            // Mettez à jour le mot de passe uniquement s'il a été modifié
+                            if (_passwordController.text.isNotEmpty) {
+                              userCopy.password = _passwordController.text;
+                            }
 
-                          // Mettez à jour l'utilisateur dans la base de données
-                          await _controller.updateUser(userCopy);
+                            // Si une nouvelle image est sélectionnée, téléchargez-la
+                            if (_tempSelectedImage != null) {
+                              final imageUrl = await _uploadImageAndGetUrl(
+                                _tempSelectedImage,
+                                _emailController.text,
+                              );
+                              // Mettez à jour l'URL de l'image de l'utilisateur
+                              userCopy.imageUrl = imageUrl;
+                            }
 
-                          // Mettez à jour l'utilisateur original avec les nouvelles valeurs
-                          user.nom = userCopy.nom;
-                          user.prenom = userCopy.prenom;
-                          user.email = userCopy.email;
-                          user.date = userCopy.date;
-                          user.region = userCopy.region;
-                          user.genre = userCopy.genre;
-                          user.phone = userCopy.phone;
-                          user.imageUrl = userCopy.imageUrl;
+                            // Mettez à jour l'utilisateur dans la base de données
+                            await _controller.updateUser(userCopy);
 
-                          // Affichez un message de succès
-                          _showSnackBar('Utilisateur modifié avec succès');
+                            // Mettez à jour l'utilisateur original avec les nouvelles valeurs
+                            user.nom = userCopy.nom;
+                            user.prenom = userCopy.prenom;
+                            user.email = userCopy.email;
+                            user.date = userCopy.date;
+                            user.region = userCopy.region;
+                            user.genre = userCopy.genre;
+                            user.phone = userCopy.phone;
+                            user.imageUrl = userCopy.imageUrl;
+                            if (_passwordController.text.isNotEmpty) {
+                              user.password = userCopy.password;
+                            }
 
-                          // Forcez le rafraîchissement de l'interface utilisateur
-                          if (mounted) {
-                            _controller.fetchUsers().then((_) {
-                              if (mounted) {
+                            // Affichez un message de succès
+                            _showSnackBar('Utilisateur modifié avec succès');
+
+                            // Forcez le rafraîchissement de l'interface utilisateur
+                            // Dans la partie où vous gérez le succès de la mise à jour
+// Remplacez votre appel à fetchUsers suivi de setState par:
+
+                            if (mounted) {
+                              // Option 1: Mettre à jour directement la liste _filteredUsers si elle existe
+                              final index = _controller.users
+                                  .indexWhere((u) => u.id == user.id);
+                              if (index != -1) {
                                 setState(() {
+                                  // Mise à jour de l'utilisateur dans la liste du contrôleur
+                                  _controller.users[index] = user;
+
+                                  // Ré-appliquer le filtre pour mettre à jour _filteredUsers
                                   _filterUsers();
                                 });
+                              } else {
+                                // Si l'utilisateur n'est pas trouvé, rechargez la liste complète
+                                _controller.fetchUsers().then((_) {
+                                  if (mounted) {
+                                    setState(() {
+                                      _filterUsers();
+                                    });
+                                  }
+                                });
                               }
-                            }).catchError((error) {
-                              print("Erreur lors du rafraîchissement des utilisateurs: $error");
-                            });
-                          }
+                            }
 
-                          // Fermez la boîte de dialogue
-                          Navigator.pop(dialogContext);
-                        } catch (e) {
-                          // Affichez un message d'erreur
-                          _showSnackBar('Erreur: ${e.toString()}', isError: true);
-                        } finally {
-                          if (mounted) {
-                            setState(() {
-                              _isLoading = false;
-                            });
+                            // Fermez la boîte de dialogue
+                            Navigator.pop(dialogContext);
+                          } catch (e) {
+                            // Affichez un message d'erreur
+                            _showSnackBar('Erreur: ${e.toString()}',
+                                isError: true);
+                          } finally {
+                            if (mounted) {
+                              setState(() {
+                                _isLoading = false;
+                              });
+                            }
                           }
                         }
-                      }
-                    },
-              child: _isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2.0),
-                    )
-                  : const Text('Enregistrer'),
-            ),
-          ],
-        );
-      },
-    ),
-  );
+                      },
+                child: _isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2.0),
+                      )
+                    : const Text('Enregistrer'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
 
-  // Forcez le rafraîchissement après la fermeture de la boîte de dialogue
-  if (mounted) {
-    setState(() {});
+    // Forcez le rafraîchissement après la fermeture de la boîte de dialogue
+    if (mounted) {
+      setState(() {});
+    }
   }
-}
 
   Future<void> _showDeleteDialog(User user) async {
     await showDialog(
@@ -1858,34 +2091,36 @@ Future<void> _showAddUserDialog() async {
     );
   }
 
-Future<String> _uploadImageAndGetUrl(PlatformFile? imageFile, String email) async {
-  if (imageFile == null) {
-    return '';
-  }
-
-  try {
-    if (kIsWeb) {
-      // For web, use the bytes of the image
-      if (imageFile.bytes != null) {
-        final imageUrl = await _controller.uploadImageWeb(
-          imageFile.bytes!,
-          imageFile.name,
-          email,
-        );
-        return imageUrl;
-      }
-    } else {
-      // For mobile, use the file path
-      final file = File(imageFile.path!);
-      final imageUrl = await _controller.uploadImage(file, email);
-      return imageUrl;
+  Future<String> _uploadImageAndGetUrl(
+      PlatformFile? imageFile, String email) async {
+    if (imageFile == null) {
+      return '';
     }
 
-    return '';
-  } catch (e) {
-    print('Error uploading image: $e');
-    _showSnackBar('Erreur de téléchargement de l\'image: ${e.toString()}', isError: true);
-    return '';
+    try {
+      if (kIsWeb) {
+        // For web, use the bytes of the image
+        if (imageFile.bytes != null) {
+          final imageUrl = await _controller.uploadImageWeb(
+            imageFile.bytes!,
+            imageFile.name,
+            email,
+          );
+          return imageUrl;
+        }
+      } else {
+        // For mobile, use the file path
+        final file = File(imageFile.path!);
+        final imageUrl = await _controller.uploadImage(file, email);
+        return imageUrl;
+      }
+
+      return '';
+    } catch (e) {
+      print('Error uploading image: $e');
+      _showSnackBar('Erreur de téléchargement de l\'image: ${e.toString()}',
+          isError: true);
+      return '';
+    }
   }
-}
 }

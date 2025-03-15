@@ -8,7 +8,7 @@ class User extends Equatable {
    String date;
    String region;
    String genre;
-  final String password;
+   String password;
    String phone;
   String imageUrl;
   final String refreshTokens;

@@ -93,13 +93,13 @@ class _OrderStatusChartState extends State<OrderStatusChart> {
       case 'pending':
         return 'En attente';
       case 'processing':
-        return 'En traitement';
+        return 'Confirmée';
       case 'shipped':
-        return 'Expédié';
+        return 'En livraison';
       case 'delivered':
-        return 'Livré';
+        return 'Completée';
       case 'cancelled':
-        return 'Annulé';
+        return 'Annulée';
       default:
         return status.isNotEmpty
             ? status[0].toUpperCase() + status.substring(1)
@@ -113,9 +113,9 @@ class _OrderStatusChartState extends State<OrderStatusChart> {
     // Couleurs pour différents statuts
     final statusColors = {
       'En attente': const Color(0xFFFFA726), // Orange
-      'Confirmée': const Color(0xFF42A5F5), // Bleu
-      'Expédié': const Color(0xFF66BB6A), // Vert
-      'Livrée': const Color(0xFF990099), // Vert-bleu
+      'Confirmée': const Color(0xFF66BB6A), // Bleu
+      'En livraison': const Color(0xFF990099), // Vert
+      'Completée': const Color(0xFF42A5F5), // Vert-bleu
       'Annulée': const Color.fromARGB(255, 187, 19, 17), // Rouge
       'Non défini': const Color(0xFF9E9E9E),
       // Gris
@@ -169,11 +169,12 @@ class _OrderStatusChartState extends State<OrderStatusChart> {
     // Couleurs pour différents statuts
     final statusColors = {
       'En attente': const Color(0xFFFFA726), // Orange
-      'Confirmée': const Color(0xFF42A5F5), // Bleu
-      'Expédié': const Color(0xFF66BB6A), // Vert
-      'Livrée': const Color(0xFF990099), // Vert-bleu
+      'Confirmée': const Color(0xFF66BB6A), // Bleu
+      'En livraison': const Color(0xFF990099), // Vert
+      'Completée': const Color(0xFF42A5F5), // Vert-bleu
       'Annulée': const Color.fromARGB(255, 187, 19, 17), // Rouge
-      'Non défini': const Color(0xFF9E9E9E), // Gris
+      'Non défini': const Color(0xFF9E9E9E),
+      // Gris
     };
 
     // Couleurs par défaut pour d'autres statuts non prédéfinis

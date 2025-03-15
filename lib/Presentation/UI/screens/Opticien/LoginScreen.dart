@@ -121,7 +121,7 @@ class _LoginScreenState extends State<LoginScreenOpticien> {
                               controller: _emailController,
                               keyboardType: TextInputType.emailAddress,
                               decoration: InputDecoration(
-                                hintText: 'exemple@optivision.com',
+                              
                                 prefixIcon: Icon(
                                   Icons.email_outlined,
                                   color: Color(0xFF1E5F74),
@@ -169,7 +169,7 @@ class _LoginScreenState extends State<LoginScreenOpticien> {
                               controller: _passwordController,
                               obscureText: _obscureText,
                               decoration: InputDecoration(
-                                hintText: '••••••••',
+                                
                                 prefixIcon: Icon(
                                   Icons.lock_outline,
                                   color: Color(0xFF1E5F74),

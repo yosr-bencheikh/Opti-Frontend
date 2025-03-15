@@ -43,6 +43,8 @@ dependencies:
   geocoding: ^2.1.0
   google_maps_flutter: ^2.2.3
   intl: ^0.20.2
+  time_range_picker: ^2.3.0
+  flutter_colorpicker: ^1.0.3 
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -67,6 +69,7 @@ dependencies:
   
   share_plus: ^10.1.4
   fl_chart: ^0.70.2
+  #arcore_flutter_plugin: ^0.1.0
   
   
 

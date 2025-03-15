@@ -42,4 +42,13 @@ class BoutiqueRepositoryImpl implements BoutiqueRepository {
       throw Exception('Failed to delete optician: $e');
     }
   }
+
+   @override
+  Future<Opticien> getOpticienById(String id) async {
+    try {
+      return await dataSource.getOpticienById(id);
+    } catch (e) {
+      throw Exception('Failed to fetch optician by ID: $e');
+    }
+  }
 }

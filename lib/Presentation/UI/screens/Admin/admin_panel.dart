@@ -46,25 +46,23 @@ void main() {
   final userController =
       UserController(userDataSource); // Initialisez UserController
   Get.put<UserController>(userController);
-
+  final boutiqueRemoteDataSource = BoutiqueRemoteDataSourceImpl(client: client);
+  Get.put<BoutiqueRemoteDataSource>(boutiqueRemoteDataSource);
+final boutiqueRepository = BoutiqueRepositoryImpl(boutiqueRemoteDataSource);
+  Get.put<BoutiqueRepository>(boutiqueRepository);
   final orderDataSource = OrderDataSourceImpl(client: client);
   Get.put<OrderDataSource>(orderDataSource);
   final orderRepository = OrderRepositoryImpl(dataSource: orderDataSource);
   Get.put<OrderRepository>(orderRepository);
-  Get.put<OrderController>(OrderController(orderRepository: orderRepository));
-
+  Get.put<OrderController>(OrderController(
+    orderRepository: orderRepository,
+    boutiqueRepository: boutiqueRepository, // Add this line
+  ));
   final opticienRemoteDataSource = OpticianDataSourceImpl();
   Get.put<OpticianDataSource>(opticienRemoteDataSource);
   final opticienRepository = OpticianRepositoryImpl(opticienRemoteDataSource);
   Get.put<OpticianRepository>(opticienRepository);
   Get.put<OpticianController>(OpticianController());
-
-  final boutiqueRemoteDataSource = BoutiqueRemoteDataSourceImpl(client: client);
-  Get.put<BoutiqueRemoteDataSource>(boutiqueRemoteDataSource);
-
-  final boutiqueRepository = BoutiqueRepositoryImpl(boutiqueRemoteDataSource);
-  Get.put<BoutiqueRepository>(boutiqueRepository);
-
   Get.put<BoutiqueController>(
     BoutiqueController(
         boutiqueRepository: boutiqueRepository), // Correct parameter
@@ -354,153 +352,173 @@ class AdminPanelApp extends StatelessWidget {
   }
 
   Widget _buildProductsChart() {
-    final orderController = Get.find<OrderController>();
-    final productController = Get.find<ProductController>();
+  final orderController = Get.find<OrderController>();
+  final productController = Get.find<ProductController>();
 
-    return SizedBox(
-      height: 380,
-      child: Obx(() {
-        // Calculate product popularity
-        final Map<String, int> productPopularity = {};
+  return SizedBox(
+    height: 380,
+    child: Obx(() {
+      // Calculate product popularity
+      final Map<String, int> productPopularity = {};
 
-        // Aggregate product orders
-        for (final order in orderController.allOrders) {
-          for (final item in order.items) {
-            productPopularity.update(
-              item.productId,
-              (value) => value + item.quantity,
-              ifAbsent: () => item.quantity,
-            );
-          }
+      // Aggregate product orders
+      for (final order in orderController.allOrders) {
+        for (final item in order.items) {
+          productPopularity.update(
+            item.productId,
+            (value) => value + item.quantity,
+            ifAbsent: () => item.quantity,
+          );
         }
+      }
 
-        // Get top 5 products
-        final sortedProducts = productPopularity.entries.toList()
-          ..sort((a, b) => b.value.compareTo(a.value));
+      // Get top 5 products
+      final sortedProducts = productPopularity.entries.toList()
+        ..sort((a, b) => b.value.compareTo(a.value));
 
-        final top5Products = sortedProducts.take(5).toList();
+      final top5Products = sortedProducts.take(5).toList();
+      
+      // Handle empty data case - this is important
+      if (top5Products.isEmpty) {
+        return const Center(child: Text('No product data available'));
+      }
+      
+      // Calculate max value for Y axis with a safety check
+      final maxY = top5Products.isEmpty 
+          ? 10.0 // Default value if no data
+          : (top5Products.first.value.toDouble() * 1.2);
 
-        return Card(
-          elevation: 3,
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: BarChart(
-              BarChartData(
-                alignment: BarChartAlignment.spaceAround,
-                maxY: (top5Products.isNotEmpty
-                        ? top5Products.first.value.toDouble()
-                        : 100) *
-                    1.2,
-                barTouchData: BarTouchData(
-                  enabled: true,
-                  touchTooltipData: BarTouchTooltipData(
-                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                      if (groupIndex >= top5Products.length) return null;
+      return Card(
+        elevation: 3,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: BarChart(
+            BarChartData(
+              alignment: BarChartAlignment.spaceAround,
+              maxY: maxY,
+              barTouchData: BarTouchData(
+                enabled: true,
+                touchTooltipData: BarTouchTooltipData(
+                  getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                    if (groupIndex >= top5Products.length) return null;
 
-                      final productId = top5Products[groupIndex].key;
-                      final product = productController.products.firstWhere(
-                        (p) => p.id == productId,
-                      );
+                    final productId = top5Products[groupIndex].key;
+                    // Add safety check for product lookup
+                    final product = productController.products.firstWhereOrNull(
+                      (p) => p.id == productId,
+                    );
 
+                    if (product == null) {
                       return BarTooltipItem(
-                        '${product.name}\nOrders: ${rod.toY.toInt()}',
+                        'Unknown Product\nOrders: ${rod.toY.toInt()}',
                         const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                         ),
                       );
-                    },
-                  ),
+                    }
+
+                    return BarTooltipItem(
+                      '${product.name}\nOrders: ${rod.toY.toInt()}',
+                      const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    );
+                  },
                 ),
-                titlesData: FlTitlesData(
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 40,
-                      getTitlesWidget: (double value, TitleMeta meta) {
-                        final index = value.toInt();
-                        if (index >= top5Products.length) return const Text('');
+              ),
+              titlesData: FlTitlesData(
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 40,
+                    getTitlesWidget: (double value, TitleMeta meta) {
+                      final index = value.toInt();
+                      if (index >= top5Products.length) return const Text('');
 
-                        final productId = top5Products[index].key;
-                        final product = productController.products.firstWhere(
-                          (p) => p.id == productId,
-                        );
+                      final productId = top5Products[index].key;
+                      // Add safety check for product lookup
+                      final product = productController.products.firstWhereOrNull(
+                        (p) => p.id == productId,
+                      );
 
-                        return SideTitleWidget(
-                          angle: 0,
-                          space: 4,
-                          meta: meta,
-                          child: Text(
-                            product.name,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 40,
-                      getTitlesWidget: (double value, TitleMeta meta) {
-                        return Text(
-                          value.toInt().toString(),
+                      return SideTitleWidget(
+                        angle: 0,
+                        space: 4,
+                        meta: meta,
+                        child: Text(
+                          product?.name ?? 'Unknown',
                           style: const TextStyle(
                             fontSize: 12,
                             color: Colors.grey,
                           ),
-                        );
-                      },
-                    ),
-                  ),
-                  topTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  rightTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                ),
-                borderData: FlBorderData(show: false),
-                gridData: FlGridData(
-                  show: true,
-                  drawVerticalLine: false,
-                  horizontalInterval: top5Products.isNotEmpty
-                      ? (top5Products.first.value ~/ 5).toDouble()
-                      : 10,
-                ),
-                barGroups: top5Products.asMap().entries.map((entry) {
-                  final index = entry.key;
-                  final product = entry.value;
-                  return BarChartGroupData(
-                    x: index,
-                    barRods: [
-                      BarChartRodData(
-                        toY: product.value.toDouble(),
-                        color: _getChartColor(index),
-                        width: 28,
-                        borderRadius: BorderRadius.circular(4),
-                        backDrawRodData: BackgroundBarChartRodData(
-                          show: true,
-                          toY: double.infinity,
-                          color: Colors.grey[200],
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                    ],
-                  );
-                }).toList(),
+                      );
+                    },
+                  ),
+                ),
+                leftTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 40,
+                    getTitlesWidget: (double value, TitleMeta meta) {
+                      return Text(
+                        value.toInt().toString(),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                topTitles: AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                rightTitles: AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
               ),
+              borderData: FlBorderData(show: false),
+              gridData: FlGridData(
+                show: true,
+                drawVerticalLine: false,
+                horizontalInterval: top5Products.isNotEmpty && top5Products.first.value > 0
+                    ? (top5Products.first.value / 5).ceilToDouble()
+                    : 2.0,
+              ),
+              barGroups: top5Products.isNotEmpty 
+                ? top5Products.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final product = entry.value;
+                    return BarChartGroupData(
+                      x: index,
+                      barRods: [
+                        BarChartRodData(
+                          toY: product.value.toDouble(),
+                          color: _getChartColor(index),
+                          width: 28,
+                          borderRadius: BorderRadius.circular(4),
+                          backDrawRodData: BackgroundBarChartRodData(
+                            show: true,
+                            toY: maxY,  // Use maxY here
+                            color: Colors.grey[200],
+                          ),
+                        ),
+                      ],
+                    );
+                  }).toList()
+                : [], // Return empty list if no data
             ),
           ),
-        );
-      }),
-    );
-  }
-
+        ),
+      );
+    }),
+  );
+}
 // Helper function for chart colors
   Color _getChartColor(int index) {
     final colors = [

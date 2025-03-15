@@ -291,9 +291,16 @@ class StoresScreen extends StatelessWidget {
   }
 
   List<String> _getUniqueCities() {
-    // Assuming each optician has a city property
-    // If not available, you can extract city from address or add a dummy list
-    return ['Paris', 'Lyon', 'Marseille', 'Toulouse', 'Nice']; // Example
+    // Use a case-insensitive approach to avoid duplicates that differ only in case
+    final Set<String> uniqueCities = {};
+
+    for (var optician in opticianController.opticiensList) {
+      if (optician.ville != null && optician.ville.isNotEmpty) {
+        uniqueCities.add(optician.ville.trim());
+      }
+    }
+
+    return uniqueCities.toList()..sort(); // Sort for better user experience
   }
 
   Widget _buildOpticalStores() {
@@ -316,8 +323,8 @@ class StoresScreen extends StatelessWidget {
 
         // City filter
         final matchesCity = selectedCity.value.isEmpty ||
-            (optician.adresse != null &&
-                optician.adresse.toLowerCase() ==
+            (optician.ville != null &&
+                optician.ville.toLowerCase() ==
                     selectedCity.value.toLowerCase());
 
         // Favorites filter (assume there's a favorites property or method)

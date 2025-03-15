@@ -25,12 +25,14 @@ class _OpticianScreenState extends State<OpticianScreen> {
   final OpticianController _controller = Get.put(OpticianController());
   final TextEditingController _searchController = TextEditingController();
     final AuthController _authController = Get.find<AuthController>();
-
+ String _selectedNom = '';
+  String _selectedPrenom = '';
+  String _selectedDate = '';
   List<Optician> _filteredOpticians = [];
   String _currentSearchTerm = '';
   bool _showFilters = false;
   int _currentPage = 1;
-  int _opticiansPerPage = 10;
+  int _opticiansPerPage = 5;
   String? _sortColumn;
   bool _sortAscending = true;
   String? _highlightedOpticianId;
@@ -66,23 +68,38 @@ void _filterOpticians() {
   }
 
   _filteredOpticians = _controller.opticians.where((optician) {
+    // Filtrage par recherche textuelle générale
     final matchesSearch = _currentSearchTerm.isEmpty ||
         optician.nom.toLowerCase().contains(_currentSearchTerm.toLowerCase()) ||
         optician.prenom.toLowerCase().contains(_currentSearchTerm.toLowerCase()) ||
         optician.email.toLowerCase().contains(_currentSearchTerm.toLowerCase()) ||
         optician.phone.toLowerCase().contains(_currentSearchTerm.toLowerCase()) ||
-        optician.region.toLowerCase().contains(_currentSearchTerm.toLowerCase());
+        optician.region.toLowerCase().contains(_currentSearchTerm.toLowerCase()) ||
+        optician.date.contains(_currentSearchTerm);
 
+    // Filtrage par région et genre
     final matchesRegion = _selectedRegion == 'Toutes les régions' || 
         optician.region == _selectedRegion;
 
     final matchesGenre = _selectedGenre == 'Tous les genres' || 
         optician.genre == _selectedGenre;
+    
+    // Nouveaux filtres: nom, prénom et date
+    final matchesNom = _selectedNom.isEmpty || 
+        optician.nom.toLowerCase().contains(_selectedNom.toLowerCase());
+    
+    final matchesPrenom = _selectedPrenom.isEmpty || 
+        optician.prenom.toLowerCase().contains(_selectedPrenom.toLowerCase());
+    
+    final matchesDate = _selectedDate.isEmpty || 
+        optician.date.contains(_selectedDate);
 
-    return matchesSearch && matchesRegion && matchesGenre;
+    // Retourner true seulement si tous les filtres sont satisfaits
+    return matchesSearch && matchesRegion && matchesGenre && 
+           matchesNom && matchesPrenom && matchesDate;
   }).toList();
 
-  // Apply sorting if a column is selected
+  // Appliquer le tri si une colonne est sélectionnée
   if (_sortColumn != null) {
     _filteredOpticians.sort((a, b) {
       var aValue = '';
@@ -122,13 +139,14 @@ void _filterOpticians() {
       return _sortAscending ? aValue.compareTo(bValue) : bValue.compareTo(aValue);
     });
   }
+
 }
 
 void _updateFilters(String region, String genre) {
   setState(() {
     _selectedRegion = region;
     _selectedGenre = genre;
-    _filterOpticians(); // Re-filter the list when filters change
+    _filterOpticians(); 
   });
 }
   void _showSnackBar(String message, {bool isError = false}) {
@@ -195,25 +213,29 @@ void _showOpticianDialog({Optician? optician}) {
   final TextEditingController _phoneController = TextEditingController(text: optician?.phone);
   final TextEditingController _regionController = TextEditingController(text: optician?.region);
   final TextEditingController _imageUrlController = TextEditingController(text: optician?.imageUrl);
-PlatformFile? _tempSelectedImage;
+  PlatformFile? _tempSelectedImage;
   final List<String> genres = ['Homme', 'Femme'];
   String selectedGenre = optician?.genre ?? genres.first;
+  DateTime _selectedDate = DateTime.tryParse(optician?.date ?? '') ?? DateTime.now();
+  String _selectedRegion = optician?.region ?? Regions.list.first;
 
   showDialog(
     context: context,
     builder: (BuildContext context) {
-      return AlertDialog(
-        title: Text(
-          optician == null ? 'Ajouter un opticien' : 'Modifier un opticien',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
-        ),
-        content: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                  // Profile image upload section
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: Text(
+              optician == null ? 'Ajouter un opticien' : 'Modifier un opticien',
+              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
+            ),
+            content: Form(
+              key: _formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Profile image upload section
                     Center(
                       child: Column(
                         children: [
@@ -230,267 +252,341 @@ PlatformFile? _tempSelectedImage;
                       ),
                     ),
                     const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _nameController,
-                        decoration: InputDecoration(
-                          labelText: 'Nom',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.person),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _nameController,
+                            decoration: InputDecoration(
+                              labelText: 'Nom',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.person),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Veuillez entrer un nom';
+                              }
+                              return null;
+                            },
+                          ),
                         ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Veuillez entrer un nom';
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
-                    SizedBox(width: 16),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _prenomController,
-                        decoration: InputDecoration(
-                          labelText: 'Prénom',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.person_outline),
+                        SizedBox(width: 16),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _prenomController,
+                            decoration: InputDecoration(
+                              labelText: 'Prénom',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.person_outline),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Veuillez entrer un prénom';
+                              }
+                              return null;
+                            },
+                          ),
                         ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Veuillez entrer un prénom';
-                          }
-                          return null;
-                        },
-                      ),
+                      ],
                     ),
+                    SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _dateController,
+                            decoration: const InputDecoration(
+                              labelText: 'Date de naissance',
+                              border: OutlineInputBorder(),
+                              suffixIcon: Icon(Icons.calendar_today),
+                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                            ),
+                            readOnly: true,
+                            onTap: () async {
+                              final DateTime? picked = await showDatePicker(
+                                context: context,
+                                initialDate: _selectedDate,
+                                firstDate: DateTime(1900),
+                                lastDate: DateTime.now(),
+                              );
+                              if (picked != null && picked != _selectedDate) {
+                                setState(() {
+                                  _selectedDate = picked;
+                                  _dateController.text = DateFormat('yyyy-MM-dd').format(_selectedDate);
+                                });
+                              }
+                            },
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Veuillez sélectionner une date';
+                              }
+
+                              // Vérifier que l'utilisateur a au moins 13 ans
+                              final selectedDate = DateTime.tryParse(value);
+                              if (selectedDate != null) {
+                                final today = DateTime.now();
+                                final age = today.year - selectedDate.year -
+                                    (today.month < selectedDate.month ||
+                                            (today.month == selectedDate.month && today.day < selectedDate.day)
+                                        ? 1
+                                        : 0);
+
+                                if (age < 13) {
+                                  return 'L\'utilisateur doit avoir au moins 13 ans';
+                                }
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        SizedBox(width: 16),
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            value: selectedGenre,
+                            decoration: InputDecoration(
+                              labelText: 'Genre',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.people),
+                            ),
+                            items: genres.map((String genre) {
+                              return DropdownMenuItem<String>(
+                                value: genre,
+                                child: Text(genre),
+                              );
+                            }).toList(),
+                            onChanged: (String? newValue) {
+                              setState(() {
+                                selectedGenre = newValue!;
+                                _genreController.text = newValue;
+                              });
+                            },
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Veuillez sélectionner un genre';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 16),
+                    TextFormField(
+                      controller: _passwordController,
+                      decoration: const InputDecoration(
+                        labelText: 'Mot de passe',
+                        border: OutlineInputBorder(),
+                        hintText: 'Minimum 8 caractères avec majuscule, chiffre et caractère spécial',
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                      ),
+                      obscureText: true,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Veuillez entrer un mot de passe';
+                        }
+                        if (value.length < 8) {
+                          return 'Le mot de passe doit contenir au moins 8 caractères';
+                        }
+                        if (!RegExp(r'[A-Z]').hasMatch(value)) {
+                          return 'Le mot de passe doit contenir au moins une majuscule';
+                        }
+                        if (!RegExp(r'[0-9]').hasMatch(value)) {
+                          return 'Le mot de passe doit contenir au moins un chiffre';
+                        }
+                        if (!RegExp(r'[!@/+_#$%^&*(),.?":{}|<>]').hasMatch(value)) {
+                          return 'Le mot de passe doit contenir au moins un caractère spécial';
+                        }
+                        return null;
+                      },
+                    ),
+                    SizedBox(height: 16),
+                    TextFormField(
+                      controller: _addressController,
+                      decoration: InputDecoration(
+                        labelText: 'Adresse',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.home),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Veuillez entrer une adresse';
+                        }
+                        return null;
+                      },
+                    ),
+                    SizedBox(height: 16),
+                    TextFormField(
+                      controller: _emailController,
+                      decoration: const InputDecoration(
+                        labelText: 'Email',
+                        border: OutlineInputBorder(),
+                        hintText: 'exemple@gmail.com',
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                      ),
+                      keyboardType: TextInputType.emailAddress,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Veuillez entrer un email';
+                        }
+                        if (!value.endsWith('@gmail.com')) {
+                          return 'L\'email doit être sous format @gmail.com';
+                        }
+                        return null;
+                      },
+                    ),
+                    SizedBox(height: 16),
+                    TextFormField(
+                      controller: _phoneController,
+                      decoration: const InputDecoration(
+                        labelText: 'Téléphone',
+                        border: OutlineInputBorder(),
+                        hintText: '8 chiffres',
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                      ),
+                      keyboardType: TextInputType.phone,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Veuillez entrer un numéro de téléphone';
+                        }
+                        if (value.length != 8 || !RegExp(r'^[0-9]{8}$').hasMatch(value)) {
+                          return 'Le téléphone doit contenir exactement 8 chiffres';
+                        }
+                        return null;
+                      },
+                    ),
+                    SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Flexible(
+                          flex: 1,
+                          child: DropdownButtonFormField<String>(
+                            decoration: const InputDecoration(
+                              labelText: 'Région',
+                              border: OutlineInputBorder(),
+                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                            ),
+                            value: _selectedRegion,
+                            items: Regions.list.map((region) {
+                              return DropdownMenuItem(
+                                value: region,
+                                child: Text(region),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              if (value != null) {
+                                setState(() {
+                                  _selectedRegion = value;
+                                  _regionController.text = value;
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 16),
                   ],
                 ),
-                SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _dateController,
-                        decoration: InputDecoration(
-                          labelText: 'Date de naissance',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.calendar_today),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Veuillez entrer une date';
-                          }
-                          return null;
-                        },
-                        onTap: () async {
-                          final DateTime? picked = await showDatePicker(
-                            context: context,
-                            initialDate: DateTime.now(),
-                            firstDate: DateTime(1900),
-                            lastDate: DateTime.now(),
-                          );
-                          if (picked != null) {
-                            _dateController.text = DateFormat('yyyy-MM-dd').format(picked);
-                          }
-                        },
-                      ),
-                    ),
-                    SizedBox(width: 16),
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        value: selectedGenre,
-                        decoration: InputDecoration(
-                          labelText: 'Genre',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.people),
-                        ),
-                        items: genres.map((String genre) {
-                          return DropdownMenuItem<String>(
-                            value: genre,
-                            child: Text(genre),
-                          );
-                        }).toList(),
-                        onChanged: (String? newValue) {
-                          selectedGenre = newValue!;
-                          _genreController.text = newValue;
-                        },
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Veuillez sélectionner un genre';
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 16),
-                TextFormField(
-                  controller: _passwordController,
-                  decoration: InputDecoration(
-                    labelText: 'Mot de passe',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.lock),
-                    suffixIcon: Icon(Icons.visibility_off),
-                  ),
-                  obscureText: true,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Veuillez entrer un mot de passe';
-                    } else if (value.length < 6) {
-                      return 'Le mot de passe doit contenir au moins 6 caractères';
-                    }
-                    return null;
-                  },
-                ),
-                SizedBox(height: 16),
-                TextFormField(
-                  controller: _addressController,
-                  decoration: InputDecoration(
-                    labelText: 'Adresse',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.home),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Veuillez entrer une adresse';
-                    }
-                    return null;
-                  },
-                ),
-                SizedBox(height: 16),
-                TextFormField(
-                  controller: _emailController,
-                  decoration: InputDecoration(
-                    labelText: 'Email',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.email),
-                  ),
-                  keyboardType: TextInputType.emailAddress,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Veuillez entrer un email';
-                    } else if (!value.contains('@') || !value.contains('.')) {
-                      return 'Veuillez entrer un email valide';
-                    }
-                    return null;
-                  },
-                ),
-                SizedBox(height: 16),
-                TextFormField(
-                  controller: _phoneController,
-                  decoration: InputDecoration(
-                    labelText: 'Téléphone',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.phone),
-                  ),
-                  keyboardType: TextInputType.phone,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                  ],
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Veuillez entrer un téléphone';
-                    }
-                    return null;
-                  },
-                ),
-                SizedBox(height: 16),
-                TextFormField(
-                  controller: _regionController,
-                  decoration: InputDecoration(
-                    labelText: 'Région',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.location_on),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Veuillez entrer une région';
-                    }
-                    return null;
-                  },
-                ),
-                SizedBox(height: 16),
-              
-              ],
+              ),
             ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Annuler', style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (_formKey.currentState!.validate()) {
-                final newOptician = Optician(
-                  id: optician?.id,
-                  nom: _nameController.text,
-                  prenom: _prenomController.text,
-                  date: _dateController.text,
-                  genre: _genreController.text,
-                  password: _passwordController.text,
-                  address: _addressController.text,
-                  email: _emailController.text,
-                  phone: _phoneController.text,
-                  region: _regionController.text,
-                  imageUrl: _imageUrlController.text,
-                );
-                    // Add user to database FIRST
-                          final result = await _controller.addOptician(newOptician);
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Annuler', style: TextStyle(color: Colors.grey)),
+              ),
+              ElevatedButton(
+              onPressed: () async {
+  if (_formKey.currentState!.validate()) {
+    try {
+      final newOptician = Optician(
+        id: optician?.id,
+        nom: _nameController.text,
+        prenom: _prenomController.text,
+        date: _dateController.text,
+        genre: selectedGenre,
+        password: _passwordController.text,
+        address: _addressController.text,
+        email: _emailController.text,
+        phone: _phoneController.text,
+        region: _selectedRegion,
+        imageUrl: _imageUrlController.text,
+      );
+      Navigator.pop(context);
 
-                          // THEN, upload the image if available (after user is created)
-                          if (_tempSelectedImage != null) {
-                            final imageUrl = await _uploadImageAndGetUrl(
-                              _tempSelectedImage,
-                              _emailController.text,
-                            );
-                            // Update the user with the new image URL
-                            newOptician.imageUrl = imageUrl;
-                          }
+      if (optician == null) {
+        await _controller.addOptician(newOptician);
+      } else {
+        await _controller.updateOptician(newOptician);
+      }
 
-                          // Retrieve the complete user with ID
-                          final completeUser =
-                              await _authController.getUserByEmail(newOptician.email);
+      if (_tempSelectedImage != null) {
+        final imageUrl = await _uploadImageAndGetUrl(
+          _tempSelectedImage,
+          _emailController.text,
+        );
+        newOptician.imageUrl = imageUrl;
+        await _controller.updateOptician(newOptician);
+      }
 
-                          // Update the user ID
-                          newOptician.id =
-                              completeUser['_id'] ?? completeUser['id'] ?? '';
+      if (optician == null) {
+        final completeUser = await _authController.getUserByEmail(newOptician.email);
+        newOptician.id = completeUser['_id'] ?? completeUser['id'] ?? '';
+      }
 
-                          // Close the dialog
-                          Navigator.pop(context);
+      Get.snackbar(
+        'Succès', 
+        optician == null ? 'Opticien ajouté avec succès' : 'Opticien modifié avec succès'
+      );
 
-                try {
-                  if (optician == null) {
-                    await _controller.addOptician(newOptician);
-                    Get.snackbar('Succès', 'Opticien ajouté avec succès');
-                  } else {
-                    await _controller.updateOptician(newOptician);
-                    Get.snackbar('Succès', 'Opticien modifié avec succès');
-                  }
-                  Navigator.pop(context);
-                } catch (e) {
-                  Get.snackbar('Erreur', 'Une erreur s\'est produite: ${e.toString()}');
-                }
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
-              foregroundColor: Colors.white,
-            ),
-            child: Text(optician == null ? 'Ajouter' : 'Enregistrer'),
-          ),
-        ],
+      // Fermer la boîte de dialogue
+      Navigator.pop(context);
+    } catch (e) {
+      Get.snackbar('Erreur', 'Une erreur s\'est produite: ${e.toString()}');
+      print('Erreur détaillée: $e'); // Ajoutez ceci pour déboguer
+    }
+  }
+},
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                ),
+                child: Text(optician == null ? 'Ajouter' : 'Enregistrer'),
+              ),
+            ],
+          );
+        }
       );
     },
   );
 }
-
 Widget _buildAdvancedFilters() {
-  final List<String> regions = ['Toutes les régions', 'Tunis', 'Sfax', 'Sousse', 'Monastir', 'Ariana'];
+  final List<String> regions = [
+    'Toutes les régions',
+    'Tunis',
+    'Ariana',
+    'Ben Arous',
+    'Manouba',
+    'Nabeul',
+    'Zaghouan',
+    'Bizerte',
+    'Béja',
+    'Jendouba',
+    'Le Kef',
+    'Siliana',
+    'Sousse',
+    'Monastir',
+    'Mahdia',
+    'Sfax',
+    'Kairouan',
+    'Kasserine',
+    'Sidi Bouzid',
+    'Gabès',
+    'Medenine',
+    'Tataouine',
+    'Gafsa',
+    'Tozeur',
+    'Kebili',
+  ];
   final List<String> genres = ['Tous les genres', 'Homme', 'Femme'];
   
   return AnimatedContainer(
@@ -544,7 +640,10 @@ Widget _buildAdvancedFilters() {
                   );
                 }).toList(),
                 onChanged: (String? newValue) {
-                  _updateFilters(newValue!, _selectedGenre);
+                  setState(() {
+                    _selectedRegion = newValue!;
+                    _filterOpticians();
+                  });
                 },
               ),
             ),
@@ -564,11 +663,74 @@ Widget _buildAdvancedFilters() {
                   );
                 }).toList(),
                 onChanged: (String? newValue) {
-                  _updateFilters(_selectedRegion, newValue!);
+                  setState(() {
+                    _selectedGenre = newValue!;
+                    _filterOpticians();
+                  });
+                },
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                decoration: InputDecoration(
+                  labelText: 'Nom',
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedNom = value;
+                    _filterOpticians();
+                  });
                 },
               ),
             ),
             SizedBox(width: 16),
+            Expanded(
+              child: TextFormField(
+                decoration: InputDecoration(
+                  labelText: 'Prénom',
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedPrenom = value;
+                    _filterOpticians();
+                  });
+                },
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                decoration: InputDecoration(
+                  labelText: 'Date de naissance',
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  hintText: 'AAAA-MM-JJ',
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedDate = value;
+                    _filterOpticians();
+                  });
+                },
+              ),
+            ),
+            SizedBox(width: 16),
+            Expanded(
+              child: Container(), // Espace vide pour équilibrer le layout
+            ),
           ],
         ),
         SizedBox(height: 16),
@@ -577,7 +739,14 @@ Widget _buildAdvancedFilters() {
           children: [
             OutlinedButton.icon(
               onPressed: () {
-                _updateFilters('Toutes les régions', 'Tous les genres');
+                setState(() {
+                  _selectedRegion = 'Toutes les régions';
+                  _selectedGenre = 'Tous les genres';
+                  _selectedNom = '';
+                  _selectedPrenom = '';
+                  _selectedDate = '';
+                  _filterOpticians();
+                });
               },
               icon: Icon(Icons.clear, size: 18),
               label: Text('Réinitialiser'),
@@ -603,7 +772,6 @@ Widget _buildAdvancedFilters() {
     ),
   );
 }
-
   Widget _buildContent() {
   return Obx(() {
     if (_controller.isLoading.value) {
@@ -786,7 +954,7 @@ Widget _buildAdvancedFilters() {
                         onSort: (_, __) => _sortByField('email'),
                       ),
                         DataColumn(
-                        label: const Text('Date'),
+                        label: const Text('Date de naissance'),
                         onSort: (_, __) => _sortByField('date'),
                       ),
                       DataColumn(
@@ -1091,9 +1259,8 @@ Widget _buildAdvancedFilters() {
   final TextEditingController _statusController = TextEditingController(text: optician.status);
 
   // Valeurs pour les menus déroulants
-  // S'assurer que la valeur existe dans la liste ou prendre une valeur par défaut
   String _selectedRegion = Regions.list.contains(optician.region) ? optician.region : Regions.list[0];
-  String _selectedGenre = ['Homme', 'Femme', 'Autre'].contains(optician.genre) ? optician.genre : 'Homme';
+  String _selectedGenre = ['Homme', 'Femme'].contains(optician.genre) ? optician.genre : 'Homme';
   DateTime _selectedDate = DateTime.tryParse(optician.date) ?? DateTime.now();
 
   await showDialog(
@@ -1101,7 +1268,10 @@ Widget _buildAdvancedFilters() {
     builder: (BuildContext dialogContext) => StatefulBuilder(
       builder: (context, setState) {
         return AlertDialog(
-          title: const Text('Modifier un opticien'),
+          title: Text(
+            'Modifier un opticien',
+            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
+          ),
           content: Container(
             width: 600,
             child: Form(
@@ -1129,15 +1299,16 @@ Widget _buildAdvancedFilters() {
                     ),
                     const SizedBox(height: 16),
 
-                    // Informations personnelles
+                    // Informations personnelles - Nom et Prénom
                     Row(
                       children: [
                         Expanded(
                           child: TextFormField(
                             controller: _nameController,
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               labelText: 'Nom',
                               border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.person),
                             ),
                             validator: (value) {
                               if (value == null || value.isEmpty) {
@@ -1147,13 +1318,14 @@ Widget _buildAdvancedFilters() {
                             },
                           ),
                         ),
-                        const SizedBox(width: 16),
+                        SizedBox(width: 16),
                         Expanded(
                           child: TextFormField(
                             controller: _prenomController,
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               labelText: 'Prénom',
                               border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.person_outline),
                             ),
                             validator: (value) {
                               if (value == null || value.isEmpty) {
@@ -1165,42 +1337,83 @@ Widget _buildAdvancedFilters() {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
 
-                    // Email et téléphone
+                    // Date de naissance et Genre
                     Row(
                       children: [
                         Expanded(
                           child: TextFormField(
-                            controller: _emailController,
+                            controller: _dateController,
                             decoration: const InputDecoration(
-                              labelText: 'Email',
+                              labelText: 'Date de naissance',
                               border: OutlineInputBorder(),
+                              suffixIcon: Icon(Icons.calendar_today),
+                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
                             ),
-                            keyboardType: TextInputType.emailAddress,
+                            readOnly: true,
+                            onTap: () async {
+                              final DateTime? picked = await showDatePicker(
+                                context: context,
+                                initialDate: _selectedDate,
+                                firstDate: DateTime(1900),
+                                lastDate: DateTime.now(),
+                              );
+                              if (picked != null && picked != _selectedDate) {
+                                setState(() {
+                                  _selectedDate = picked;
+                                  _dateController.text = DateFormat('yyyy-MM-dd').format(_selectedDate);
+                                });
+                              }
+                            },
                             validator: (value) {
                               if (value == null || value.isEmpty) {
-                                return 'Veuillez entrer un email';
+                                return 'Veuillez sélectionner une date';
                               }
-                              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                                return 'Veuillez entrer un email valide';
+
+                              // Vérifier que l'utilisateur a au moins 13 ans
+                              final selectedDate = DateTime.tryParse(value);
+                              if (selectedDate != null) {
+                                final today = DateTime.now();
+                                final age = today.year - selectedDate.year -
+                                    (today.month < selectedDate.month ||
+                                            (today.month == selectedDate.month && today.day < selectedDate.day)
+                                        ? 1
+                                        : 0);
+
+                                if (age < 13) {
+                                  return 'L\'utilisateur doit avoir au moins 13 ans';
+                                }
                               }
                               return null;
                             },
                           ),
                         ),
-                        const SizedBox(width: 16),
+                        SizedBox(width: 16),
                         Expanded(
-                          child: TextFormField(
-                            controller: _phoneController,
-                            decoration: const InputDecoration(
-                              labelText: 'Téléphone',
+                          child: DropdownButtonFormField<String>(
+                            value: _selectedGenre,
+                            decoration: InputDecoration(
+                              labelText: 'Genre',
                               border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.people),
                             ),
-                            keyboardType: TextInputType.phone,
+                            items: ['Homme', 'Femme'].map((String genre) {
+                              return DropdownMenuItem<String>(
+                                value: genre,
+                                child: Text(genre),
+                              );
+                            }).toList(),
+                            onChanged: (String? newValue) {
+                              if (newValue != null) {
+                                setState(() {
+                                  _selectedGenre = newValue;
+                                });
+                              }
+                            },
                             validator: (value) {
                               if (value == null || value.isEmpty) {
-                                return 'Veuillez entrer un numéro de téléphone';
+                                return 'Veuillez sélectionner un genre';
                               }
                               return null;
                             },
@@ -1208,51 +1421,110 @@ Widget _buildAdvancedFilters() {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
 
-                    // Date de naissance
-                    GestureDetector(
-                      onTap: () async {
-                        final DateTime? picked = await showDatePicker(
-                          context: context,
-                          initialDate: _selectedDate,
-                          firstDate: DateTime(1900),
-                          lastDate: DateTime.now(),
-                        );
-                        if (picked != null && picked != _selectedDate) {
-                          setState(() {
-                            _selectedDate = picked;
-                            _dateController.text = DateFormat('yyyy-MM-dd').format(_selectedDate);
-                          });
-                        }
-                      },
-                      child: AbsorbPointer(
-                        child: TextFormField(
-                          controller: _dateController,
-                          decoration: const InputDecoration(
-                            labelText: 'Date de naissance',
-                            border: OutlineInputBorder(),
-                            suffixIcon: Icon(Icons.calendar_today),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Veuillez sélectionner une date';
-                            }
-                            return null;
-                          },
-                        ),
+                    // Mot de passe
+                    TextFormField(
+                      controller: _passwordController,
+                      decoration: const InputDecoration(
+                        labelText: 'Mot de passe',
+                        border: OutlineInputBorder(),
+                        hintText: 'Minimum 8 caractères avec majuscule, chiffre et caractère spécial',
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
                       ),
+                      obscureText: true,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Veuillez entrer un mot de passe';
+                        }
+                        if (value.length < 8) {
+                          return 'Le mot de passe doit contenir au moins 8 caractères';
+                        }
+                        if (!RegExp(r'[A-Z]').hasMatch(value)) {
+                          return 'Le mot de passe doit contenir au moins une majuscule';
+                        }
+                        if (!RegExp(r'[0-9]').hasMatch(value)) {
+                          return 'Le mot de passe doit contenir au moins un chiffre';
+                        }
+                        if (!RegExp(r'[!@/+_#$%^&*(),.?":{}|<>]').hasMatch(value)) {
+                          return 'Le mot de passe doit contenir au moins un caractère spécial';
+                        }
+                        return null;
+                      },
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
 
-                    // Région et genre - Corrigés pour éviter l'erreur d'assertion
+                    // Adresse
+                    TextFormField(
+                      controller: _addressController,
+                      decoration: InputDecoration(
+                        labelText: 'Adresse',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.home),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Veuillez entrer une adresse';
+                        }
+                        return null;
+                      },
+                    ),
+                    SizedBox(height: 16),
+
+                    // Email
+                    TextFormField(
+                      controller: _emailController,
+                      decoration: const InputDecoration(
+                        labelText: 'Email',
+                        border: OutlineInputBorder(),
+                        hintText: 'exemple@gmail.com',
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                      ),
+                      keyboardType: TextInputType.emailAddress,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Veuillez entrer un email';
+                        }
+                        if (!value.endsWith('@gmail.com')) {
+                          return 'L\'email doit être sous format @gmail.com';
+                        }
+                        return null;
+                      },
+                    ),
+                    SizedBox(height: 16),
+
+                    // Téléphone
+                    TextFormField(
+                      controller: _phoneController,
+                      decoration: const InputDecoration(
+                        labelText: 'Téléphone',
+                        border: OutlineInputBorder(),
+                        hintText: '8 chiffres',
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                      ),
+                      keyboardType: TextInputType.phone,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Veuillez entrer un numéro de téléphone';
+                        }
+                        if (value.length != 8 || !RegExp(r'^[0-9]{8}$').hasMatch(value)) {
+                          return 'Le téléphone doit contenir exactement 8 chiffres';
+                        }
+                        return null;
+                      },
+                    ),
+                    SizedBox(height: 16),
+
+                    // Région
                     Row(
                       children: [
-                        Expanded(
+                        Flexible(
+                          flex: 1,
                           child: DropdownButtonFormField<String>(
                             decoration: const InputDecoration(
                               labelText: 'Région',
                               border: OutlineInputBorder(),
+                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
                             ),
                             value: _selectedRegion,
                             items: Regions.list.map((region) {
@@ -1276,74 +1548,12 @@ Widget _buildAdvancedFilters() {
                             },
                           ),
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: DropdownButtonFormField<String>(
-                            decoration: const InputDecoration(
-                              labelText: 'Genre',
-                              border: OutlineInputBorder(),
-                            ),
-                            value: _selectedGenre,
-                            items: ['Homme', 'Femme', 'Autre'].map((genre) {
-                              return DropdownMenuItem(
-                                value: genre,
-                                child: Text(genre),
-                              );
-                            }).toList(),
-                            onChanged: (value) {
-                              if (value != null) {
-                                setState(() {
-                                  _selectedGenre = value;
-                                });
-                              }
-                            },
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Veuillez sélectionner un genre';
-                              }
-                              return null;
-                            },
-                          ),
-                        ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
 
-                    // Adresse
-                    TextFormField(
-                      controller: _addressController,
-                      decoration: const InputDecoration(
-                        labelText: 'Adresse',
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Veuillez entrer une adresse';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Mot de passe
-                    TextFormField(
-                      controller: _passwordController,
-                      decoration: const InputDecoration(
-                        labelText: 'Mot de passe',
-                        border: OutlineInputBorder(),
-                      ),
-                      obscureText: true,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Veuillez entrer un mot de passe';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Statut
-                  
+                    // Statut (si nécessaire)
+                    // Vous pouvez ajouter le champ de statut ici si nécessaire
                   ],
                 ),
               ),
@@ -1352,7 +1562,7 @@ Widget _buildAdvancedFilters() {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Annuler'),
+              child: Text('Annuler', style: TextStyle(color: Colors.grey)),
             ),
             ElevatedButton(
               onPressed: _isLoading
@@ -1395,27 +1605,33 @@ Widget _buildAdvancedFilters() {
                           await _controller.updateOptician(updatedOptician);
 
                           // Affichez un message de succès
-                          _showSnackBar('Opticien modifié avec succès');
-
-                          // Forcez le rafraîchissement de l'interface utilisateur
-                          if (mounted) {
-                            _controller.fetchOpticians().then((_) {
-                              if (mounted) {
-                                setState(() {
-                                  // Si vous avez une fonction de filtrage similaire, appelez-la ici
-                                  // _filterOpticians();
-                                });
-                              }
-                            }).catchError((error) {
-                              print("Erreur lors du rafraîchissement des opticiens: $error");
-                            });
-                          }
+                          Get.snackbar(
+                            'Succès', 
+                            'Opticien modifié avec succès',
+                            snackPosition: SnackPosition.BOTTOM,
+                            backgroundColor: Colors.green,
+                            colorText: Colors.white,
+                          );
 
                           // Fermez la boîte de dialogue
                           Navigator.pop(dialogContext);
+                          
+                          // Forcez le rafraîchissement de l'interface utilisateur
+                          if (mounted) {
+                            setState(() {
+                              // Rafraichir la liste des opticiens
+                              _controller.fetchOpticians();
+                            });
+                          }
                         } catch (e) {
                           // Affichez un message d'erreur
-                          _showSnackBar('Erreur: ${e.toString()}', isError: true);
+                          Get.snackbar(
+                            'Erreur', 
+                            'Une erreur s\'est produite: ${e.toString()}',
+                            snackPosition: SnackPosition.BOTTOM,
+                            backgroundColor: Colors.red,
+                            colorText: Colors.white,
+                          );
                         } finally {
                           if (mounted) {
                             setState(() {
@@ -1425,11 +1641,15 @@ Widget _buildAdvancedFilters() {
                         }
                       }
                     },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
+              ),
               child: _isLoading
                   ? const SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2.0),
+                      child: CircularProgressIndicator(strokeWidth: 2.0, color: Colors.white),
                     )
                   : const Text('Enregistrer'),
             ),
@@ -1439,7 +1659,6 @@ Widget _buildAdvancedFilters() {
     ),
   );
 
-  // Forcez le rafraîchissement après la fermeture de la boîte de dialogue
   if (mounted) {
     setState(() {});
   }
@@ -1463,7 +1682,7 @@ Widget build(BuildContext context) {
           ),
           const SizedBox(height: 4),
           Text(
-              '${_controller.getTotalOpticians()} Opticiens trouvés',
+              '${_controller.getTotalOpticians()} Opticiens',
             style: TextStyle(
               fontSize: 14,
               color: const Color(0xFF757575),

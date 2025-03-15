@@ -5,4 +5,5 @@ abstract class BoutiqueRepository {
   Future<void> addOpticien(Opticien opticien);
   Future<void> updateOpticien(String id, Opticien opticien);
   Future<void> deleteOpticien(String id);
+  Future<Opticien> getOpticienById(String id);
 }

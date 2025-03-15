@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:opti_app/domain/entities/Boutique.dart';
 
 class Order extends Equatable {
   final String? id;
@@ -12,6 +13,8 @@ class Order extends Equatable {
   final String status;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final String? boutiqueId;
+  final Opticien? boutique;
 
   const Order({
     this.id,
@@ -25,75 +28,44 @@ class Order extends Equatable {
     this.status = 'En attente',
     required this.createdAt,
     required this.updatedAt,
+    this.boutiqueId,
+    this.boutique,
   });
 
   @override
   List<Object?> get props => [
-    id,
-    userId,
-    items,
-    subtotal,
-    deliveryFee,
-    total,
-    address,
-    paymentMethod,
-    status,
-    createdAt,
-    updatedAt,
-  ];
+        id,
+        userId,
+        items,
+        subtotal,
+        deliveryFee,
+        total,
+        address,
+        paymentMethod,
+        status,
+        createdAt,
+        updatedAt,
+        boutiqueId,
+        boutique,
+      ];
 
   // Factory method to create Order from JSON
   factory Order.fromJson(Map<String, dynamic> json) {
-    // Parse items from JSON
-    List<OrderItem> items = [];
-    if (json['items'] != null) {
-      if (json['items'] is List) {
-        items = (json['items'] as List)
-            .map((item) => OrderItem.fromJson(item))
-            .toList();
-      }
-    }
-
-    // Parse dates
-    DateTime createdAt;
-    DateTime updatedAt;
-    
-    try {
-      createdAt = json['createdAt'] != null
-          ? json['createdAt'] is String
-              ? DateTime.parse(json['createdAt'])
-              : DateTime.fromMillisecondsSinceEpoch(json['createdAt'])
-          : DateTime.now();
-      
-      updatedAt = json['updatedAt'] != null
-          ? json['updatedAt'] is String
-              ? DateTime.parse(json['updatedAt'])
-              : DateTime.fromMillisecondsSinceEpoch(json['updatedAt'])
-          : DateTime.now();
-    } catch (e) {
-      print('Error parsing dates: $e');
-      createdAt = DateTime.now();
-      updatedAt = DateTime.now();
-    }
-
     return Order(
       id: json['_id'] ?? json['id'],
       userId: json['userId'],
-      items: items,
-      subtotal: (json['subtotal'] is int) 
-          ? (json['subtotal'] as int).toDouble() 
-          : json['subtotal'],
-      deliveryFee: (json['deliveryFee'] is int) 
-          ? (json['deliveryFee'] as int).toDouble() 
-          : json['deliveryFee'],
-      total: (json['total'] is int) 
-          ? (json['total'] as int).toDouble() 
-          : json['total'],
+      boutiqueId: json['boutiqueId'],
+      items: (json['items'] as List)
+          .map((item) => OrderItem.fromJson(item))
+          .toList(),
+      subtotal: (json['subtotal'] as num).toDouble(),
+      deliveryFee: (json['deliveryFee'] as num).toDouble(),
+      total: (json['total'] as num).toDouble(),
       address: json['address'],
       paymentMethod: json['paymentMethod'],
       status: json['status'] ?? 'En attente',
-      createdAt: createdAt,
-      updatedAt: updatedAt,
+      createdAt: DateTime.parse(json['createdAt']),
+      updatedAt: DateTime.parse(json['updatedAt']),
     );
   }
 
@@ -102,6 +74,7 @@ class Order extends Equatable {
     return {
       if (id != null) 'id': id,
       'userId': userId,
+      'boutiqueId': boutiqueId,
       'items': items.map((item) => item.toJson()).toList(),
       'subtotal': subtotal,
       'deliveryFee': deliveryFee,
@@ -114,7 +87,7 @@ class Order extends Equatable {
     };
   }
 
-  // Create a copy of Order with some fields replaced
+  // Add the copyWith method
   Order copyWith({
     String? id,
     String? userId,
@@ -127,6 +100,8 @@ class Order extends Equatable {
     String? status,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? boutiqueId,
+    Opticien? boutique,
   }) {
     return Order(
       id: id ?? this.id,
@@ -140,6 +115,8 @@ class Order extends Equatable {
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      boutiqueId: boutiqueId ?? this.boutiqueId,
+      boutique: boutique ?? this.boutique,
     );
   }
 }
@@ -163,13 +140,13 @@ class OrderItem extends Equatable {
 
   @override
   List<Object?> get props => [
-    productId,
-    productName,
-    productImage,
-    quantity,
-    unitPrice,
-    totalPrice,
-  ];
+        productId,
+        productName,
+        productImage,
+        quantity,
+        unitPrice,
+        totalPrice,
+      ];
 
   // Factory method to create OrderItem from JSON
   factory OrderItem.fromJson(Map<String, dynamic> json) {
@@ -178,11 +155,11 @@ class OrderItem extends Equatable {
       productName: json['productName'],
       productImage: json['productImage'],
       quantity: json['quantity'],
-      unitPrice: (json['unitPrice'] is int) 
-          ? (json['unitPrice'] as int).toDouble() 
+      unitPrice: (json['unitPrice'] is int)
+          ? (json['unitPrice'] as int).toDouble()
           : json['unitPrice'],
-      totalPrice: (json['totalPrice'] is int) 
-          ? (json['totalPrice'] as int).toDouble() 
+      totalPrice: (json['totalPrice'] is int)
+          ? (json['totalPrice'] as int).toDouble()
           : json['totalPrice'],
     );
   }

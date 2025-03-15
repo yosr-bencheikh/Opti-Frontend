@@ -7,16 +7,19 @@ import 'package:opti_app/domain/entities/Order.dart';
 import 'package:opti_app/domain/entities/product_entity.dart';
 import 'package:opti_app/domain/entities/user.dart';
 import 'package:opti_app/domain/repositories/OrderRepository.dart';
+import 'package:opti_app/domain/repositories/boutique_repository.dart';
 import 'dart:developer' as developer;
 
 import 'package:url_launcher/url_launcher.dart';
 
 class OrderController extends GetxController {
   final OrderRepository orderRepository;
+  final BoutiqueRepository boutiqueRepository;
   final UserController userController = Get.find<UserController>();
   final RxList<User> users = <User>[].obs;
   OrderController({
     required this.orderRepository,
+    required this.boutiqueRepository,
   });
 
   final RxList<Order> userOrders = <Order>[].obs;
@@ -31,7 +34,156 @@ class OrderController extends GetxController {
   final RxString selectedPaymentMethod = ''.obs;
 
   final deliveryFee = 5.50;
-// Add this method to your OrderController class
+
+Future<void> createOrderFromCart(String userId) async {
+  try {
+    isCreating.value = true;
+
+    final cartController = Get.find<CartItemController>();
+    final productController = Get.find<ProductController>();
+
+    if (cartController.cartItems.value.isEmpty) {
+      Get.snackbar('Erreur', 'Votre panier est vide');
+      return;
+    }
+
+    // Log order creation attempt
+    developer.log('Creating order for user: $userId');
+    developer.log('Cart items count: ${cartController.cartItems.value.length}');
+
+    // Préparer les éléments de la commande à partir du panier
+    final List<OrderItem> orderItems = [];
+    double subtotal = 0;
+    String? boutiqueId;
+
+    for (var cartItem in cartController.cartItems.value) {
+      final Product? product = productController.products.firstWhereOrNull(
+        (p) => p.id == cartItem.productId,
+      );
+
+      if (product != null) {
+        final double unitPrice = cartItem.totalPrice / cartItem.quantity;
+
+        orderItems.add(OrderItem(
+          productId: product.id!,
+          productName: product.name,
+          productImage: product.image,
+          quantity: cartItem.quantity,
+          unitPrice: unitPrice,
+          totalPrice: cartItem.totalPrice,
+        ));
+
+        subtotal += cartItem.totalPrice;
+
+        // Récupérer le boutiqueId du premier produit
+        if (boutiqueId == null && product.boutiqueId != null) {
+          boutiqueId = product.boutiqueId;
+        }
+      }
+    }
+
+    final double total = subtotal + deliveryFee;
+
+    // Créer l'objet Order avec le boutiqueId
+    final order = Order(
+      userId: userId,
+      boutiqueId: boutiqueId, // Ajoutez le boutiqueId ici
+      items: orderItems,
+      subtotal: subtotal,
+      deliveryFee: deliveryFee,
+      total: total,
+      address: selectedAddress.value,
+      paymentMethod: selectedPaymentMethod.value,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+
+    // Log the order data
+    developer.log('Order data prepared: ${order.toJson()}');
+
+    // Envoyer la commande au serveur directement via le repository
+    developer.log('Sending order to server...');
+    final createdOrder = await orderRepository.createOrder(order);
+
+    developer.log('Order created successfully with ID: ${createdOrder.id}');
+    currentOrder.value = createdOrder;
+
+    // Vider le panier après une commande réussie
+    developer.log('Clearing cart...');
+    await cartController.clearCart(userId);
+
+    Get.snackbar(
+      'Succès',
+      'Votre commande a été confirmée avec succès',
+      duration: const Duration(seconds: 3),
+    );
+  } catch (e) {
+    developer.log('Error creating order: $e', error: e);
+
+    // Show a more user-friendly error message
+    String errorMessage =
+        'Une erreur est survenue lors de la création de la commande.';
+
+    if (e.toString().contains('timed out') ||
+        e.toString().contains('SocketException') ||
+        e.toString().contains('Connection refused')) {
+      errorMessage =
+          'Impossible de se connecter au serveur. Vérifiez votre connexion internet ou réessayez plus tard.';
+    }
+
+    Get.snackbar(
+      'Erreur',
+      errorMessage,
+      duration: const Duration(seconds: 5),
+    );
+  } finally {
+    isCreating.value = false;
+  }
+}
+ Future<void> getOrderDetails(String orderId) async {
+  try {
+    isLoading.value = true;
+    developer.log('Fetching details for order: $orderId');
+
+    final order = await orderRepository.getOrderById(orderId);
+
+    if (order.boutiqueId != null && order.boutiqueId!.isNotEmpty) {
+      try {
+        // Fetch the boutique details
+        final boutique = await boutiqueRepository.getOpticienById(order.boutiqueId!);
+        currentOrder.value = order.copyWith(boutique: boutique);
+      } catch (e) {
+        developer.log('Error fetching boutique details: $e', error: e);
+        currentOrder.value = order;
+      }
+    } else {
+      currentOrder.value = order;
+    }
+
+    developer.log('Order details fetched successfully');
+    developer.log('Boutique details: ${order.boutique}'); // Debug statement
+  } catch (e) {
+    developer.log('Error fetching order details: $e', error: e);
+
+    String errorMessage =
+        'Une erreur est survenue lors du chargement des détails de la commande.';
+
+    if (e.toString().contains('timed out') ||
+        e.toString().contains('SocketException') ||
+        e.toString().contains('Connection refused')) {
+      errorMessage =
+          'Impossible de se connecter au serveur. Vérifiez votre connexion internet.';
+    }
+
+    Get.snackbar(
+      'Erreur',
+      errorMessage,
+      duration: const Duration(seconds: 3),
+    );
+  } finally {
+    isLoading.value = false;
+  }
+}
 void updateLocalOrderStatus(String orderId, String newStatus) {
   // Find the order in the allOrders list
   final int index = allOrders.indexWhere((order) => order.id == orderId);
@@ -41,6 +193,7 @@ void updateLocalOrderStatus(String orderId, String newStatus) {
     Order updatedOrder = Order(
       id: allOrders[index].id,
       userId: allOrders[index].userId,
+      boutiqueId: allOrders[index].boutiqueId,
       items: allOrders[index].items,
       status: newStatus,
       address: allOrders[index].address,
@@ -58,105 +211,6 @@ void updateLocalOrderStatus(String orderId, String newStatus) {
     update();
   }
 }
-  Future<void> createOrderFromCart(String userId) async {
-    try {
-      isCreating.value = true;
-
-      final cartController = Get.find<CartItemController>();
-      final productController = Get.find<ProductController>();
-
-      if (cartController.cartItems.value.isEmpty) {
-        Get.snackbar('Erreur', 'Votre panier est vide');
-        return;
-      }
-
-      // Log order creation attempt
-      developer.log('Creating order for user: $userId');
-      developer
-          .log('Cart items count: ${cartController.cartItems.value.length}');
-
-      // Préparer les éléments de la commande à partir du panier
-      final List<OrderItem> orderItems = [];
-      double subtotal = 0;
-
-      for (var cartItem in cartController.cartItems.value) {
-        final Product? product = productController.products.firstWhereOrNull(
-          (p) => p.id == cartItem.productId,
-        );
-
-        if (product != null) {
-          final double unitPrice = cartItem.totalPrice / cartItem.quantity;
-
-          orderItems.add(OrderItem(
-            productId: product.id!,
-            productName: product.name,
-            productImage: product.image,
-            quantity: cartItem.quantity,
-            unitPrice: unitPrice,
-            totalPrice: cartItem.totalPrice,
-          ));
-
-          subtotal += cartItem.totalPrice;
-        }
-      }
-
-      final double total = subtotal + deliveryFee;
-
-      // Créer l'objet Order
-      final order = Order(
-        userId: userId,
-        items: orderItems,
-        subtotal: subtotal,
-        deliveryFee: deliveryFee,
-        total: total,
-        address: selectedAddress.value,
-        paymentMethod: selectedPaymentMethod.value,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
-
-      // Log the order data
-      developer.log('Order data prepared: ${order.toJson()}');
-
-      // Envoyer la commande au serveur directement via le repository
-      developer.log('Sending order to server...');
-      final createdOrder = await orderRepository.createOrder(order);
-
-      developer.log('Order created successfully with ID: ${createdOrder.id}');
-      currentOrder.value = createdOrder;
-
-      // Vider le panier après une commande réussie
-      developer.log('Clearing cart...');
-      await cartController.clearCart(userId);
-
-      Get.snackbar(
-        'Succès',
-        'Votre commande a été confirmée avec succès',
-        duration: const Duration(seconds: 3),
-      );
-    } catch (e) {
-      developer.log('Error creating order: $e', error: e);
-
-      // Show a more user-friendly error message
-      String errorMessage =
-          'Une erreur est survenue lors de la création de la commande.';
-
-      if (e.toString().contains('timed out') ||
-          e.toString().contains('SocketException') ||
-          e.toString().contains('Connection refused')) {
-        errorMessage =
-            'Impossible de se connecter au serveur. Vérifiez votre connexion internet ou réessayez plus tard.';
-      }
-
-      Get.snackbar(
-        'Erreur',
-        errorMessage,
-        duration: const Duration(seconds: 5),
-      );
-    } finally {
-      isCreating.value = false;
-    }
-  }
 
   final RxString currentUserName = ''.obs;
 
@@ -272,37 +326,7 @@ void updateLocalOrderStatus(String orderId, String newStatus) {
     }
   }
 
-  Future<void> getOrderDetails(String orderId) async {
-    try {
-      isLoading.value = true;
-      developer.log('Fetching details for order: $orderId');
 
-      final order = await orderRepository.getOrderById(orderId);
-      currentOrder.value = order;
-
-      developer.log('Order details fetched successfully');
-    } catch (e) {
-      developer.log('Error fetching order details: $e', error: e);
-
-      String errorMessage =
-          'Une erreur est survenue lors du chargement des détails de la commande.';
-
-      if (e.toString().contains('timed out') ||
-          e.toString().contains('SocketException') ||
-          e.toString().contains('Connection refused')) {
-        errorMessage =
-            'Impossible de se connecter au serveur. Vérifiez votre connexion internet.';
-      }
-
-      Get.snackbar(
-        'Erreur',
-        errorMessage,
-        duration: const Duration(seconds: 3),
-      );
-    } finally {
-      isLoading.value = false;
-    }
-  }
 
   Future<bool> cancelOrder(String orderId) async {
     try {
@@ -487,4 +511,5 @@ void updateLocalOrderStatus(String orderId, String newStatus) {
   void setPaymentMethod(String method) {
     selectedPaymentMethod.value = method;
   }
+  
 }

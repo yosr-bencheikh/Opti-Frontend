@@ -127,6 +127,7 @@ class UserController extends GetxController {
     try {
       _isLoading.value = true;
       _error.value = null;
+      
 
       await _dataSource.addUser(user);
       await fetchUsers(); // Rafraîchir la liste des utilisateurs

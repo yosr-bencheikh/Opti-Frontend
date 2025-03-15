@@ -434,7 +434,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Future<void> _placeOrder(BuildContext context) async {
     // Vérifier que l'utilisateur est connecté
     final userId = authController.currentUserId.value;
-
+    
     // Vérifier que l'adresse est renseignée
     if (orderController.selectedAddress.value.isEmpty) {
       Get.snackbar(

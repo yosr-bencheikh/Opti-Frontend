@@ -106,7 +106,7 @@ class ProductController extends GetxController {
 
       // Filter the products by optician ID
       final opticianProducts =
-          _allProducts.where((p) => p.opticienId == opticianId).toList();
+          _allProducts.where((p) => p.boutiqueId == opticianId).toList();
 
       // After all processing is done, update the UI state
       _products.assignAll(opticianProducts);
