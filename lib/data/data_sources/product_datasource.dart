@@ -8,7 +8,7 @@ import 'package:opti_app/domain/entities/Boutique.dart';
 import 'package:opti_app/domain/entities/product_entity.dart';
 
 class ProductDatasource {
-  final String baseUrl = 'http://localhost:3000/api/products';
+  final String baseUrl = 'http://192.168.1.11:3000/api/products';
   final Dio _dio = Dio(); // Créez une instance de Dio
 
   Future<List<Product>> getProductsByOptician(String opticianId) async {
@@ -201,7 +201,7 @@ class ProductDatasource {
   Future<List<Opticien>> getOpticiens() async {
     try {
       final response =
-          await http.get(Uri.parse('http://localhost:3000/opticiens'));
+          await http.get(Uri.parse('http://192.168.1.11:3000/opticiens'));
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);

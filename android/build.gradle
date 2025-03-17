@@ -1,18 +1,14 @@
 buildscript {
-        ext.kotlin_version = '1.9.23'
+    ext.kotlin_version = '1.8.0'
     repositories {
         google()
         mavenCentral()
-        gradlePluginPortal() 
+        gradlePluginPortal()
+
     }
     dependencies {
-        // Version de l'outil de build Android et du plugin Kotlin
-       
         classpath 'com.android.tools.build:gradle:8.2.1'
-
-      classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-
-        // Plugin Google Services (nécessaire pour Firebase)
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         classpath 'com.google.gms:google-services:4.4.2'
     }
 }
@@ -21,10 +17,13 @@ allprojects {
     repositories {
         google()
         mavenCentral()
-        
+        // Only keep these as fallbacks if you really need them
+        // maven { url "https://maven.aliyun.com/repository/public" }
+        // maven { url "https://maven.aliyun.com/repository/google" }
+        // maven { url "https://maven.aliyun.com/repository/gradle-plugin" }
     }
     
-    // Add this resolution strategy
+    // Keep your resolution strategy
     configurations.all {
         resolutionStrategy.eachDependency { DependencyResolveDetails details ->
             if (details.requested.group == 'org.jetbrains.kotlin') {
