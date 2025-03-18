@@ -69,6 +69,8 @@ dependencies:
   
   share_plus: ^10.1.4
   fl_chart: ^0.70.2
+  
+
 #  arcore_flutter_plugin: 
 #    path: C:\Users\LENOVO\Downloads\arcore_flutter_plugin-master\arcore_flutter_plugin-master
     

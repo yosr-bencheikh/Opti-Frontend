@@ -8,6 +8,7 @@ class BoutiqueController extends GetxController {
   final isLoading = false.obs;
   final opticiensList = <Opticien>[].obs;
   final error = RxString('');
+  final selectedBoutique = Rx<Opticien?>(null);
 
   BoutiqueController({required this.boutiqueRepository}); // Remove unnecessary parameter
 
@@ -71,6 +72,23 @@ class BoutiqueController extends GetxController {
       isLoading(false);
     }
   }
+  
+// In BoutiqueController
+Future<Opticien?> getBoutiqueById(String id) async { // Changed return type
+  try {
+    isLoading(true);
+    error('');
+    final result = await boutiqueRepository.getOpticienById(id);
+    selectedBoutique.value = result;
+    return result; // Added return statement
+  } catch (e) {
+    error(e.toString());
+    selectedBoutique.value = null;
+    return null;
+  } finally {
+    isLoading(false);
+  }
+}
 
   // Update an existing optician
   Future<bool> updateOpticien(String id, Opticien opticien) async {

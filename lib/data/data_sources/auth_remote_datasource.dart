@@ -25,8 +25,7 @@ abstract class AuthRemoteDataSource {
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   final http.Client client;
 
-  
-  final String baseUrl = 'http://localhost:3000/api';
+  final String baseUrl = 'http://192.168.1.22:3000/api';
 
   static String? verifiedEmail; // Made statica
   static String? verificationCode;
@@ -336,7 +335,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<String> uploadImage(String filePath, String email) async {
     final url = Uri.parse(
-        '$baseUrl/upload'); // Adjusted URL to match the backend endpoint
+        '$baseUrl/upload/$email/image'); // Adjusted URL to match the backend endpoint
     var request = http.MultipartRequest('POST', url);
     request.files.add(await http.MultipartFile.fromPath('image', filePath));
 

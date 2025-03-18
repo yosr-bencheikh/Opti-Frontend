@@ -21,7 +21,7 @@ abstract class OrderDataSource {
 // Implementation of the OrderDataSource interface
 class OrderDataSourceImpl implements OrderDataSource {
   final http.Client client;
-  final String baseUrl = "http://localhost:3000";
+  final String baseUrl = "http://192.168.1.22:3000";
   OrderDataSourceImpl({required this.client});
 
   @override
@@ -187,6 +187,7 @@ class OrderDataSourceImpl implements OrderDataSource {
         Uri.parse('$baseUrl/orders'), // Endpoint pour toutes les commandes
         headers: {'Content-Type': 'application/json'},
       ).timeout(const Duration(seconds: 15));
+      print('API Response: ${response.body}');
 
       if (response.statusCode == 200) {
         final List data = json.decode(response.body);

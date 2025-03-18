@@ -199,6 +199,464 @@ class _UsersScreenState extends State<UsersScreen> {
     }
   }
 
+  Future<void> _showAddUserDialog(User? user) async {
+    final _formKey = GlobalKey<FormState>();
+
+    // Form controllers
+    final TextEditingController _nomController = TextEditingController();
+    final TextEditingController _prenomController = TextEditingController();
+    final TextEditingController _emailController = TextEditingController();
+    final TextEditingController _phoneController = TextEditingController();
+    final TextEditingController _passwordController = TextEditingController();
+    final TextEditingController _dateController = TextEditingController(
+      text: user?.date != null
+          ? DateFormat('yyyy-MM-dd').format(DateTime.parse(user!.date))
+          : '',
+    );
+    bool _isLoading = false;
+
+    // Selection variables
+    String _selectedRegion = Regions.list.first;
+    String _selectedGenre = 'Homme';
+    DateTime _selectedDate =
+        DateTime.tryParse(user?.date ?? '') ?? DateTime.now();
+    PlatformFile? _tempSelectedImage;
+
+    await showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) => StatefulBuilder(
+        builder: (context, setState) {
+          return Dialog(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: 600,
+                maxHeight: MediaQuery.of(context).size.height * 0.8,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Dialog title
+                    const Text(
+                      'Ajouter un utilisateur',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Form content in a scrollable container
+                    Flexible(
+                      child: Form(
+                        key: _formKey,
+                        child: SingleChildScrollView(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Profile image upload section
+                              Center(
+                                child: Column(
+                                  children: [
+                                    SizedBox(
+                                      height:
+                                          120, // Give explicit size to the file picker
+                                      child: FilePickerExample(
+                                        onImagePicked: (PlatformFile? file) {
+                                          setState(() {
+                                            _tempSelectedImage = file;
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    const Text('Photo de profil'),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Name and surname fields
+                              Row(
+                                children: [
+                                  Flexible(
+                                    flex: 1,
+                                    child: TextFormField(
+                                      controller: _nomController,
+                                      decoration: const InputDecoration(
+                                        labelText: 'Nom',
+                                        border: OutlineInputBorder(),
+                                        hintText: 'Entrez le nom de famille',
+                                        contentPadding: EdgeInsets.symmetric(
+                                            horizontal: 12, vertical: 16),
+                                      ),
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return 'Veuillez entrer un nom';
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Flexible(
+                                    flex: 1,
+                                    child: TextFormField(
+                                      controller: _prenomController,
+                                      decoration: const InputDecoration(
+                                        labelText: 'Prénom',
+                                        border: OutlineInputBorder(),
+                                        hintText: 'Entrez le prénom',
+                                        contentPadding: EdgeInsets.symmetric(
+                                            horizontal: 12, vertical: 16),
+                                      ),
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return 'Veuillez entrer un prénom';
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Email field
+                              TextFormField(
+                                controller: _emailController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Email',
+                                  border: OutlineInputBorder(),
+                                  hintText: 'exemple@gmail.com',
+                                  contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 16),
+                                ),
+                                keyboardType: TextInputType.emailAddress,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Veuillez entrer un email';
+                                  }
+                                  if (!value.endsWith('@gmail.com')) {
+                                    return 'L\'email doit être sous format @gmail.com';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Password field
+                              TextFormField(
+                                controller: _passwordController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Mot de passe',
+                                  border: OutlineInputBorder(),
+                                  hintText:
+                                      'Minimum 8 caractères avec majuscule, chiffre et caractère spécial',
+                                  contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 16),
+                                ),
+                                obscureText: true,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Veuillez entrer un mot de passe';
+                                  }
+                                  if (value.length < 8) {
+                                    return 'Le mot de passe doit contenir au moins 8 caractères';
+                                  }
+                                  if (!RegExp(r'[A-Z]').hasMatch(value)) {
+                                    return 'Le mot de passe doit contenir au moins une majuscule';
+                                  }
+                                  if (!RegExp(r'[0-9]').hasMatch(value)) {
+                                    return 'Le mot de passe doit contenir au moins un chiffre';
+                                  }
+                                  if (!RegExp(r'[!@/+_#$%^&*(),.?":{}|<>]')
+                                      .hasMatch(value)) {
+                                    return 'Le mot de passe doit contenir au moins un caractère spécial';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Phone and date fields
+                              Row(
+                                children: [
+                                  Flexible(
+                                    flex: 1,
+                                    child: TextFormField(
+                                      controller: _phoneController,
+                                      decoration: const InputDecoration(
+                                        labelText: 'Téléphone',
+                                        border: OutlineInputBorder(),
+                                        hintText: '8 chiffres',
+                                        contentPadding: EdgeInsets.symmetric(
+                                            horizontal: 12, vertical: 16),
+                                      ),
+                                      keyboardType: TextInputType.phone,
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return 'Veuillez entrer un numéro de téléphone';
+                                        }
+                                        if (value.length != 8 ||
+                                            !RegExp(r'^[0-9]{8}$')
+                                                .hasMatch(value)) {
+                                          return 'Le téléphone doit contenir exactement 8 chiffres';
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  // Date de naissance
+                                  Flexible(
+                                    flex: 1,
+                                    child: TextFormField(
+                                      controller: _dateController,
+                                      decoration: const InputDecoration(
+                                        labelText: 'Date de naissance',
+                                        border: OutlineInputBorder(),
+                                        suffixIcon: Icon(Icons.calendar_today),
+                                        contentPadding: EdgeInsets.symmetric(
+                                            horizontal: 12, vertical: 16),
+                                      ),
+                                      readOnly: true,
+                                      onTap: () async {
+                                        final DateTime? picked =
+                                            await showDatePicker(
+                                          context: context,
+                                          initialDate: _selectedDate,
+                                          firstDate: DateTime(1900),
+                                          lastDate: DateTime.now(),
+                                        );
+                                        if (picked != null &&
+                                            picked != _selectedDate) {
+                                          setState(() {
+                                            _selectedDate = picked;
+                                            _dateController.text =
+                                                DateFormat('yyyy-MM-dd')
+                                                    .format(_selectedDate);
+                                          });
+                                        }
+                                      },
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return 'Veuillez sélectionner une date';
+                                        }
+
+                                        // Vérifier que l'utilisateur a au moins 13 ans
+                                        final selectedDate =
+                                            DateTime.tryParse(value);
+                                        if (selectedDate != null) {
+                                          final today = DateTime.now();
+                                          final age = today.year -
+                                              selectedDate.year -
+                                              (today.month <
+                                                          selectedDate.month ||
+                                                      (today.month ==
+                                                              selectedDate
+                                                                  .month &&
+                                                          today.day <
+                                                              selectedDate.day)
+                                                  ? 1
+                                                  : 0);
+
+                                          if (age < 13) {
+                                            return 'L\'utilisateur doit avoir au moins 13 ans';
+                                          }
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Region and gender selection
+                              Row(
+                                children: [
+                                  Flexible(
+                                    flex: 1,
+                                    child: DropdownButtonFormField<String>(
+                                      decoration: const InputDecoration(
+                                        labelText: 'Région',
+                                        border: OutlineInputBorder(),
+                                        contentPadding: EdgeInsets.symmetric(
+                                            horizontal: 12, vertical: 16),
+                                      ),
+                                      value: _selectedRegion,
+                                      items: Regions.list.map((region) {
+                                        return DropdownMenuItem(
+                                          value: region,
+                                          child: Text(region),
+                                        );
+                                      }).toList(),
+                                      onChanged: (value) {
+                                        if (value != null) {
+                                          setState(() {
+                                            _selectedRegion = value;
+                                          });
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Flexible(
+                                    flex: 1,
+                                    child: DropdownButtonFormField<String>(
+                                      decoration: const InputDecoration(
+                                        labelText: 'Genre',
+                                        border: OutlineInputBorder(),
+                                        contentPadding: EdgeInsets.symmetric(
+                                            horizontal: 12, vertical: 16),
+                                      ),
+                                      value: _selectedGenre,
+                                      items: ['Homme', 'Femme'].map((genre) {
+                                        return DropdownMenuItem(
+                                          value: genre,
+                                          child: Text(genre),
+                                        );
+                                      }).toList(),
+                                      onChanged: (value) {
+                                        if (value != null) {
+                                          setState(() {
+                                            _selectedGenre = value;
+                                          });
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Action buttons
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Annuler'),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: _isLoading
+                              ? null
+                              : () async {
+                                  if (_formKey.currentState!.validate()) {
+                                    setState(() {
+                                      _isLoading = true;
+                                    });
+
+                                    try {
+                                      // Créer l'utilisateur
+                                      final newUser = User(
+                                        nom: _nomController.text,
+                                        prenom: _prenomController.text,
+                                        email: _emailController.text,
+                                        date: DateFormat('yyyy-MM-dd')
+                                            .format(_selectedDate),
+                                        region: _selectedRegion,
+                                        genre: _selectedGenre,
+                                        password: _passwordController.text,
+                                        phone: _phoneController.text,
+                                        status: 'Active',
+                                        imageUrl: 'imageUrl',
+                                      );
+
+                                      // Add user to database FIRST
+                                      final result =
+                                          await _controller.addUser(newUser);
+
+                                      // THEN, upload the image if available
+                                      if (_tempSelectedImage != null) {
+                                        final imageUrl =
+                                            await _uploadImageAndGetUrl(
+                                          _tempSelectedImage,
+                                          _emailController.text,
+                                        );
+                                        // Update the user with the new image URL
+                                        newUser.imageUrl = imageUrl;
+                                      }
+
+                                      // Retrieve the complete user with ID
+                                      final completeUser = await _authController
+                                          .getUserByEmail(newUser.email);
+
+                                      // Update the user ID
+                                      newUser.id = completeUser['_id'] ??
+                                          completeUser['id'] ??
+                                          '';
+
+                                      // Close the dialog
+                                      Navigator.pop(dialogContext);
+
+                                      // Update UI
+                                      if (mounted) {
+                                        setState(() {
+                                          _controller.fetchUsers();
+                                          _showSnackBar(
+                                              'Utilisateur ajouté avec succès');
+                                          // Force refresh of the UI
+                                          _controller.fetchUsers().then((_) {
+                                            if (mounted) {
+                                              setState(() {
+                                                _filterUsers();
+                                              });
+                                            }
+                                          }).catchError((error) {
+                                            print(
+                                                "Erreur lors du rafraîchissement des utilisateurs: $error");
+                                          });
+                                        });
+                                      }
+                                    } catch (e) {
+                                      _showSnackBar('Erreur: ${e.toString()}',
+                                          isError: true);
+                                    } finally {
+                                      if (mounted) {
+                                        setState(() {
+                                          _isLoading = false;
+                                        });
+                                      }
+                                    }
+                                  }
+                                },
+                          child: _isLoading
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2.0),
+                                )
+                              : const Text('Ajouter'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+
+    // Force rebuild after dialog is closed
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
   String _getValueForSort(User user, String column) {
     switch (column) {
       case 'id':
@@ -402,7 +860,7 @@ class _UsersScreenState extends State<UsersScreen> {
               ),
               const SizedBox(height: 4),
               Text(
-                '${_controller.users.length} utilisateurs trouvés',
+                '${_controller.users.length} utilisateurs',
                 style: TextStyle(
                   fontSize: 14,
                   color: _textSecondaryColor,
@@ -410,6 +868,20 @@ class _UsersScreenState extends State<UsersScreen> {
                 ),
               ),
             ],
+          ),
+          ElevatedButton.icon(
+            onPressed: () => _showAddUserDialog(null),
+            icon: const Icon(Icons.person_add),
+            label: const Text('Nouvel utilisateur'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _primaryColor,
+              foregroundColor: Colors.white,
+              elevation: 2,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
           ),
         ],
       ),

@@ -70,25 +70,30 @@ Future<void> main() async {
   Get.put<http.Client>(client);
 
   // Register UserDataSource and UserController
-  final userDataSource = UserDataSourceImpl(client: client); // Assurez-vous que cette classe existe
+  final userDataSource = UserDataSourceImpl(
+      client: client); // Assurez-vous que cette classe existe
   Get.put<UserDataSource>(userDataSource);
 
-  final userController = UserController(userDataSource); // Initialisez UserController
+  final userController =
+      UserController(userDataSource); // Initialisez UserController
   Get.put<UserController>(userController); // Enregistrez-le dans GetX
 
   // Register other dependencies
   final productRemoteDataSource = ProductDatasource();
   Get.put<ProductDatasource>(productRemoteDataSource);
-  final productRepository = ProductRepositoryImpl(dataSource: productRemoteDataSource);
+  final productRepository =
+      ProductRepositoryImpl(dataSource: productRemoteDataSource);
   Get.put<ProductRepository>(productRepository);
   Get.put<ProductRepositoryImpl>(productRepository);
-  Get.put<ProductController>(ProductController(productRepository, productRemoteDataSource));
+  Get.put<ProductController>(
+      ProductController(productRepository, productRemoteDataSource));
 
   final authRemoteDataSource = AuthRemoteDataSourceImpl(client: client);
   Get.put<AuthRemoteDataSource>(authRemoteDataSource);
   final authRepository = AuthRepositoryImpl(authRemoteDataSource);
   Get.put<AuthRepository>(authRepository);
-  Get.put<AuthController>(AuthController(authRepository: authRepository, prefs: prefs));
+  Get.put<AuthController>(
+      AuthController(authRepository: authRepository, prefs: prefs));
 
   final boutiqueRemoteDataSource = BoutiqueRemoteDataSourceImpl(client: client);
   Get.put<BoutiqueRemoteDataSource>(boutiqueRemoteDataSource);
@@ -97,7 +102,8 @@ Future<void> main() async {
   Get.put<BoutiqueRepository>(boutiqueRepository);
 
   Get.put<BoutiqueController>(
-    BoutiqueController(boutiqueRepository: boutiqueRepository), // Correct parameter
+    BoutiqueController(
+        boutiqueRepository: boutiqueRepository), // Correct parameter
   );
 
   final opticianDataSource = OpticianDataSourceImpl();
@@ -112,7 +118,8 @@ Future<void> main() async {
 
   final cartItemRemoteDataSource = CartItemDataSourceImpl(client: client);
   Get.put<CartItemDataSource>(cartItemRemoteDataSource);
-  final cartItemRepository = CartItemRepositoryImpl(dataSource: cartItemRemoteDataSource);
+  final cartItemRepository =
+      CartItemRepositoryImpl(dataSource: cartItemRemoteDataSource);
   Get.put<CartItemRepository>(cartItemRepository);
   Get.put<CartItemController>(CartItemController(
     repository: cartItemRepository,
@@ -139,7 +146,6 @@ Future<void> main() async {
   Get.put(sendCodeToEmail);
   Get.put(NavigationController(), permanent: true);
   NotificationService().initialize();
-  
 
   runApp(const MyApp());
 }
