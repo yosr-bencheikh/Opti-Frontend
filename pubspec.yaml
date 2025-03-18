@@ -30,6 +30,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  fl_chart: ^0.70.2
   http: ^1.3.0
   shared_preferences: ^2.0.15
   flutter_facebook_auth: ^7.1.1 
@@ -44,7 +45,7 @@ dependencies:
   google_maps_flutter: ^2.2.3
   intl: ^0.20.2
   time_range_picker: ^2.3.0
-  flutter_colorpicker: ^1.0.3 
+  flutter_colorpicker: ^1.1.0
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -68,7 +69,7 @@ dependencies:
   onesignal_flutter: ^5.3.0
   
   share_plus: ^10.1.4
-  fl_chart: ^0.70.2
+
 #  arcore_flutter_plugin: 
 #    path: C:\Users\LENOVO\Downloads\arcore_flutter_plugin-master\arcore_flutter_plugin-master
     

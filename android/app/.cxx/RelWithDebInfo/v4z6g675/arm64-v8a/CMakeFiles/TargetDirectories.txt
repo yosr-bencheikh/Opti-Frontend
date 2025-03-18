@@ -1,0 +1,2 @@
+C:/PFE2025/Projet/Opti-Frontend/android/app/.cxx/RelWithDebInfo/v4z6g675/arm64-v8a/CMakeFiles/edit_cache.dir
+C:/PFE2025/Projet/Opti-Frontend/android/app/.cxx/RelWithDebInfo/v4z6g675/arm64-v8a/CMakeFiles/rebuild_cache.dir

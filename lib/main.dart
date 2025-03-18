@@ -1,7 +1,8 @@
+import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:http/http.dart' as http;
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:opti_app/AuthBinding.dart';
@@ -56,9 +57,7 @@ import 'package:opti_app/notification_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:opti_app/Presentation/UI/screens/User/ordersList_screen.dart';
 
-// Importez WishlistController
-
-Future<void> main() async {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize SharedPreferences
@@ -70,11 +69,11 @@ Future<void> main() async {
   Get.put<http.Client>(client);
 
   // Register UserDataSource and UserController
-  final userDataSource = UserDataSourceImpl(client: client); // Assurez-vous que cette classe existe
+  final userDataSource = UserDataSourceImpl(client: client);
   Get.put<UserDataSource>(userDataSource);
 
-  final userController = UserController(userDataSource); // Initialisez UserController
-  Get.put<UserController>(userController); // Enregistrez-le dans GetX
+  final userController = UserController(userDataSource);
+  Get.put<UserController>(userController);
 
   // Register other dependencies
   final productRemoteDataSource = ProductDatasource();
@@ -97,7 +96,7 @@ Future<void> main() async {
   Get.put<BoutiqueRepository>(boutiqueRepository);
 
   Get.put<BoutiqueController>(
-    BoutiqueController(boutiqueRepository: boutiqueRepository), // Correct parameter
+    BoutiqueController(boutiqueRepository: boutiqueRepository),
   );
 
   final opticianDataSource = OpticianDataSourceImpl();
@@ -132,14 +131,13 @@ Future<void> main() async {
   // Pass the boutiqueRepository to OrderController
   Get.put<OrderController>(OrderController(
     orderRepository: orderRepository,
-    boutiqueRepository: boutiqueRepository, // Add this line
+    boutiqueRepository: boutiqueRepository,
   ));
 
   final sendCodeToEmail = SendCodeToEmail(Get.find());
   Get.put(sendCodeToEmail);
   Get.put(NavigationController(), permanent: true);
   NotificationService().initialize();
-  
 
   runApp(const MyApp());
 }
@@ -221,8 +219,7 @@ class MyApp extends StatelessWidget {
         GetPage(
           name: '/wishlist',
           page: () {
-            final userEmail =
-                Get.arguments as String; // Récupérer l'email des arguments
+            final userEmail = Get.arguments as String;
             return WishlistPage(userEmail: userEmail);
           },
         ),
