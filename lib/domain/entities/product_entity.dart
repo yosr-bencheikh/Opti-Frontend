@@ -9,10 +9,10 @@ class Product {
   int quantiteStock;
   String image;
   String? typeVerre;
-  String boutiqueId;
   String opticienId; // Added this field
   double averageRating;
   int totalReviews;
+  String style; // Ajout du champ 'style'
 
   Product({
     this.id,
@@ -25,10 +25,10 @@ class Product {
     required this.quantiteStock,
     this.image = "",
     this.typeVerre,
-    required this.boutiqueId,
     this.opticienId = "", // Added with default value
     required this.averageRating,
     required this.totalReviews,
+    required this.style, // Ajouter le style au constructeur
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
@@ -46,10 +46,10 @@ class Product {
       quantiteStock: json['quantite_stock'] ?? 0,
       image: imageUrl ?? '', // Use the constructed image URL
       typeVerre: json['type_verre']?.toString() ?? '',
-      boutiqueId: json['boutiqueId']?.toString() ?? '',
       opticienId: json['opticienId']?.toString() ?? '', // Parse from JSON
       averageRating: (json['averageRating'] as num?)?.toDouble() ?? 0.0,
       totalReviews: json['totalReviews'] ?? 0,
+      style: json['style']?.toString() ?? '', // Parse le style depuis JSON
     );
   }
 
@@ -78,10 +78,10 @@ class Product {
       'quantite_stock': quantiteStock,
       'image': image,
       'type_verre': typeVerre,
-      'boutiqueId': boutiqueId,
       'opticienId': opticienId, // Include in JSON
       'totalReviews': totalReviews,
       'averageRating': averageRating,
+      'style': style, // Ajouter le style dans le JSON
     };
   }
 
@@ -96,10 +96,10 @@ class Product {
     int? quantiteStock,
     String? image,
     String? typeVerre,
-    String? boutiqueId,
     String? opticienId, // Added to copyWith
     double? averageRating,
     int? totalReviews,
+    String? style, // Ajout du paramètre style dans copyWith
   }) {
     return Product(
       id: id ?? this.id,
@@ -112,10 +112,10 @@ class Product {
       quantiteStock: quantiteStock ?? this.quantiteStock,
       image: image ?? this.image,
       typeVerre: typeVerre ?? this.typeVerre,
-      boutiqueId: boutiqueId ?? this.boutiqueId,
       opticienId: opticienId ?? this.opticienId, // Handle in copyWith
       averageRating: averageRating ?? this.averageRating,
       totalReviews: totalReviews ?? this.totalReviews,
+      style: style ?? this.style, // Mettre à jour la valeur de style
     );
   }
 }

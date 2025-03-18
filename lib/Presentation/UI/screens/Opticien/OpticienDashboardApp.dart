@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 
 import 'package:opti_app/Presentation/UI/screens/Admin/Monthly_sales_chart.dart';
 import 'package:opti_app/Presentation/UI/screens/Admin/Order_Pie_Chart.dart';
@@ -13,6 +14,7 @@ import 'package:opti_app/Presentation/controllers/OrderController.dart';
 import 'package:opti_app/Presentation/controllers/boutique_controller.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
 import 'package:opti_app/Presentation/controllers/user_controller.dart';
+
 // Dashboard screen
 class OpticianDashboardScreen extends StatefulWidget {
   const OpticianDashboardScreen({Key? key}) : super(key: key);
@@ -27,6 +29,7 @@ class _OpticianDashboardScreenState extends State<OpticianDashboardScreen> {
   final ProductController productController = Get.find<ProductController>();
   final BoutiqueController boutiqueController = Get.find<BoutiqueController>();
   final OrderController orderController = Get.find<OrderController>();
+  final RxString selectedMonth = DateFormat('MMMM').format(DateTime.now()).obs;
 
   @override
   void initState() {
@@ -253,147 +256,242 @@ class _OpticianDashboardScreenState extends State<OpticianDashboardScreen> {
     );
   }
 
+  Widget _buildMonthDropdown() {
+    final orderController = Get.find<OrderController>();
+
+    return Obx(() {
+      // Get unique months that have orders
+      final Set<int> monthsWithOrders = {};
+
+      // Collect months that have orders
+      for (final order in orderController.allOrders) {
+        monthsWithOrders.add(order.createdAt.month);
+      }
+
+      // Convert month numbers to month names and sort them
+      final List<String> availableMonths = monthsWithOrders
+          .map((monthNum) => DateFormat('MMMM').format(DateTime(0, monthNum)))
+          .toList()
+        ..sort((a, b) => DateFormat('MMMM').parse(a).month.compareTo(
+              DateFormat('MMMM').parse(b).month,
+            ));
+
+      // Handle case when no months have orders
+      if (availableMonths.isEmpty) {
+        return const Text('No order data available');
+      }
+
+      // Set default month if current selection is not valid
+      if (!availableMonths.contains(selectedMonth.value)) {
+        selectedMonth.value = availableMonths.first;
+      }
+
+      return DropdownButton<String>(
+        value: selectedMonth.value,
+        onChanged: (String? newValue) {
+          if (newValue != null) {
+            selectedMonth.value = newValue;
+          }
+        },
+        items: availableMonths.map<DropdownMenuItem<String>>((String month) {
+          return DropdownMenuItem<String>(
+            value: month,
+            child: Text(month),
+          );
+        }).toList(),
+      );
+    });
+  }
+
   Widget _buildProductsChart() {
     final orderController = Get.find<OrderController>();
     final productController = Get.find<ProductController>();
 
-    return SizedBox(
-      height: 380,
-      child: Obx(() {
-        // Calculate product popularity
-        final Map<String, int> productPopularity = {};
+    // Liste des mois
+    final List<String> months = List.generate(
+        12, (index) => DateFormat('MMMM').format(DateTime(0, index + 1)));
 
-        // Aggregate product orders
+    // Observable pour le nombre de produits à afficher (valeur par défaut : 5)
+    final selectedProductCount = 5.obs;
+
+    return SizedBox(
+      height: 430,
+      child: Obx(() {
+        final selectedMonthNumber =
+            DateFormat('MMMM').parse(selectedMonth.value).month;
+
+        // Calcul de la popularité des produits pour le mois sélectionné
+        final Map<String, int> productPopularity = {};
         for (final order in orderController.allOrders) {
-          for (final item in order.items) {
-            productPopularity.update(
-              item.productId,
-              (value) => value + item.quantity,
-              ifAbsent: () => item.quantity,
-            );
+          // On ne considère que les commandes avec le statut "Completée"
+          if (order.createdAt.month == selectedMonthNumber &&
+              order.status == 'Completée') {
+            for (final item in order.items) {
+              productPopularity.update(
+                item.productId,
+                (value) => value + item.quantity,
+                ifAbsent: () => item.quantity,
+              );
+            }
           }
         }
 
-        // Get top 5 products
+        // Tri des produits par popularité décroissante et prise des N premiers produits
         final sortedProducts = productPopularity.entries.toList()
           ..sort((a, b) => b.value.compareTo(a.value));
-
-        final top5Products = sortedProducts.take(5).toList();
+        final topProducts =
+            sortedProducts.take(selectedProductCount.value).toList();
 
         return Card(
           elevation: 3,
           child: Padding(
             padding: const EdgeInsets.all(20),
-            child: BarChart(
-              BarChartData(
-                alignment: BarChartAlignment.spaceAround,
-                maxY: (top5Products.isNotEmpty
-                        ? top5Products.first.value.toDouble()
-                        : 100) *
-                    1.2,
-                barTouchData: BarTouchData(
-                  enabled: true,
-                  touchTooltipData: BarTouchTooltipData(
-                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                      if (groupIndex >= top5Products.length) return null;
-
-                      final productId = top5Products[groupIndex].key;
-                      final product = productController.products.firstWhere(
-                        (p) => p.id == productId,
-                      );
-
-                      return BarTooltipItem(
-                        '${product.name}\nOrders: ${rod.toY.toInt()}',
-                        const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                titlesData: FlTitlesData(
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 40,
-                      getTitlesWidget: (double value, TitleMeta meta) {
-                        final index = value.toInt();
-                        if (index >= top5Products.length) return const Text('');
-
-                        final productId = top5Products[index].key;
-                        final product = productController.products.firstWhere(
-                          (p) => p.id == productId,
-                        );
-
-                        return SideTitleWidget(
-                          angle: 0,
-                          space: 4,
-                          meta: meta,
-                          child: Text(
-                            product.name,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 40,
-                      getTitlesWidget: (double value, TitleMeta meta) {
-                        return Text(
-                          value.toInt().toString(),
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  topTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  rightTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                ),
-                borderData: FlBorderData(show: false),
-                gridData: FlGridData(
-                  show: true,
-                  drawVerticalLine: false,
-                  horizontalInterval: top5Products.isNotEmpty
-                      ? (top5Products.first.value ~/ 5).toDouble()
-                      : 10,
-                ),
-                barGroups: top5Products.asMap().entries.map((entry) {
-                  final index = entry.key;
-                  final product = entry.value;
-                  return BarChartGroupData(
-                    x: index,
-                    barRods: [
-                      BarChartRodData(
-                        toY: product.value.toDouble(),
-                        color: _getChartColor(index),
-                        width: 28,
-                        borderRadius: BorderRadius.circular(4),
-                        backDrawRodData: BackgroundBarChartRodData(
-                          show: true,
-                          toY: double.infinity,
-                          color: Colors.grey[200],
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Dropdown pour sélectionner le mois
+                _buildMonthDropdown(),
+                const SizedBox(height: 20),
+                // Dropdown pour sélectionner le nombre de produits à afficher
+                Row(
+                  children: [
+                    const Text("Nombre de produits : "),
+                    const SizedBox(width: 10),
+                    DropdownButton<int>(
+                      value: selectedProductCount.value,
+                      items: List.generate(
+                        10,
+                        (index) => DropdownMenuItem(
+                          value: index + 1,
+                          child: Text('${index + 1}'),
                         ),
                       ),
-                    ],
-                  );
-                }).toList(),
-              ),
+                      onChanged: (value) {
+                        if (value != null) {
+                          selectedProductCount.value = value;
+                        }
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Expanded(
+                  child: BarChart(
+                    BarChartData(
+                      alignment: BarChartAlignment.spaceAround,
+                      maxY: (topProducts.isNotEmpty
+                              ? topProducts.first.value.toDouble()
+                              : 100) *
+                          1.2,
+                      barTouchData: BarTouchData(
+                        enabled: true,
+                        touchTooltipData: BarTouchTooltipData(
+                          getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                            if (groupIndex >= topProducts.length) return null;
+                            final productId = topProducts[groupIndex].key;
+                            final product =
+                                productController.products.firstWhere(
+                              (p) => p.id == productId,
+                            );
+                            return BarTooltipItem(
+                              '${product.name}\nCommandes : ${rod.toY.toInt()}',
+                              const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      titlesData: FlTitlesData(
+                        show: true,
+                        // Désactivation des titres en haut et à droite
+                        topTitles: AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
+                        rightTitles: AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
+                        bottomTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            reservedSize: 40,
+                            getTitlesWidget: (double value, TitleMeta meta) {
+                              final index = value.toInt();
+                              if (index >= topProducts.length)
+                                return const Text('');
+                              final productId = topProducts[index].key;
+                              final product =
+                                  productController.products.firstWhere(
+                                (p) => p.id == productId,
+                              );
+                              return SideTitleWidget(
+                                angle: 0,
+                                space: 4,
+                                meta: meta,
+                                child: Text(
+                                  product.name,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        leftTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            reservedSize: 40,
+                            getTitlesWidget: (double value, TitleMeta meta) {
+                              return Text(
+                                value.toInt().toString(),
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                      borderData: FlBorderData(show: false),
+                      gridData: FlGridData(
+                        show: true,
+                        drawVerticalLine: false,
+                        horizontalInterval: topProducts.isNotEmpty
+                            ? ((topProducts.first.value ~/ 5)
+                                .toDouble()
+                                .clamp(1, double.infinity))
+                            : 10,
+                      ),
+                      barGroups: topProducts.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final product = entry.value;
+                        return BarChartGroupData(
+                          x: index,
+                          barRods: [
+                            BarChartRodData(
+                              toY: product.value.toDouble(),
+                              color: _getChartColor(index),
+                              width: 28,
+                              borderRadius: BorderRadius.circular(4),
+                              backDrawRodData: BackgroundBarChartRodData(
+                                show: true,
+                                toY: double.infinity,
+                                color: Colors.grey[200],
+                              ),
+                            ),
+                          ],
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         );

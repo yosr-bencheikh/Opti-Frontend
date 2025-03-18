@@ -16,7 +16,11 @@ class BoutiqueRemoteDataSourceImpl implements BoutiqueRemoteDataSource {
 
   BoutiqueRemoteDataSourceImpl({
     required this.client,
+<<<<<<< HEAD
     this.baseUrl = 'http://192.168.1.11:3000',
+=======
+    this.baseUrl = 'http://192.168.1.22:3000',
+>>>>>>> faa1af5b30714013502ee690711c452a74ff0927
   });
   @override
   Future<Opticien> getOpticienById(String id) async {

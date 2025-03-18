@@ -35,182 +35,188 @@ class OrderController extends GetxController {
 
   final deliveryFee = 5.50;
 
-Future<void> createOrderFromCart(String userId) async {
-  try {
-    isCreating.value = true;
+  Future<void> createOrderFromCart(String userId) async {
+    try {
+      isCreating.value = true;
 
-    final cartController = Get.find<CartItemController>();
-    final productController = Get.find<ProductController>();
+      final cartController = Get.find<CartItemController>();
+      final productController = Get.find<ProductController>();
 
-    if (cartController.cartItems.value.isEmpty) {
-      Get.snackbar('Erreur', 'Votre panier est vide');
-      return;
-    }
+      if (cartController.cartItems.value.isEmpty) {
+        Get.snackbar('Erreur', 'Votre panier est vide');
+        return;
+      }
 
-    // Log order creation attempt
-    developer.log('Creating order for user: $userId');
-    developer.log('Cart items count: ${cartController.cartItems.value.length}');
+      // Log order creation attempt
+      developer.log('Creating order for user: $userId');
+      developer
+          .log('Cart items count: ${cartController.cartItems.value.length}');
 
-    // Préparer les éléments de la commande à partir du panier
-    final List<OrderItem> orderItems = [];
-    double subtotal = 0;
-    String? boutiqueId;
+      // Préparer les éléments de la commande à partir du panier
+      final List<OrderItem> orderItems = [];
+      double subtotal = 0;
+      String? boutiqueId;
 
-    for (var cartItem in cartController.cartItems.value) {
-      final Product? product = productController.products.firstWhereOrNull(
-        (p) => p.id == cartItem.productId,
-      );
+      for (var cartItem in cartController.cartItems.value) {
+        final Product? product = productController.products.firstWhereOrNull(
+          (p) => p.id == cartItem.productId,
+        );
 
-      if (product != null) {
-        final double unitPrice = cartItem.totalPrice / cartItem.quantity;
+        if (product != null) {
+          final double unitPrice = cartItem.totalPrice / cartItem.quantity;
 
-        orderItems.add(OrderItem(
-          productId: product.id!,
-          productName: product.name,
-          productImage: product.image,
-          quantity: cartItem.quantity,
-          unitPrice: unitPrice,
-          totalPrice: cartItem.totalPrice,
-        ));
+          orderItems.add(OrderItem(
+            productId: product.id!,
+            productName: product.name,
+            productImage: product.image,
+            quantity: cartItem.quantity,
+            unitPrice: unitPrice,
+            totalPrice: cartItem.totalPrice,
+            opticienId: product.opticienId,
+          ));
 
-        subtotal += cartItem.totalPrice;
+          subtotal += cartItem.totalPrice;
 
-        // Récupérer le boutiqueId du premier produit
-        if (boutiqueId == null && product.boutiqueId != null) {
-          boutiqueId = product.boutiqueId;
+          // Récupérer le boutiqueId du premier produit
+          if (boutiqueId == null && product.opticienId != null) {
+            boutiqueId = product.opticienId;
+          }
         }
       }
+
+      final double total = subtotal + deliveryFee;
+
+      // Créer l'objet Order avec le boutiqueId
+      final order = Order(
+        userId: userId,
+        boutiqueId: boutiqueId, // Ajoutez le boutiqueId ici
+        items: orderItems,
+        subtotal: subtotal,
+        deliveryFee: deliveryFee,
+        total: total,
+        address: selectedAddress.value,
+        paymentMethod: selectedPaymentMethod.value,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      // Log the order data
+      developer.log('Order data prepared: ${order.toJson()}');
+
+      // Envoyer la commande au serveur directement via le repository
+      developer.log('Sending order to server...');
+      final createdOrder = await orderRepository.createOrder(order);
+
+      developer.log('Order created successfully with ID: ${createdOrder.id}');
+      currentOrder.value = createdOrder;
+
+      // Vider le panier après une commande réussie
+      developer.log('Clearing cart...');
+      await cartController.clearCart(userId);
+
+      Get.snackbar(
+        'Succès',
+        'Votre commande a été confirmée avec succès',
+        duration: const Duration(seconds: 3),
+      );
+    } catch (e) {
+      developer.log('Error creating order: $e', error: e);
+
+      // Show a more user-friendly error message
+      String errorMessage =
+          'Une erreur est survenue lors de la création de la commande.';
+
+      if (e.toString().contains('timed out') ||
+          e.toString().contains('SocketException') ||
+          e.toString().contains('Connection refused')) {
+        errorMessage =
+            'Impossible de se connecter au serveur. Vérifiez votre connexion internet ou réessayez plus tard.';
+      }
+
+      Get.snackbar(
+        'Erreur',
+        errorMessage,
+        duration: const Duration(seconds: 5),
+      );
+    } finally {
+      isCreating.value = false;
     }
-
-    final double total = subtotal + deliveryFee;
-
-    // Créer l'objet Order avec le boutiqueId
-    final order = Order(
-      userId: userId,
-      boutiqueId: boutiqueId, // Ajoutez le boutiqueId ici
-      items: orderItems,
-      subtotal: subtotal,
-      deliveryFee: deliveryFee,
-      total: total,
-      address: selectedAddress.value,
-      paymentMethod: selectedPaymentMethod.value,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    );
-
-    // Log the order data
-    developer.log('Order data prepared: ${order.toJson()}');
-
-    // Envoyer la commande au serveur directement via le repository
-    developer.log('Sending order to server...');
-    final createdOrder = await orderRepository.createOrder(order);
-
-    developer.log('Order created successfully with ID: ${createdOrder.id}');
-    currentOrder.value = createdOrder;
-
-    // Vider le panier après une commande réussie
-    developer.log('Clearing cart...');
-    await cartController.clearCart(userId);
-
-    Get.snackbar(
-      'Succès',
-      'Votre commande a été confirmée avec succès',
-      duration: const Duration(seconds: 3),
-    );
-  } catch (e) {
-    developer.log('Error creating order: $e', error: e);
-
-    // Show a more user-friendly error message
-    String errorMessage =
-        'Une erreur est survenue lors de la création de la commande.';
-
-    if (e.toString().contains('timed out') ||
-        e.toString().contains('SocketException') ||
-        e.toString().contains('Connection refused')) {
-      errorMessage =
-          'Impossible de se connecter au serveur. Vérifiez votre connexion internet ou réessayez plus tard.';
-    }
-
-    Get.snackbar(
-      'Erreur',
-      errorMessage,
-      duration: const Duration(seconds: 5),
-    );
-  } finally {
-    isCreating.value = false;
   }
-}
- Future<void> getOrderDetails(String orderId) async {
-  try {
-    isLoading.value = true;
-    developer.log('Fetching details for order: $orderId');
 
-    final order = await orderRepository.getOrderById(orderId);
+  Future<void> getOrderDetails(String orderId) async {
+    try {
+      isLoading.value = true;
+      developer.log('Fetching details for order: $orderId');
 
-    if (order.boutiqueId != null && order.boutiqueId!.isNotEmpty) {
-      try {
-        // Fetch the boutique details
-        final boutique = await boutiqueRepository.getOpticienById(order.boutiqueId!);
-        currentOrder.value = order.copyWith(boutique: boutique);
-      } catch (e) {
-        developer.log('Error fetching boutique details: $e', error: e);
+      final order = await orderRepository.getOrderById(orderId);
+
+      if (order.boutiqueId != null && order.boutiqueId!.isNotEmpty) {
+        try {
+          // Fetch the boutique details
+          final boutique =
+              await boutiqueRepository.getOpticienById(order.boutiqueId!);
+          currentOrder.value = order.copyWith(boutique: boutique);
+        } catch (e) {
+          developer.log('Error fetching boutique details: $e', error: e);
+          currentOrder.value = order;
+        }
+      } else {
         currentOrder.value = order;
       }
-    } else {
-      currentOrder.value = order;
+
+      developer.log('Order details fetched successfully');
+      developer.log('Boutique details: ${order.boutique}'); // Debug statement
+    } catch (e) {
+      developer.log('Error fetching order details: $e', error: e);
+
+      String errorMessage =
+          'Une erreur est survenue lors du chargement des détails de la commande.';
+
+      if (e.toString().contains('timed out') ||
+          e.toString().contains('SocketException') ||
+          e.toString().contains('Connection refused')) {
+        errorMessage =
+            'Impossible de se connecter au serveur. Vérifiez votre connexion internet.';
+      }
+
+      Get.snackbar(
+        'Erreur',
+        errorMessage,
+        duration: const Duration(seconds: 3),
+      );
+    } finally {
+      isLoading.value = false;
     }
+  }
 
-    developer.log('Order details fetched successfully');
-    developer.log('Boutique details: ${order.boutique}'); // Debug statement
-  } catch (e) {
-    developer.log('Error fetching order details: $e', error: e);
+  void updateLocalOrderStatus(String orderId, String newStatus) {
+    // Find the order in the allOrders list
+    final int index = allOrders.indexWhere((order) => order.id == orderId);
 
-    String errorMessage =
-        'Une erreur est survenue lors du chargement des détails de la commande.';
+    if (index != -1) {
+      // Create a copy of the order with the updated status
+      Order updatedOrder = Order(
+        id: allOrders[index].id,
+        userId: allOrders[index].userId,
+        boutiqueId: allOrders[index].boutiqueId,
+        items: allOrders[index].items,
+        status: newStatus,
+        address: allOrders[index].address,
+        paymentMethod: allOrders[index].paymentMethod,
+        subtotal: allOrders[index].subtotal,
+        deliveryFee: allOrders[index].deliveryFee,
+        total: allOrders[index].total,
+        createdAt: allOrders[index].createdAt,
+        updatedAt: allOrders[index].updatedAt,
+      );
 
-    if (e.toString().contains('timed out') ||
-        e.toString().contains('SocketException') ||
-        e.toString().contains('Connection refused')) {
-      errorMessage =
-          'Impossible de se connecter au serveur. Vérifiez votre connexion internet.';
+      // Update the order in the list
+      allOrders[index] = updatedOrder;
+
+      // Notify the UI that the data has changed
+      update();
     }
-
-    Get.snackbar(
-      'Erreur',
-      errorMessage,
-      duration: const Duration(seconds: 3),
-    );
-  } finally {
-    isLoading.value = false;
   }
-}
-void updateLocalOrderStatus(String orderId, String newStatus) {
-  // Find the order in the allOrders list
-  final int index = allOrders.indexWhere((order) => order.id == orderId);
-  
-  if (index != -1) {
-    // Create a copy of the order with the updated status
-    Order updatedOrder = Order(
-      id: allOrders[index].id,
-      userId: allOrders[index].userId,
-      boutiqueId: allOrders[index].boutiqueId,
-      items: allOrders[index].items,
-      status: newStatus,
-      address: allOrders[index].address,
-      paymentMethod: allOrders[index].paymentMethod,
-      subtotal: allOrders[index].subtotal,
-      deliveryFee: allOrders[index].deliveryFee,
-      total: allOrders[index].total,
-      createdAt: allOrders[index].createdAt, updatedAt: allOrders[index].updatedAt,
-    );
-    
-    // Update the order in the list
-    allOrders[index] = updatedOrder;
-    
-    // Notify the UI that the data has changed
-    update();
-  }
-}
 
   final RxString currentUserName = ''.obs;
 
@@ -326,8 +332,6 @@ void updateLocalOrderStatus(String orderId, String newStatus) {
     }
   }
 
-
-
   Future<bool> cancelOrder(String orderId) async {
     try {
       isLoading.value = true;
@@ -386,74 +390,76 @@ void updateLocalOrderStatus(String orderId, String newStatus) {
       isLoading.value = false;
     }
   }
-Future<bool> updateOrderStatus(
-  String orderId, 
-  String status, {
-  String? cancellationReason, // Add cancellationReason as an optional parameter
-}) async {
-  try {
-    isLoading.value = true;
-    developer.log('Updating order status: $orderId to $status');
 
-    // Call the repository to update the order status with cancellation reason
-    final success = await orderRepository.updateOrderStatus(
-      orderId, 
-      status, 
-      cancellationReason: cancellationReason, // Pass cancellationReason
-    );
+  Future<bool> updateOrderStatus(
+    String orderId,
+    String status, {
+    String?
+        cancellationReason, // Add cancellationReason as an optional parameter
+  }) async {
+    try {
+      isLoading.value = true;
+      developer.log('Updating order status: $orderId to $status');
 
-    if (success) {
-      // Refresh the order details if it's the current order
-      if (currentOrder.value?.id == orderId) {
-        await getOrderDetails(orderId);
-      }
-
-      // Refresh user orders list
-      if (currentOrder.value?.userId != null) {
-        await loadUserOrders(currentOrder.value!.userId);
-      }
-
-      Get.snackbar(
-        'Succès',
-        'Statut de commande mis à jour avec succès',
-        duration: const Duration(seconds: 3),
+      // Call the repository to update the order status with cancellation reason
+      final success = await orderRepository.updateOrderStatus(
+        orderId,
+        status,
+        cancellationReason: cancellationReason, // Pass cancellationReason
       );
 
-      developer.log('Order status updated successfully');
-    } else {
+      if (success) {
+        // Refresh the order details if it's the current order
+        if (currentOrder.value?.id == orderId) {
+          await getOrderDetails(orderId);
+        }
+
+        // Refresh user orders list
+        if (currentOrder.value?.userId != null) {
+          await loadUserOrders(currentOrder.value!.userId);
+        }
+
+        Get.snackbar(
+          'Succès',
+          'Statut de commande mis à jour avec succès',
+          duration: const Duration(seconds: 3),
+        );
+
+        developer.log('Order status updated successfully');
+      } else {
+        Get.snackbar(
+          'Erreur',
+          'Impossible de mettre à jour le statut de la commande',
+          duration: const Duration(seconds: 3),
+        );
+
+        developer.log('Failed to update order status');
+      }
+
+      return success;
+    } catch (e) {
+      developer.log('Error updating order status: $e', error: e);
+
+      String errorMessage =
+          'Une erreur est survenue lors de la mise à jour du statut.';
+
+      if (e.toString().contains('timed out') ||
+          e.toString().contains('SocketException') ||
+          e.toString().contains('Connection refused')) {
+        errorMessage =
+            'Impossible de se connecter au serveur. Vérifiez votre connexion internet.';
+      }
+
       Get.snackbar(
         'Erreur',
-        'Impossible de mettre à jour le statut de la commande',
+        errorMessage,
         duration: const Duration(seconds: 3),
       );
-
-      developer.log('Failed to update order status');
+      return false;
+    } finally {
+      isLoading.value = false;
     }
-
-    return success;
-  } catch (e) {
-    developer.log('Error updating order status: $e', error: e);
-
-    String errorMessage =
-        'Une erreur est survenue lors de la mise à jour du statut.';
-
-    if (e.toString().contains('timed out') ||
-        e.toString().contains('SocketException') ||
-        e.toString().contains('Connection refused')) {
-      errorMessage =
-          'Impossible de se connecter au serveur. Vérifiez votre connexion internet.';
-    }
-
-    Get.snackbar(
-      'Erreur',
-      errorMessage,
-      duration: const Duration(seconds: 3),
-    );
-    return false;
-  } finally {
-    isLoading.value = false;
   }
-}
 
   Future<void> setAddress(String address, dynamic selectedLatitude,
       dynamic selectedLongitude) async {
@@ -520,63 +526,63 @@ Future<bool> updateOrderStatus(
   }
   // Add this method to your OrderController class
 
-Future<bool> deleteOrder(String orderId) async {
-  try {
-    isLoading.value = true;
-    developer.log('Permanently deleting order: $orderId');
+  Future<bool> deleteOrder(String orderId) async {
+    try {
+      isLoading.value = true;
+      developer.log('Permanently deleting order: $orderId');
 
-    // Call the repository to delete the order
-    final success = await orderRepository.deleteOrder(orderId);
+      // Call the repository to delete the order
+      final success = await orderRepository.deleteOrder(orderId);
 
-    if (success) {
-      // Remove the deleted order from both userOrders and allOrders lists
-      userOrders.removeWhere((order) => order.id == orderId);
-      allOrders.removeWhere((order) => order.id == orderId);
+      if (success) {
+        // Remove the deleted order from both userOrders and allOrders lists
+        userOrders.removeWhere((order) => order.id == orderId);
+        allOrders.removeWhere((order) => order.id == orderId);
 
-      // Clear the current order if it matches the deleted order
-      if (currentOrder.value?.id == orderId) {
-        currentOrder.value = null;
+        // Clear the current order if it matches the deleted order
+        if (currentOrder.value?.id == orderId) {
+          currentOrder.value = null;
+        }
+
+        Get.snackbar(
+          'Succès',
+          'Commande supprimée définitivement',
+          duration: const Duration(seconds: 3),
+        );
+
+        developer.log('Order permanently deleted successfully');
+      } else {
+        Get.snackbar(
+          'Erreur',
+          'Impossible de supprimer définitivement la commande',
+          duration: const Duration(seconds: 3),
+        );
+
+        developer.log('Failed to delete order');
+      }
+
+      return success;
+    } catch (e) {
+      developer.log('Error deleting order: $e', error: e);
+
+      String errorMessage =
+          'Une erreur est survenue lors de la suppression définitive de la commande.';
+
+      if (e.toString().contains('timed out') ||
+          e.toString().contains('SocketException') ||
+          e.toString().contains('Connection refused')) {
+        errorMessage =
+            'Impossible de se connecter au serveur. Vérifiez votre connexion internet.';
       }
 
       Get.snackbar(
-        'Succès',
-        'Commande supprimée définitivement',
-        duration: const Duration(seconds: 3),
-      );
-
-      developer.log('Order permanently deleted successfully');
-    } else {
-      Get.snackbar(
         'Erreur',
-        'Impossible de supprimer définitivement la commande',
+        errorMessage,
         duration: const Duration(seconds: 3),
       );
-
-      developer.log('Failed to delete order');
+      return false;
+    } finally {
+      isLoading.value = false;
     }
-
-    return success;
-  } catch (e) {
-    developer.log('Error deleting order: $e', error: e);
-
-    String errorMessage =
-        'Une erreur est survenue lors de la suppression définitive de la commande.';
-
-    if (e.toString().contains('timed out') ||
-        e.toString().contains('SocketException') ||
-        e.toString().contains('Connection refused')) {
-      errorMessage =
-          'Impossible de se connecter au serveur. Vérifiez votre connexion internet.';
-    }
-
-    Get.snackbar(
-      'Erreur',
-      errorMessage,
-      duration: const Duration(seconds: 3),
-    );
-    return false;
-  } finally {
-    isLoading.value = false;
   }
-}
 }

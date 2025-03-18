@@ -130,18 +130,6 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
                         ),
                       ),
                       SizedBox(height: 8),
-                      ElevatedButton.icon(
-                        onPressed: () => orderController.loadAllOrders(),
-                        icon: Icon(Icons.refresh),
-                        label: Text('Actualiser'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.indigo.shade700,
-                          foregroundColor: Colors.white,
-                          elevation: 2,
-                          padding: EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 10),
-                        ),
-                      ),
                     ],
                   ),
                 );
@@ -508,13 +496,6 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
             }),
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => orderController.loadAllOrders(),
-        backgroundColor: Colors.indigo.shade700,
-        tooltip: 'Actualiser les commandes',
-        elevation: 4,
-        child: const Icon(Icons.refresh, color: Colors.white),
       ),
     );
   }

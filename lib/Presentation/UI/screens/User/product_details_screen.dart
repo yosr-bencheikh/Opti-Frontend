@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:opti_app/Presentation/UI/screens/User/Augmented_faces.dart';
+import 'package:opti_app/Presentation/UI/screens/User/Face_detection.dart';
 import 'package:opti_app/Presentation/UI/screens/User/camera_screen.dart';
 import 'package:opti_app/Presentation/UI/screens/User/home_screen.dart';
 import 'package:opti_app/Presentation/UI/screens/User/reviews_screen.dart';
@@ -152,9 +153,9 @@ class ProductDetailsScreen extends GetView<ProductController> {
           ? Matrix4.identity()
           : Matrix4.translationValues(0, -5, 0),
       child: GestureDetector(
-      /*  onTap: () {
+        onTap: () {
           _launchARExperience(context);
-        },*/
+        },
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
@@ -196,12 +197,34 @@ class ProductDetailsScreen extends GetView<ProductController> {
     );
   }
 
-  /*void _launchARExperience(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => AugmentedFacesScreen()),
-    );
-  }*/
+  void _launchARExperience(BuildContext context) {
+    try {
+      print("Starting navigation to FaceDetectionScreen");
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => FaceDetectionScreen()),
+      ).then((_) {
+        print("Successfully returned from FaceDetectionScreen");
+      });
+      print("Navigation code executed");
+    } catch (e) {
+      print("Error during navigation: $e");
+      // You could also show an error dialog here
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text("Navigation Error"),
+          content: Text("Failed to open face detection: $e"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text("OK"),
+            ),
+          ],
+        ),
+      );
+    }
+  }
 
   Widget _buildProductInfo() {
     return Padding(

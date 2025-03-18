@@ -8,7 +8,11 @@ import 'package:opti_app/domain/entities/Boutique.dart';
 import 'package:opti_app/domain/entities/product_entity.dart';
 
 class ProductDatasource {
+<<<<<<< HEAD
   final String baseUrl = 'http://192.168.1.11:3000/api/products';
+=======
+  final String baseUrl = 'http://192.168.1.22:3000/api/products';
+>>>>>>> faa1af5b30714013502ee690711c452a74ff0927
   final Dio _dio = Dio(); // Créez une instance de Dio
 
   Future<List<Product>> getProductsByOptician(String opticianId) async {

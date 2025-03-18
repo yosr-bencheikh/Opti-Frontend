@@ -14,7 +14,11 @@ class CartDataSourceImpl implements CartDataSource {
   final http.Client client;
 
   // Use your server's IP and port (make sure this is accessible from your phone)
+<<<<<<< HEAD
   final String baseUrl = 'http://192.168.1.11:3000/api';
+=======
+  final String baseUrl = 'http://192.168.1.22:3000/api';
+>>>>>>> faa1af5b30714013502ee690711c452a74ff0927
 
   CartDataSourceImpl({required this.client});
 
