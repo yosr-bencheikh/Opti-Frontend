@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:opti_app/Presentation/controllers/boutique_controller.dart';
 import 'package:opti_app/data/data_sources/OpticianDataSource.dart';
 import 'package:opti_app/data/repositories/OpticianRepositoryImpl.dart';
 import 'package:opti_app/domain/entities/Optician.dart';
@@ -71,47 +72,46 @@ class OpticianController extends GetxController {
   }
 
   Future<void> loginWithEmail(String email, String password) async {
-    try {
-      isLoading.value = true;
+  try {
+    isLoading.value = true;
 
-      final token = await _repository.loginWithEmail(email, password);
+    final token = await _repository.loginWithEmail(email, password);
 
-      final Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
-      final String userId = decodedToken['id']?.toString() ?? '';
+    final Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
+    final String userId = decodedToken['id']?.toString() ?? '';
 
-      // Récupérer les informations de l'opticien
-      final Optician optician = await _dataSource.getOpticianByEmail(email);
+    // Récupérer les informations de l'opticien
+    final Optician optician = await _dataSource.getOpticianByEmail(email);
 
-      // Save user ID, token, and optician first name (prenom)
-      currentUserId.value = userId;
-      authToken.value = token;
-      isLoggedIn.value = true;
-      opticianName.value = optician.prenom; // Utiliser le prénom ici
+    // Save user ID, token, and optician first name (prenom)
+    currentUserId.value = userId;
+    authToken.value = token;
+    isLoggedIn.value = true;
+    opticianName.value = optician.prenom;
 
-      // Save token, email, and optician first name to SharedPreferences
-      await prefs.setString('token', token);
-      await prefs.setString('userEmail', email);
-      await prefs.setString(
-          'opticianName', opticianName.value); // Stocker le prénom
+    // Récupérer les boutiques de l'opticien connecté
+    final boutiqueController = Get.find<BoutiqueController>();
+    await boutiqueController.getboutiqueByOpticianId(userId);  // Nouvelle méthode
 
-      // Load user data
-      await fetchOpticians();
+    // Save token, email, and optician first name to SharedPreferences
+    await prefs.setString('token', token);
+    await prefs.setString('userEmail', email);
+    await prefs.setString('opticianName', opticianName.value);
 
-      // Navigate to home screen
-      Get.offAllNamed('/OpticienDashboard', arguments: userId);
-    } catch (e) {
-      debugPrint('Login error: $e');
-      Get.snackbar(
-        'Error',
-        'Login failed: ${e.toString()}',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
-    } finally {
-      isLoading.value = false;
-    }
+    // Navigate to home screen
+    Get.offAllNamed('/OpticienDashboard', arguments: userId);
+  } catch (e) {
+    debugPrint('Login error: $e');
+    Get.snackbar(
+      'Error',
+      'Login failed: ${e.toString()}',
+      backgroundColor: Colors.red,
+      colorText: Colors.white,
+    );
+  } finally {
+    isLoading.value = false;
   }
-
+}
   Future<void> loadOpticianName() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     opticianName.value = prefs.getString('opticianName') ?? "Utilisateur";

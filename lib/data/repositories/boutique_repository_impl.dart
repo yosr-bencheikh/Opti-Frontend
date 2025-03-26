@@ -7,6 +7,14 @@ class BoutiqueRepositoryImpl implements BoutiqueRepository {
 
   BoutiqueRepositoryImpl(this.dataSource);
 
+@override
+Future<List<Boutique>> getBoutiquesByOpticianId(String opticienId) async {
+  try {
+    return await dataSource.getBoutiquesByOpticianId(opticienId);
+  } catch (e) {
+    throw Exception('Failed to fetch boutiques for optician: $e');
+  }
+}
   @override
   Future<List<Boutique>> getOpticiens() async {
     try {

@@ -8,6 +8,7 @@ abstract class BoutiqueRemoteDataSource {
   Future<void> updateOpticien(String id, Boutique opticien);
   Future<void> deleteOpticien(String id);
   Future<Boutique> getOpticienById(String id);
+  Future<List<Boutique>> getBoutiquesByOpticianId(String opticienId);
 }
 
 class BoutiqueRemoteDataSourceImpl implements BoutiqueRemoteDataSource {
@@ -18,6 +19,32 @@ class BoutiqueRemoteDataSourceImpl implements BoutiqueRemoteDataSource {
     required this.client,
     this.baseUrl = 'http://localhost:3000',
   });
+
+@override
+Future<List<Boutique>> getBoutiquesByOpticianId(String opticienId) async {
+  try {
+    final url = '$baseUrl/opticiens/by-opticien/$opticienId'; // Changé de 'boutique' à 'opticiens'
+    print('🔍 Fetching boutiques from: $url');
+    
+    final response = await client.get(
+      Uri.parse(url),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    print('🔄 Response: ${response.statusCode} - ${response.body}');
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = json.decode(response.body);
+      print('📊 Data received: ${data.length} items');
+      return data.map((json) => Boutique.fromJson(json)).toList();
+    } else {
+      throw Exception('Server error: ${response.statusCode}');
+    }
+  } catch (e) {
+    print('❌ Error: $e');
+    throw Exception('Failed to load boutiques: $e');
+  }
+}
   @override
   Future<Boutique> getOpticienById(String id) async {
     try {

@@ -6,5 +6,7 @@ abstract class BoutiqueRepository {
   Future<void> updateOpticien(String id, Boutique opticien);
   Future<void> deleteOpticien(String id);
   Future<Boutique> getOpticienById(String id);
+    Future<List<Boutique>> getBoutiquesByOpticianId(String opticienId);
+
   
 }

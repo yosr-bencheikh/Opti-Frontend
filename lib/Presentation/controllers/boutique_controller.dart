@@ -13,13 +13,32 @@ class BoutiqueController extends GetxController {
   final error = RxString('');
   final selectedBoutique = Rx<Boutique?>(null);
   final RxList<Optician> _opticiens = <Optician>[].obs;
+  final RxBool _showOnlyUserBoutiques = false.obs;
 
   BoutiqueController(this.opticianController, {required this.boutiqueRepository});
 
-  @override
+ @override
   void onInit() {
     super.onInit();
-    getboutique();
+    final opticianController = Get.find<OpticianController>();
+    
+    // Définir si on montre seulement les boutiques de l'utilisateur
+    _showOnlyUserBoutiques.value = opticianController.isLoggedIn.value;
+    
+    // Charger les boutiques appropriées
+    if (_showOnlyUserBoutiques.value) {
+      getboutiqueByOpticianId(opticianController.currentUserId.value);
+    } else {
+      getboutique();
+    }
+  }
+    Future<void> refreshBoutiques() async {
+    final opticianController = Get.find<OpticianController>();
+    if (_showOnlyUserBoutiques.value) {
+      await getboutiqueByOpticianId(opticianController.currentUserId.value);
+    } else {
+      await getboutique();
+    }
   }
 String? getOpticienNom(String? opticienId) {  // Accepte maintenant String?
   if (opticienId == null) return null;
@@ -36,11 +55,21 @@ String? getOpticienNom(String? opticienId) {  // Accepte maintenant String?
 
   Future<void> getboutique() async {
     try {
+      final opticianController = Get.find<OpticianController>();
+      
+      // Si un opticien est connecté, ne charger que ses boutiques
+      if (opticianController.isLoggedIn.value) {
+        await getboutiqueByOpticianId(opticianController.currentUserId.value);
+        return;
+      }
+
       isLoading(true);
       error('');
       print('Fetching opticians...');
 
       final result = await boutiqueRepository.getOpticiens();
+          opticiensList.assignAll(result);
+
       print('Fetched opticians: $result');
 
       opticiensList.assignAll(result);
@@ -54,6 +83,27 @@ String? getOpticienNom(String? opticienId) {  // Accepte maintenant String?
     }
   }
 
+  Future<void> getboutiqueByOpticianId(String opticianId) async {
+    try {
+      isLoading(true);
+      opticiensList.clear();
+      error('');
+      print('Fetching boutiques for optician: $opticianId');
+
+      final result = await boutiqueRepository.getBoutiquesByOpticianId(opticianId);
+      
+      // Efface la liste existante avant d'ajouter les nouvelles boutiques
+      opticiensList.clear();
+      opticiensList.addAll(result);
+      
+      print('Boutiques mises à jour: ${opticiensList.length}');
+    } catch (e) {
+      error(e.toString());
+      print('Error fetching boutiques: $e');
+    } finally {
+      isLoading(false);
+    }
+  }
 String? getOpticianName(String? opticianId) {
   if (opticianId == null) return null;
   final optician = opticianController.opticians.firstWhereOrNull((o) => o.id == opticianId);

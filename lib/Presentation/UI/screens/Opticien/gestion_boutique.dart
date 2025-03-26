@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:opti_app/Presentation/UI/screens/Opticien/OpticienDashboardApp.dart';
 import 'package:opti_app/Presentation/controllers/OpticianController.dart';
 import 'package:opti_app/Presentation/controllers/boutique_controller.dart';
 import 'package:opti_app/core/constants/regions.dart';
@@ -50,15 +49,35 @@ final RxString selectedOpticianName = 'Non attribué'.obs;
   final Color _cardColor = Colors.white;
   final Color _textPrimaryColor = const Color(0xFF212121);
   final Color _textSecondaryColor = const Color(0xFF757575);
-  @override
-  void initState() {
-    super.initState();
-    _searchController.addListener(_filterOpticiens);
-  }
-
+@override
+void initState() {
+  super.initState();
+  _searchController.addListener(_filterOpticiens);
+   WidgetsBinding.instance.addPostFrameCallback((_) {
+    _loadInitialData();
+  });
+  // Charge les boutiques en fonction du type d'utilisateur
+  final opticianController = Get.find<OpticianController>();
+  if (opticianController.isLoggedIn.value) {
+    // Charge seulement les boutiques de l'opticien connecté
+    opticienController.getboutiqueByOpticianId(opticianController.currentUserId.value);
+  } 
+}
+Future<void> _loadInitialData() async {
+  final opticianController = Get.find<OpticianController>();
+  if (opticianController.isLoggedIn.value) {
+    await opticienController.getboutiqueByOpticianId(opticianController.currentUserId.value);
+  } 
+  if (mounted) setState(() {});
+}
   List<Boutique> get _filteredOpticiens {
-    List<Boutique> filteredList = opticienController.opticiensList;
+      final opticianController = Get.find<OpticianController>();
 
+ List<Boutique> filteredList = opticianController.isLoggedIn.value
+      ? opticienController.opticiensList
+          .where((boutique) => boutique.opticien_id == opticianController.currentUserId.value)
+          .toList()
+      : opticienController.opticiensList;
     // Apply search filter
     if (_searchController.text.isNotEmpty) {
       final query = _searchController.text.toLowerCase();
@@ -147,35 +166,25 @@ final RxString selectedOpticianName = 'Non attribué'.obs;
     return (_filteredOpticiens.length / _itemsPerPage).ceil();
   }
 
-@override
-Widget build(BuildContext context) {
-  return Scaffold(
-    backgroundColor: Colors.grey[50],
-    body: Obx(
-      () => Row( // Structure en Row au lieu de Column
-        children: [
-          // Sidebar
-          CustomSidebar(currentPage: 'Boutiques'),
-          
-          // Main Content
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildHeader(),
-                  _buildSearchBar(),
-                  if (_showFilters) _buildAdvancedFilters(),
-                  _buildContent(),
-                ],
-              ),
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.grey[50],
+      body: Obx(
+        () => Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeader(),
+            _buildSearchBar(),
+            if (_showFilters) _buildAdvancedFilters(), // Add this line
+            Expanded(
+              child: _buildContent(),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   void _filterOpticiens() {
     setState(() {});
@@ -357,6 +366,8 @@ Widget build(BuildContext context) {
   }
 
   Widget _buildHeader() {
+      final opticianController = Get.find<OpticianController>();
+
     return Container(
       padding: const EdgeInsets.fromLTRB(32, 40, 32, 20),
       decoration: BoxDecoration(
@@ -383,13 +394,15 @@ Widget build(BuildContext context) {
                 ),
               ),
               const SizedBox(height: 8),
-              Text(
-                '${_filteredOpticiens.length} boutiques',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: _textSecondaryColor,
-                  fontWeight: FontWeight.w500,
-                ),
+             Text(
+              opticianController.isLoggedIn.value
+                  ? '${_filteredOpticiens.length} boutiques (Vos boutiques)'
+                  : '${_filteredOpticiens.length} boutiques',
+              style: TextStyle(
+                fontSize: 14,
+                color: _textSecondaryColor,
+                fontWeight: FontWeight.w500,
+              ),
               ),
             ],
           ),
@@ -590,7 +603,7 @@ Widget build(BuildContext context) {
             ),
             const SizedBox(height: 24),
             ElevatedButton(
-              onPressed: () => opticienController.getboutique(),
+              onPressed: () => opticienController.refreshBoutiques(),
               child: const Text('Réessayer'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF3A7BD5),
