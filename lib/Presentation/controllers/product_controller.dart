@@ -12,7 +12,7 @@ class ProductController extends GetxController {
 
   // Convert to observable variables using .obs
   final RxList<Product> _products = <Product>[].obs;
-  final RxList<Opticien> _opticiens = <Opticien>[].obs;
+  final RxList<Boutique> _opticiens = <Boutique>[].obs;
   final RxBool _isLoading = false.obs;
   final Rxn<String> _error = Rxn<String>();
 
@@ -20,7 +20,7 @@ class ProductController extends GetxController {
 
   // Getters for the observable variables
   List<Product> get products => _products;
-  List<Opticien> get opticiens => _opticiens;
+  List<Boutique> get opticiens => _opticiens;
   bool get isLoading => _isLoading.value;
   String? get error => _error.value;
   final RxMap<String, List<Product>> _productsByOptician =
@@ -106,7 +106,7 @@ class ProductController extends GetxController {
 
       // Filter the products by optician ID
       final opticianProducts =
-          _allProducts.where((p) => p.boutiqueId == opticianId).toList();
+          _allProducts.where((p) => p.opticienId == opticianId).toList();
 
       // After all processing is done, update the UI state
       _products.assignAll(opticianProducts);

@@ -14,7 +14,7 @@ class Order extends Equatable {
   final DateTime createdAt;
   final DateTime updatedAt;
   final String? boutiqueId;
-  final Opticien? boutique;
+  final Boutique? boutique;
 
   const Order({
     this.id,
@@ -48,28 +48,28 @@ class Order extends Equatable {
         boutiqueId,
         boutique,
       ];
-
-  // Factory method to create Order from JSON
   factory Order.fromJson(Map<String, dynamic> json) {
+    // Check if the data is nested inside a 'data' field
+    final orderData = json.containsKey('data') ? json['data'] : json;
+
     return Order(
-      id: json['_id'] ?? json['id'],
-      userId: json['userId'],
-      boutiqueId: json['boutiqueId'],
-      items: (json['items'] as List)
+      id: orderData['_id'],
+      userId: orderData['userId'],
+      boutiqueId:
+          orderData['opticienId'], // Use opticienId instead of boutiqueId
+      items: (orderData['items'] as List)
           .map((item) => OrderItem.fromJson(item))
           .toList(),
-      subtotal: (json['subtotal'] as num).toDouble(),
-      deliveryFee: (json['deliveryFee'] as num).toDouble(),
-      total: (json['total'] as num).toDouble(),
-      address: json['address'],
-      paymentMethod: json['paymentMethod'],
-      status: json['status'] ?? 'En attente',
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
+      subtotal: (orderData['subtotal'] as num).toDouble(),
+      deliveryFee: (orderData['deliveryFee'] as num).toDouble(),
+      total: (orderData['total'] as num).toDouble(),
+      address: orderData['address'],
+      paymentMethod: orderData['paymentMethod'],
+      status: orderData['status'] ?? 'En attente',
+      createdAt: DateTime.parse(orderData['createdAt']),
+      updatedAt: DateTime.parse(orderData['updatedAt']),
     );
-  }
-
-  // Convert Order to JSON
+  } // Convert Order to JSON
   Map<String, dynamic> toJson() {
     return {
       if (id != null) 'id': id,
@@ -101,7 +101,7 @@ class Order extends Equatable {
     DateTime? createdAt,
     DateTime? updatedAt,
     String? boutiqueId,
-    Opticien? boutique,
+    Boutique? boutique,
   }) {
     return Order(
       id: id ?? this.id,
@@ -128,6 +128,7 @@ class OrderItem extends Equatable {
   final int quantity;
   final double unitPrice;
   final double totalPrice;
+  final String opticienId; // Added field
 
   const OrderItem({
     required this.productId,
@@ -136,6 +137,7 @@ class OrderItem extends Equatable {
     required this.quantity,
     required this.unitPrice,
     required this.totalPrice,
+    required this.opticienId, // Added to constructor
   });
 
   @override
@@ -146,6 +148,7 @@ class OrderItem extends Equatable {
         quantity,
         unitPrice,
         totalPrice,
+        opticienId, // Added to props
       ];
 
   // Factory method to create OrderItem from JSON
@@ -161,9 +164,9 @@ class OrderItem extends Equatable {
       totalPrice: (json['totalPrice'] is int)
           ? (json['totalPrice'] as int).toDouble()
           : json['totalPrice'],
+      opticienId: json['opticienId'] ?? '', // Provide default value if null
     );
   }
-
   // Convert OrderItem to JSON
   Map<String, dynamic> toJson() {
     return {
@@ -173,6 +176,7 @@ class OrderItem extends Equatable {
       'quantity': quantity,
       'unitPrice': unitPrice,
       'totalPrice': totalPrice,
+      'opticienId': opticienId, // Added serialization
     };
   }
 }

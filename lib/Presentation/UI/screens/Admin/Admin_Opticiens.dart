@@ -40,6 +40,15 @@ class _OpticianScreenState extends State<OpticianScreen> {
 String _selectedGenre = 'Tous les genres';
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
       GlobalKey<ScaffoldMessengerState>();
+
+      final Color _primaryColor = const Color.fromARGB(255, 33, 199, 146);
+  final Color _secondaryColor = const Color.fromARGB(255, 16, 16, 17);
+  final Color _accentColor = const Color(0xFFFF4081);
+  final Color _lightPrimaryColor = const Color(0xFFC5CAE9);
+  final Color _backgroundColor = const Color(0xFFF5F7FA);
+  final Color _cardColor = Colors.white;
+  final Color _textPrimaryColor = const Color(0xFF212121);
+  final Color _textSecondaryColor = const Color(0xFF757575);
   @override
   void initState() {
     super.initState();
@@ -58,6 +67,15 @@ final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
       _currentSearchTerm = _searchController.text;
       _filterOpticians();
       _currentPage = 1; // Reset to first page on new search
+    });
+  }
+    void _resetFilters() {
+    setState(() {
+  
+      _searchController.clear();
+      _currentSearchTerm = '';
+      _filterOpticians();
+      _currentPage = 1;
     });
   }
 
@@ -559,42 +577,15 @@ void _showOpticianDialog({Optician? optician}) {
     },
   );
 }
+
+
 Widget _buildAdvancedFilters() {
-  final List<String> regions = [
-    'Toutes les régions',
-    'Tunis',
-    'Ariana',
-    'Ben Arous',
-    'Manouba',
-    'Nabeul',
-    'Zaghouan',
-    'Bizerte',
-    'Béja',
-    'Jendouba',
-    'Le Kef',
-    'Siliana',
-    'Sousse',
-    'Monastir',
-    'Mahdia',
-    'Sfax',
-    'Kairouan',
-    'Kasserine',
-    'Sidi Bouzid',
-    'Gabès',
-    'Medenine',
-    'Tataouine',
-    'Gafsa',
-    'Tozeur',
-    'Kebili',
-  ];
-  final List<String> genres = ['Tous les genres', 'Homme', 'Femme'];
-  
   return AnimatedContainer(
     duration: const Duration(milliseconds: 300),
-    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    margin: const EdgeInsets.only(top: 16, left: 16, right: 16),
     padding: const EdgeInsets.all(20),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: _cardColor,
       borderRadius: BorderRadius.circular(12),
       boxShadow: [
         BoxShadow(
@@ -603,137 +594,171 @@ Widget _buildAdvancedFilters() {
           offset: const Offset(0, 4),
         ),
       ],
-      border: Border.all(color: Colors.blue.shade100, width: 1),
+      border: Border.all(color: _lightPrimaryColor, width: 1),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Icon(Icons.filter_alt, color: Colors.blue),
+            Icon(Icons.filter_alt, color: _primaryColor),
             const SizedBox(width: 8),
             Text(
               'Filtres avancés',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Colors.blue,
+                color: _primaryColor,
+              ),
+            ),
+            const Spacer(),
+            IconButton(
+              icon: const Icon(Icons.help_outline),
+              color: _textSecondaryColor,
+              tooltip: 'Aide sur les filtres',
+              onPressed: () {
+                // Afficher une aide sur les filtres
+              },
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+
+        // First row of filters
+        Row(
+          children: [
+            Expanded(
+              child: _buildFilterTextField(
+                label: 'Nom',
+                hintText: 'Filtrer par nom',
+                icon: Icons.person,
+                value: _selectedNom,
+                onChanged: (value) {
+                  setState(() {
+                    _selectedNom = value;
+                    _filterOpticians();
+                    _currentPage = 1;
+                  });
+                },
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildFilterTextField(
+                label: 'Prénom',
+                hintText: 'Filtrer par prénom',
+                icon: Icons.person_outline,
+                value: _selectedPrenom,
+                onChanged: (value) {
+                  setState(() {
+                    _selectedPrenom = value;
+                    _filterOpticians();
+                    _currentPage = 1;
+                  });
+                },
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildFilterTextField(
+                label: 'Date de naissance',
+                hintText: 'YYYY-MM-DD',
+                icon: Icons.calendar_today,
+                value: _selectedDate,
+                onChanged: (value) {
+                  setState(() {
+                    _selectedDate = value;
+                    _filterOpticians();
+                    _currentPage = 1;
+                  });
+                },
               ),
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 24),
+
+        // Second row of filters
         Row(
           children: [
             Expanded(
-              child: DropdownButtonFormField<String>(
+              child: _buildFilterDropdown(
+                label: 'Région',
+                hint: 'Toutes les régions',
+                icon: Icons.location_on_outlined,
                 value: _selectedRegion,
-                decoration: InputDecoration(
-                  labelText: 'Région',
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                ),
-                items: regions.map((String region) {
+                items: [
+                  'Toutes les régions',
+                  'Tunis',
+                  'Ariana',
+                  'Ben Arous',
+                  'Manouba',
+                  'Nabeul',
+                  'Zaghouan',
+                  'Bizerte',
+                  'Béja',
+                  'Jendouba',
+                  'Le Kef',
+                  'Siliana',
+                  'Sousse',
+                  'Monastir',
+                  'Mahdia',
+                  'Sfax',
+                  'Kairouan',
+                  'Kasserine',
+                  'Sidi Bouzid',
+                  'Gabès',
+                  'Medenine',
+                  'Tataouine',
+                  'Gafsa',
+                  'Tozeur',
+                  'Kebili',
+                ].map((region) {
                   return DropdownMenuItem<String>(
                     value: region,
                     child: Text(region),
                   );
                 }).toList(),
-                onChanged: (String? newValue) {
+                onChanged: (value) {
                   setState(() {
-                    _selectedRegion = newValue!;
+                    _selectedRegion = value!;
                     _filterOpticians();
+                    _currentPage = 1;
                   });
                 },
               ),
             ),
-            SizedBox(width: 16),
+            const SizedBox(width: 16),
             Expanded(
-              child: DropdownButtonFormField<String>(
+              child: _buildFilterDropdown(
+                label: 'Genre',
+                hint: 'Tous les genres',
+                icon: Icons.people_outline,
                 value: _selectedGenre,
-                decoration: InputDecoration(
-                  labelText: 'Genre',
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                ),
-                items: genres.map((String genre) {
+                items: ['Tous les genres', 'Homme', 'Femme'].map((genre) {
                   return DropdownMenuItem<String>(
                     value: genre,
                     child: Text(genre),
                   );
                 }).toList(),
-                onChanged: (String? newValue) {
-                  setState(() {
-                    _selectedGenre = newValue!;
-                    _filterOpticians();
-                  });
-                },
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: TextFormField(
-                decoration: InputDecoration(
-                  labelText: 'Nom',
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                ),
                 onChanged: (value) {
                   setState(() {
-                    _selectedNom = value;
+                    _selectedGenre = value!;
                     _filterOpticians();
+                    _currentPage = 1;
                   });
                 },
               ),
             ),
-            SizedBox(width: 16),
-            Expanded(
-              child: TextFormField(
-                decoration: InputDecoration(
-                  labelText: 'Prénom',
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                ),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedPrenom = value;
-                    _filterOpticians();
-                  });
-                },
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: TextFormField(
-                decoration: InputDecoration(
-                  labelText: 'Date de naissance',
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  hintText: 'AAAA-MM-JJ',
-                ),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedDate = value;
-                    _filterOpticians();
-                  });
-                },
-              ),
-            ),
-            SizedBox(width: 16),
+            const SizedBox(width: 16),
             Expanded(
               child: Container(), // Espace vide pour équilibrer le layout
             ),
           ],
         ),
-        SizedBox(height: 16),
+        const SizedBox(height: 24),
+        
+        // Boutons
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
@@ -746,12 +771,12 @@ Widget _buildAdvancedFilters() {
                   _selectedPrenom = '';
                   _selectedDate = '';
                   _filterOpticians();
+                  _currentPage = 1;
                 });
               },
-              icon: Icon(Icons.clear, size: 18),
               label: Text('Réinitialiser'),
               style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.grey,
+                foregroundColor: _textSecondaryColor,
               ),
             ),
             SizedBox(width: 16),
@@ -762,7 +787,7 @@ Widget _buildAdvancedFilters() {
               icon: Icon(Icons.check, size: 18),
               label: Text('Appliquer'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
+                backgroundColor: _primaryColor,
                 foregroundColor: Colors.white,
               ),
             ),
@@ -770,6 +795,99 @@ Widget _buildAdvancedFilters() {
         ),
       ],
     ),
+  );
+}
+
+Widget _buildFilterTextField({
+  required String label,
+  required String hintText,
+  required IconData icon,
+  required String value,
+  required Function(String) onChanged,
+}) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        label,
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: _textPrimaryColor,
+        ),
+      ),
+      const SizedBox(height: 8),
+      Container(
+        decoration: BoxDecoration(
+          color: _backgroundColor,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: _lightPrimaryColor,
+            width: 1,
+          ),
+        ),
+        child: TextField(
+          controller: TextEditingController(text: value),
+          onChanged: onChanged,
+          style: TextStyle(color: _textPrimaryColor),
+          decoration: InputDecoration(
+            hintText: hintText,
+            hintStyle: TextStyle(color: _textSecondaryColor),
+            prefixIcon: Icon(icon, color: _primaryColor, size: 20),
+            border: InputBorder.none,
+            contentPadding:
+                const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+          ),
+        ),
+      ),
+    ],
+  );
+}
+
+Widget _buildFilterDropdown({
+  required String label,
+  required String hint,
+  required IconData icon,
+  required String value,
+  required List<DropdownMenuItem<String>> items,
+  required Function(String?) onChanged,
+}) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        label,
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: _textPrimaryColor,
+        ),
+      ),
+      const SizedBox(height: 8),
+      Container(
+        decoration: BoxDecoration(
+          color: _backgroundColor,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: _lightPrimaryColor,
+            width: 1,
+          ),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: DropdownButtonHideUnderline(
+          child: DropdownButton<String>(
+            value: value,
+            hint: Text(hint, style: TextStyle(color: _textSecondaryColor)),
+            icon: const Icon(Icons.keyboard_arrow_down),
+            isExpanded: true,
+            style: TextStyle(color: _textPrimaryColor, fontSize: 15),
+            dropdownColor: Colors.white,
+            items: items,
+            onChanged: onChanged,
+          ),
+        ),
+      ),
+    ],
   );
 }
   Widget _buildContent() {
@@ -1663,78 +1781,173 @@ Widget _buildAdvancedFilters() {
     setState(() {});
   }
 }
-
-@override
-Widget build(BuildContext context) {
-  return Scaffold(
-    appBar: AppBar(
-      title: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Gestion des Opticiens',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-              '${_controller.getTotalOpticians()} Opticiens',
-            style: TextStyle(
-              fontSize: 14,
-              color: const Color(0xFF757575),
-              fontWeight: FontWeight.w500,
-            ),
+  Widget _buildSearchBar() {
+    return Container(
+      decoration: BoxDecoration(
+        color: _cardColor,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      actions: [
-        IconButton(
-          icon: Icon(_showFilters ? Icons.filter_list_off : Icons.filter_list),
-          onPressed: () {
-            setState(() {
-              _showFilters = !_showFilters;
-            });
-          },
-        ),
-        IconButton(
-          icon: Icon(Icons.refresh),
-          onPressed: () => _controller.fetchOpticians(),
-        ),
-      ],
-    ),
-    body: Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: TextField(
-            controller: _searchController,
-             onChanged: (value) => _onSearchChanged(),
-            decoration: InputDecoration(
-                    hintText: 'Rechercher un opticien',
-                    prefixIcon: Icon(Icons.search, color:  Color.fromARGB(255, 84, 151, 198)),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Rechercher un opticien par nom, catégorie...',
+                    prefixIcon: Icon(Icons.search, color: _primaryColor),
                     filled: true,
-                    fillColor: Color(0xFFF5F7FA),
+                    fillColor: _backgroundColor,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                       borderSide: BorderSide.none,
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(color: Color.fromARGB(255, 84, 151, 198), width: 2),
+                      borderSide: BorderSide(color: _primaryColor, width: 2),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-                    hintStyle: TextStyle(color: Color(0xFF757575)),
+                    contentPadding: const EdgeInsets.symmetric(
+                        vertical: 16, horizontal: 20),
+                    hintStyle: TextStyle(color: _textSecondaryColor),
                   ),
+                  style: TextStyle(color: _textPrimaryColor, fontSize: 15),
+                ),
+              ),
+              const SizedBox(width: 16),
+              ElevatedButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _showFilters = !_showFilters;
+                  });
+                },
+                icon: Icon(
+                    _showFilters ? Icons.filter_list_off : Icons.filter_list),
+                label: Text(_showFilters ? 'Masquer filtres' : 'Filtrer'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor:
+                      _showFilters ? _lightPrimaryColor : _primaryColor,
+                  foregroundColor: _showFilters ? _primaryColor : Colors.white,
+                  elevation: _showFilters ? 0 : 2,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ],
           ),
+          if (_filteredOpticians.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 16),
+              child: Row(
+                children: [
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: _lightPrimaryColor,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  const Spacer(),
+                  if (_showFilters || _currentSearchTerm.isNotEmpty)
+                    TextButton.icon(
+                      onPressed: _resetFilters,
+                      icon: Icon(Icons.clear_all, color: _accentColor),
+                      label: Text(
+                        'Réinitialiser les filtres',
+                        style: TextStyle(
+                          color: _accentColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: null, // Enlevez l'AppBar pour utiliser votre propre en-tête
+    body: Column(
+      children: [
+        _buildHeader(), // Ajoutez votre propre en-tête personnalisé
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+            Expanded(
+                child: TextField(
+                  controller: _searchController,
+                                decoration: InputDecoration(
+                    hintText:
+                        'Rechercher un opticien par nom, email, téléphone...',
+                    prefixIcon: Icon(Icons.search, color: _primaryColor),
+                    filled: true,
+                    fillColor: _backgroundColor,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: _primaryColor, width: 2),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                        vertical: 16, horizontal: 20),
+                    hintStyle: TextStyle(color: _textSecondaryColor),
+                  ),
+                  style: TextStyle(color: _textPrimaryColor, fontSize: 15),
+                ),
+              ),
+              const SizedBox(width: 10),
+              ElevatedButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _showFilters = !_showFilters;
+                  });
+                },
+                icon: Icon(
+                    _showFilters ? Icons.filter_list_off : Icons.filter_list),
+                label:
+                    Text(_showFilters ? 'Masquer filtres' : 'Filtrer'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor:
+                      _showFilters ? _lightPrimaryColor : _primaryColor,
+                  foregroundColor: _showFilters ? _primaryColor : Colors.white,
+                  elevation: _showFilters ? 0 : 2,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+
+            
+            ],
+          ),
+
         ),
         if (_showFilters) _buildAdvancedFilters(),
         Expanded(
           child: _buildContent(),
         ),
+        
         // Pagination
         if (_filteredOpticians.length > _opticiansPerPage)
           Padding(
@@ -1745,12 +1958,12 @@ Widget build(BuildContext context) {
                 IconButton(
                   icon: Icon(Icons.chevron_left),
                   onPressed: _currentPage > 1
-                      ? () {
-                          setState(() {
-                            _currentPage--;
-                          });
-                        }
-                      : null,
+                    ? () {
+                        setState(() {
+                          _currentPage--;
+                        });
+                      }
+                    : null,
                 ),
                 Text(
                   'Page $_currentPage de ${(_filteredOpticians.length / _opticiansPerPage).ceil()}',
@@ -1759,22 +1972,79 @@ Widget build(BuildContext context) {
                 IconButton(
                   icon: Icon(Icons.chevron_right),
                   onPressed: _currentPage < (_filteredOpticians.length / _opticiansPerPage).ceil()
-                      ? () {
-                          setState(() {
-                            _currentPage++;
-                          });
-                        }
-                      : null,
+                    ? () {
+                        setState(() {
+                          _currentPage++;
+                        });
+                      }
+                    : null,
                 ),
               ],
             ),
           ),
       ],
     ),
-    floatingActionButton: FloatingActionButton(
-      onPressed: _showOpticianDialog,
-      child: Icon(Icons.add),
-      tooltip: 'Ajouter un opticien',
+  );
+}
+
+// Ajoutez cette méthode pour créer l'en-tête personnalisé
+Widget _buildHeader() {
+  final Color _lightPrimaryColor = Color.fromARGB(255, 84, 151, 198).withOpacity(0.5);
+  final Color _textPrimaryColor = Colors.black;
+  final Color _textSecondaryColor = Color(0xFF757575);
+  final Color _primaryColor = Color.fromARGB(255, 33, 199, 146);
+
+  return Container(
+    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+    decoration: BoxDecoration(
+      border: Border(
+        bottom: BorderSide(
+          color: _lightPrimaryColor,
+          width: 2,
+        ),
+      ),
+    ),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Gestion des Opticiens',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: _textPrimaryColor,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${_controller.getTotalOpticians()} Opticiens',
+              style: TextStyle(
+                fontSize: 14,
+                color: _textSecondaryColor,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        ElevatedButton.icon(
+          onPressed: () => _showOpticianDialog(),
+          icon: const Icon(Icons.person_add),
+          label: const Text('Nouvel opticien'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: _primaryColor,
+            foregroundColor: Colors.white,
+            elevation: 2,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        ),
+      ],
     ),
   );
 }
@@ -1790,4 +2060,4 @@ Widget build(BuildContext context) {
       }
     });
   }
-}
+} 

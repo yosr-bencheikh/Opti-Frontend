@@ -12,64 +12,53 @@ import 'package:opti_app/domain/repositories/OpticianRepository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class OpticianController extends GetxController {
-  final OpticianDataSource _dataSource = OpticianDataSourceImpl();
-  late final OpticianRepository opticienRepository;
+  late final OpticianDataSource _dataSource;
+  late final OpticianRepository _repository;
   late final SharedPreferences prefs;
-  var opticians = <Optician>[].obs; // Observable list of opticians
-  var isLoading = true.obs; // Loading state
+  
+  var opticians = <Optician>[].obs;
+  var isLoading = true.obs;
   var isLoggedIn = false.obs;
-  var error = ''.obs; // Error message
+  var error = ''.obs;
   var currentUserId = ''.obs;
   var authToken = ''.obs;
   var opticianName = "".obs;
 
-  @override
+ @override
   void onInit() async {
     super.onInit();
+    
+    // Injection des dépendances
+    _dataSource = Get.find<OpticianDataSource>();
+    _repository = Get.find<OpticianRepository>();
+    prefs = Get.find<SharedPreferences>();
 
-    // Initialiser SharedPreferences
-    prefs = await SharedPreferences.getInstance();
-
-    // Initialiser le repository
-    opticienRepository = OpticianRepositoryImpl(_dataSource);
-
-    // Vérifier si l'utilisateur est déjà connecté
+    // Vérification de la connexion existante
     final storedToken = prefs.getString('token');
-    final storedEmail = prefs.getString('userEmail');
     final storedOpticianName = prefs.getString('opticianName');
 
     if (storedToken != null && storedToken.isNotEmpty) {
       authToken.value = storedToken;
       isLoggedIn.value = true;
 
-      // Vérifier si le token est valide (non expiré)
       try {
         if (JwtDecoder.isExpired(storedToken)) {
-          // Token expiré, déconnexion
           logout();
         } else {
-          // Token valide, récupérer les informations de l'utilisateur
-          final Map<String, dynamic> decodedToken =
-              JwtDecoder.decode(storedToken);
+          final decodedToken = JwtDecoder.decode(storedToken);
           currentUserId.value = decodedToken['id']?.toString() ?? '';
-
-          // Charger le nom de l'opticien
           opticianName.value = storedOpticianName ?? "Utilisateur";
 
-          // Rediriger vers le dashboard si nécessaire
           if (Get.currentRoute != '/OpticienDashboard') {
-            Get.offAllNamed('/OpticienDashboard',
-                arguments: currentUserId.value);
+            Get.offAllNamed('/OpticienDashboard', arguments: currentUserId.value);
           }
         }
       } catch (e) {
-        // Erreur de décodage du token, déconnexion
         logout();
       }
     }
 
-    // Charger les opticiens
-    fetchOpticians();
+    await fetchOpticians();
   }
 
 // Ajouter une méthode de déconnexion
@@ -85,7 +74,7 @@ class OpticianController extends GetxController {
     try {
       isLoading.value = true;
 
-      final token = await opticienRepository.loginWithEmail(email, password);
+      final token = await _repository.loginWithEmail(email, password);
 
       final Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
       final String userId = decodedToken['id']?.toString() ?? '';

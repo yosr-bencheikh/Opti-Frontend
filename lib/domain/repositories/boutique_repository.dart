@@ -1,9 +1,10 @@
 import 'package:opti_app/domain/entities/Boutique.dart';
 
 abstract class BoutiqueRepository {
-  Future<List<Opticien>> getOpticiens();
-  Future<void> addOpticien(Opticien opticien);
-  Future<void> updateOpticien(String id, Opticien opticien);
+  Future<List<Boutique>> getOpticiens();
+  Future<void> addOpticien(Boutique opticien);
+  Future<void> updateOpticien(String id, Boutique opticien);
   Future<void> deleteOpticien(String id);
-  Future<Opticien> getOpticienById(String id);
+  Future<Boutique> getOpticienById(String id);
+  
 }

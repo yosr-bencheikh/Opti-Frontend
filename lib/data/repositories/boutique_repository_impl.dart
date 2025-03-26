@@ -8,7 +8,7 @@ class BoutiqueRepositoryImpl implements BoutiqueRepository {
   BoutiqueRepositoryImpl(this.dataSource);
 
   @override
-  Future<List<Opticien>> getOpticiens() async {
+  Future<List<Boutique>> getOpticiens() async {
     try {
       return await dataSource.getOpticiens();
     } catch (e) {
@@ -17,7 +17,7 @@ class BoutiqueRepositoryImpl implements BoutiqueRepository {
   }
 
   @override
-  Future<void> addOpticien(Opticien opticien) async {
+  Future<void> addOpticien(Boutique opticien) async {
     try {
       await dataSource.addOpticien(opticien);
     } catch (e) {
@@ -26,7 +26,7 @@ class BoutiqueRepositoryImpl implements BoutiqueRepository {
   }
 
   @override
-  Future<void> updateOpticien(String id, Opticien opticien) async {
+  Future<void> updateOpticien(String id, Boutique opticien) async {
     try {
       await dataSource.updateOpticien(id, opticien);
     } catch (e) {
@@ -44,7 +44,7 @@ class BoutiqueRepositoryImpl implements BoutiqueRepository {
   }
 
    @override
-  Future<Opticien> getOpticienById(String id) async {
+  Future<Boutique> getOpticienById(String id) async {
     try {
       return await dataSource.getOpticienById(id);
     } catch (e) {

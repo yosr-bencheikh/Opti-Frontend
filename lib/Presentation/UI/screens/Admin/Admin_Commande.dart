@@ -3,6 +3,9 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:opti_app/Presentation/UI/screens/Admin/UsersScreen.dart';
 import 'package:opti_app/Presentation/controllers/OrderController.dart';
+import 'package:opti_app/Presentation/controllers/boutique_controller.dart';
+import 'package:opti_app/domain/entities/Boutique.dart';
+import 'package:opti_app/domain/entities/Optician.dart';
 import 'package:opti_app/domain/entities/Order.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -15,6 +18,7 @@ class AdminOrdersPage extends StatefulWidget {
 
 class _AdminOrdersPageState extends State<AdminOrdersPage> {
   final OrderController orderController = Get.find<OrderController>();
+  final BoutiqueController boutiqueController = Get.find<BoutiqueController>();
   final List<String> statusOptions = [
     'En attente',
     'Confirmée',
@@ -80,13 +84,6 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
         ),
         elevation: 0,
         backgroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.refresh, color: Colors.indigo.shade700),
-            onPressed: () => orderController.loadAllOrders(),
-            tooltip: 'Actualiser',
-          ),
-        ],
       ),
       body: Obx(() {
         if (orderController.isLoading.value) {
@@ -131,17 +128,6 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
                   ),
                 ),
                 SizedBox(height: 8),
-                ElevatedButton.icon(
-                  onPressed: () => orderController.loadAllOrders(),
-                  icon: Icon(Icons.refresh),
-                  label: Text('Actualiser'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.indigo.shade700,
-                    foregroundColor: Colors.white,
-                    elevation: 2,
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  ),
-                ),
               ],
             ),
           );
@@ -155,23 +141,23 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
             .where((order) => order.status == 'Completée')
             .toList();
 
-        return Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Colors.grey.shade100, Colors.white],
-              stops: [0.0, 0.3],
+        // -- ICI on enveloppe tout dans un SingleChildScrollView vertical --
+        return SingleChildScrollView(
+          child: Container(
+            // Pour occuper toute la largeur
+            width: MediaQuery.of(context).size.width,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Colors.grey.shade100, Colors.white],
+                stops: [0.0, 0.3],
+              ),
             ),
-          ),
-          child: SingleChildScrollView(
-            // Wrap the Column in a SingleChildScrollView
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize:
-                    MainAxisSize.min, // Ensure the Column takes minimum space
                 children: [
                   // Stats cards
                   _buildStatsRow(),
@@ -197,169 +183,161 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(12),
+                        // Un seul SingleChildScrollView pour le scroll horizontal
                         child: SingleChildScrollView(
-                          child: SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: DataTable(
-                              headingRowColor: MaterialStateProperty.all(
-                                  Colors.indigo.shade50),
-                              dataRowMaxHeight: 80,
-                              dataRowMinHeight: 60,
-                              columnSpacing: 20,
-                              horizontalMargin: 20,
-                              dividerThickness: 1.5,
-                              headingTextStyle: TextStyle(
-                                color: Colors.black87,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 15,
+                          scrollDirection: Axis.horizontal,
+                          child: DataTable(
+                            headingRowColor: MaterialStateProperty.all(
+                                Colors.indigo.shade50),
+                            dataRowMaxHeight: 80,
+                            dataRowMinHeight: 60,
+                            columnSpacing: 20,
+                            horizontalMargin: 20,
+                            dividerThickness: 1.5,
+                            headingTextStyle: TextStyle(
+                              color: Colors.black87,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 15,
+                            ),
+                            dataTextStyle: TextStyle(
+                              fontSize: 14,
+                              color: Colors.black87,
+                            ),
+                            columns: const [
+                              DataColumn(
+                                label: Text('ID', textAlign: TextAlign.center),
                               ),
-                              dataTextStyle: TextStyle(
-                                fontSize: 14,
-                                color: Colors.black87,
+                              DataColumn(
+                                label: Text('ID Client',
+                                    textAlign: TextAlign.center),
                               ),
-                              columns: const [
-                                DataColumn(
-                                  label:
-                                      Text('ID', textAlign: TextAlign.center),
-                                ),
-                                DataColumn(
-                                  label: Text('ID Client',
-                                      textAlign: TextAlign.center),
-                                ),
-                                DataColumn(
-                                  label:
-                                      Text('Date', textAlign: TextAlign.center),
-                                ),
-                                DataColumn(
-                                  label: Text('Statut',
-                                      textAlign: TextAlign.center),
-                                ),
-                                DataColumn(
-                                  label: Text('Actions',
-                                      textAlign: TextAlign.center),
-                                ),
-                              ],
-                              rows: activeOrders.map((order) {
-                                final dateFormat =
-                                    DateFormat('dd/MM/yyyy HH:mm');
-                                final formattedDate =
-                                    dateFormat.format(order.createdAt);
-                                final rowColor = _determineRowColor(order);
+                              DataColumn(
+                                label:
+                                    Text('Date', textAlign: TextAlign.center),
+                              ),
+                              DataColumn(
+                                label:
+                                    Text('Statut', textAlign: TextAlign.center),
+                              ),
+                              DataColumn(
+                                label: Text('Actions',
+                                    textAlign: TextAlign.center),
+                              ),
+                            ],
+                            rows: activeOrders.map((order) {
+                              final dateFormat = DateFormat('dd/MM/yyyy HH:mm');
+                              final formattedDate =
+                                  dateFormat.format(order.createdAt);
+                              final rowColor = _determineRowColor(order);
 
-                                return DataRow(
-                                  color: MaterialStateProperty.all(rowColor),
-                                  cells: [
-                                    DataCell(
-                                      Text(
-                                        order.id?.substring(0, 8) ?? 'N/A',
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          fontFamily: 'RobotoMono',
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w500,
-                                        ),
+                              return DataRow(
+                                color: MaterialStateProperty.all(rowColor),
+                                cells: [
+                                  DataCell(
+                                    Text(
+                                      order.id?.substring(0, 8) ?? 'N/A',
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontFamily: 'RobotoMono',
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
                                       ),
                                     ),
-                                    DataCell(
-                                      GestureDetector(
-                                        onTap: () {
-                                          _handleUserSelection(order.userId);
-                                          Get.to(() => UsersScreen(
-                                              selectedUserId: order.userId));
-                                        },
-                                        child: Padding(
-                                          padding: EdgeInsets.symmetric(
-                                              vertical: 8.0),
-                                          child: Text(
-                                            order.userId.substring(0, 8),
-                                            style: TextStyle(
-                                              color: Colors.indigo.shade700,
-                                              decoration:
-                                                  TextDecoration.underline,
-                                              fontSize: 14,
-                                              fontWeight: _selectedUserId ==
-                                                      order.userId
-                                                  ? FontWeight.bold
-                                                  : FontWeight.normal,
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
+                                  ),
+                                  DataCell(
+                                    GestureDetector(
+                                      onTap: () {
+                                        _handleUserSelection(order.userId);
+                                        Get.to(() => UsersScreen(
+                                            selectedUserId: order.userId));
+                                      },
+                                      child: Padding(
+                                        padding:
+                                            EdgeInsets.symmetric(vertical: 8.0),
+                                        child: Text(
+                                          order.userId.substring(0, 8),
+                                          style: TextStyle(
+                                            color: Colors.indigo.shade700,
+                                            decoration:
+                                                TextDecoration.underline,
+                                            fontSize: 14,
+                                            fontWeight:
+                                                _selectedUserId == order.userId
+                                                    ? FontWeight.bold
+                                                    : FontWeight.normal,
                                           ),
+                                          overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
                                     ),
-                                    DataCell(
-                                      Text(
-                                        formattedDate,
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.grey.shade800,
-                                        ),
+                                  ),
+                                  DataCell(
+                                    Text(
+                                      formattedDate,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.grey.shade800,
                                       ),
                                     ),
-                                    DataCell(
-                                      Center(
-                                          child:
-                                              _buildStatusChip(order.status)),
-                                    ),
-                                    DataCell(
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceEvenly,
-                                        children: [
+                                  ),
+                                  DataCell(
+                                    Center(
+                                        child: _buildStatusChip(order.status)),
+                                  ),
+                                  DataCell(
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceEvenly,
+                                      children: [
+                                        _buildActionButton(
+                                          icon: Icons.visibility,
+                                          color: Colors.indigo.shade600,
+                                          tooltip: 'Voir les détails',
+                                          onPressed: () =>
+                                              _showOrderDetails(order),
+                                          iconSize: 24,
+                                        ),
+                                        if (order.status != 'Annulée')
                                           _buildActionButton(
-                                            icon: Icons.visibility,
-                                            color: Colors.indigo.shade600,
-                                            tooltip: 'Voir les détails',
+                                            icon: Icons.edit,
+                                            color: Colors.amber.shade700,
+                                            tooltip: 'Modifier le statut',
                                             onPressed: () =>
-                                                _showOrderDetails(order),
+                                                _showStatusUpdateDialog(order),
                                             iconSize: 24,
                                           ),
-                                          if (order.status !=
-                                              'Annulée') // Hide edit if canceled
-                                            _buildActionButton(
-                                              icon: Icons.edit,
-                                              color: Colors.amber.shade700,
-                                              tooltip: 'Modifier le statut',
-                                              onPressed: () =>
-                                                  _showStatusUpdateDialog(
-                                                      order),
-                                              iconSize: 24,
-                                            ),
-                                          if (order.status ==
-                                              'En attente') // Accept only for pending
-                                            _buildActionButton(
-                                              icon: Icons.check_circle,
-                                              color: Colors.green.shade600,
-                                              tooltip: 'Accepter',
-                                              onPressed: () =>
-                                                  _updateOrderStatus(
-                                                      order, 'Confirmée'),
-                                              iconSize: 24,
-                                            ),
-                                          if (order.status !=
-                                              'Annulée') // Show cancel unless already canceled
-                                            _buildActionButton(
-                                              icon: Icons.cancel,
-                                              color: Colors.red.shade600,
-                                              tooltip: 'Annuler',
-                                              onPressed: () =>
-                                                  _showCancellationReasonDialog(
-                                                      order),
-                                              iconSize: 24,
-                                            ),
-                                        ],
-                                      ),
+                                        if (order.status == 'En attente')
+                                          _buildActionButton(
+                                            icon: Icons.check_circle,
+                                            color: Colors.green.shade600,
+                                            tooltip: 'Accepter',
+                                            onPressed: () => _updateOrderStatus(
+                                                order, 'Confirmée'),
+                                            iconSize: 24,
+                                          ),
+                                        if (order.status != 'Annulée')
+                                          _buildActionButton(
+                                            icon: Icons.cancel,
+                                            color: Colors.red.shade600,
+                                            tooltip: 'Annuler',
+                                            onPressed: () =>
+                                                _showCancellationReasonDialog(
+                                                    order),
+                                            iconSize: 24,
+                                          ),
+                                      ],
                                     ),
-                                  ],
-                                );
-                              }).toList(),
-                            ),
+                                  ),
+                                ],
+                              );
+                            }).toList(),
                           ),
                         ),
                       ),
                     ),
                   ],
-                  SizedBox(height: 20), // Consistent spacing
+
+                  SizedBox(height: 20),
 
                   // Section historique des commandes complétées
                   if (completedOrders.isNotEmpty) ...[
@@ -381,118 +359,114 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(12),
+                        // Un seul SingleChildScrollView pour le scroll horizontal
                         child: SingleChildScrollView(
-                          child: SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: DataTable(
-                              headingRowColor: MaterialStateProperty.all(
-                                  Colors.green.shade50),
-                              dataRowMaxHeight: 70,
-                              dataRowMinHeight: 55,
-                              columnSpacing: 20,
-                              horizontalMargin: 20,
-                              dividerThickness: 1.5,
-                              headingTextStyle: TextStyle(
-                                color: Colors.black87,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 15,
-                              ),
-                              columns: const [
-                                DataColumn(
-                                  label:
-                                      Text('ID', textAlign: TextAlign.center),
-                                ),
-                                DataColumn(
-                                  label: Text('ID Client',
-                                      textAlign: TextAlign.center),
-                                ),
-                                DataColumn(
-                                  label:
-                                      Text('Date', textAlign: TextAlign.center),
-                                ),
-                                DataColumn(
-                                  label: Text('Articles',
-                                      textAlign: TextAlign.center),
-                                ),
-                                DataColumn(
-                                  label: Text('Total',
-                                      textAlign: TextAlign.center),
-                                ),
-                                DataColumn(
-                                  label: Text('Actions',
-                                      textAlign: TextAlign.center),
-                                ),
-                              ],
-                              rows: completedOrders.map((order) {
-                                final dateFormat =
-                                    DateFormat('dd/MM/yyyy HH:mm');
-                                final formattedDate =
-                                    dateFormat.format(order.createdAt);
-
-                                return DataRow(
-                                  color: MaterialStateProperty.all(
-                                      Colors.green.shade50.withOpacity(0.3)),
-                                  cells: [
-                                    DataCell(
-                                      Text(
-                                        order.id?.substring(0, 8) ?? 'N/A',
-                                        style: TextStyle(
-                                          fontFamily: 'RobotoMono',
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ),
-                                    DataCell(
-                                      GestureDetector(
-                                        onTap: () {
-                                          Get.to(() => UsersScreen(
-                                              selectedUserId: order.userId));
-                                        },
-                                        child: Text(
-                                          order.userId.substring(0, 8),
-                                          style: TextStyle(
-                                            color: Colors.indigo.shade700,
-                                            decoration:
-                                                TextDecoration.underline,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    DataCell(
-                                      Text(formattedDate),
-                                    ),
-                                    DataCell(
-                                      Text('${order.items.length} article(s)'),
-                                    ),
-                                    DataCell(
-                                      Text(
-                                        '${order.total.toStringAsFixed(2)} €',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.indigo.shade700,
-                                        ),
-                                      ),
-                                    ),
-                                    DataCell(
-                                      Row(
-                                        children: [
-                                          _buildActionButton(
-                                            icon: Icons.visibility,
-                                            color: Colors.indigo.shade600,
-                                            tooltip: 'Voir les détails',
-                                            onPressed: () => _showOrderDetails(
-                                                order,
-                                                showModifyButtons: false),
-                                            iconSize: 22,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              }).toList(),
+                          scrollDirection: Axis.horizontal,
+                          child: DataTable(
+                            headingRowColor:
+                                MaterialStateProperty.all(Colors.green.shade50),
+                            dataRowMaxHeight: 70,
+                            dataRowMinHeight: 55,
+                            columnSpacing: 20,
+                            horizontalMargin: 20,
+                            dividerThickness: 1.5,
+                            headingTextStyle: TextStyle(
+                              color: Colors.black87,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 15,
                             ),
+                            columns: const [
+                              DataColumn(
+                                label: Text('ID', textAlign: TextAlign.center),
+                              ),
+                              DataColumn(
+                                label: Text('ID Client',
+                                    textAlign: TextAlign.center),
+                              ),
+                              DataColumn(
+                                label:
+                                    Text('Date', textAlign: TextAlign.center),
+                              ),
+                              DataColumn(
+                                label: Text('Articles',
+                                    textAlign: TextAlign.center),
+                              ),
+                              DataColumn(
+                                label:
+                                    Text('Total', textAlign: TextAlign.center),
+                              ),
+                              DataColumn(
+                                label: Text('Actions',
+                                    textAlign: TextAlign.center),
+                              ),
+                            ],
+                            rows: completedOrders.map((order) {
+                              final dateFormat = DateFormat('dd/MM/yyyy HH:mm');
+                              final formattedDate =
+                                  dateFormat.format(order.createdAt);
+
+                              return DataRow(
+                                color: MaterialStateProperty.all(
+                                    Colors.green.shade50.withOpacity(0.3)),
+                                cells: [
+                                  DataCell(
+                                    Text(
+                                      order.id?.substring(0, 8) ?? 'N/A',
+                                      style: TextStyle(
+                                        fontFamily: 'RobotoMono',
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                  DataCell(
+                                    GestureDetector(
+                                      onTap: () {
+                                        Get.to(() => UsersScreen(
+                                            selectedUserId: order.userId));
+                                      },
+                                      child: Text(
+                                        order.userId.substring(0, 8),
+                                        style: TextStyle(
+                                          color: Colors.indigo.shade700,
+                                          decoration: TextDecoration.underline,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  DataCell(
+                                    Text(formattedDate),
+                                  ),
+                                  DataCell(
+                                    Text('${order.items.length} article(s)'),
+                                  ),
+                                  DataCell(
+                                    Text(
+                                      '${order.total.toStringAsFixed(2)} €',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.indigo.shade700,
+                                      ),
+                                    ),
+                                  ),
+                                  DataCell(
+                                    Row(
+                                      children: [
+                                        _buildActionButton(
+                                          icon: Icons.visibility,
+                                          color: Colors.indigo.shade600,
+                                          tooltip: 'Voir les détails',
+                                          onPressed: () => _showOrderDetails(
+                                              order,
+                                              showModifyButtons: false),
+                                          iconSize: 22,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }).toList(),
                           ),
                         ),
                       ),
@@ -504,13 +478,6 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
           ),
         );
       }),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => orderController.loadAllOrders(),
-        backgroundColor: Colors.indigo.shade700,
-        tooltip: 'Actualiser les commandes',
-        elevation: 4,
-        child: const Icon(Icons.refresh, color: Colors.white),
-      ),
     );
   }
 
@@ -591,6 +558,16 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
         );
       },
     );
+  }
+
+  Future<Boutique?> _fetchBoutique(String? boutiqueId) async {
+    if (boutiqueId == null || boutiqueId.isEmpty) return null;
+    try {
+      return await boutiqueController.getBoutiqueById(boutiqueId);
+    } catch (e) {
+      print('Error fetching boutique: $e');
+      return null;
+    }
   }
 
   List<String> getAllowedStatuses(String currentStatus) {
@@ -1073,6 +1050,16 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
   void _showOrderDetails(Order order, {bool showModifyButtons = true}) {
     final dateFormat = DateFormat('dd/MM/yyyy HH:mm');
 
+    // Group items by boutiqueId
+    final Map<String, List<OrderItem>> groupedItems = {};
+    for (var item in order.items) {
+      final boutiqueId = item.opticienId;
+      if (!groupedItems.containsKey(boutiqueId)) {
+        groupedItems[boutiqueId] = [];
+      }
+      groupedItems[boutiqueId]!.add(item);
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1123,6 +1110,9 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
                   ),
                   SizedBox(height: 24),
 
+                  // Order Status Progress Bar
+                  _buildOrderStatusProgressBar(order.status),
+                  SizedBox(height: 24),
                   // Order ID and Date
                   _buildDetailCard(
                     title: 'Informations générales',
@@ -1163,81 +1153,122 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
                   ),
                   SizedBox(height: 16),
 
-                  // Boutique Information
-                  _buildDetailCard(
-                    title: 'Informations de boutique',
-                    icon: Icons.store,
-                    child: Column(
-                      children: [
-                        if (order.boutique != null) ...[
-                          _buildDetailRow(
-                            title: 'Nom',
-                            value: order.boutique!.nom,
-                          ),
-                          Divider(),
-                          _buildDetailRow(
-                            title: 'Adresse',
-                            value: order.boutique!.adresse,
-                          ),
-                          Divider(),
-                          _buildDetailRow(
-                            title: 'Ville',
-                            value: order.boutique!.ville,
-                          ),
-                          Divider(),
-                          _buildDetailRow(
-                            title: 'Téléphone',
-                            value: order.boutique!.phone ?? 'Non disponible',
-                            onTap: () async {
-                              if (order.boutique!.phone != null) {
-                                final url = 'tel:${order.boutique!.phone}';
-                                if (await canLaunchUrl(Uri.parse(url))) {
-                                  await launchUrl(Uri.parse(url));
-                                }
-                              }
-                            },
-                            valueStyle: TextStyle(
-                              color: Colors.indigo.shade700,
-                              decoration: TextDecoration.underline,
-                            ),
-                          ),
-                          Divider(),
-                          _buildDetailRow(
-                            title: 'Email',
-                            value: order.boutique!.email ?? 'Non disponible',
-                            onTap: () async {
-                              if (order.boutique!.email != null) {
-                                final url = 'mailto:${order.boutique!.email}';
-                                if (await canLaunchUrl(Uri.parse(url))) {
-                                  await launchUrl(Uri.parse(url));
-                                }
-                              }
-                            },
-                            valueStyle: TextStyle(
-                              color: Colors.indigo.shade700,
-                              decoration: TextDecoration.underline,
-                            ),
-                          ),
-                          Divider(),
-                          _buildDetailRow(
-                            title: 'Heures d\'ouverture',
-                            value: order.boutique!.opening_hours ??
-                                'Non disponible',
-                          ),
-                        ] else ...[
-                          _buildDetailRow(
+                  // Boutique Information and Products
+                  for (final entry in groupedItems.entries)
+                    FutureBuilder<Boutique?>(
+                      future: _fetchBoutique(entry.key), // Fetch boutique by ID
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return Center(child: CircularProgressIndicator());
+                        }
+
+                        if (snapshot.hasError || !snapshot.hasData) {
+                          return _buildDetailCard(
                             title: 'Informations de boutique',
-                            value: 'Non disponible',
-                            valueStyle: TextStyle(
-                              color: Colors.grey,
-                              fontStyle: FontStyle.italic,
+                            icon: Icons.store,
+                            child: _buildDetailRow(
+                              title: 'Informations de boutique',
+                              value: 'Non disponible',
+                              valueStyle: TextStyle(
+                                color: Colors.grey,
+                                fontStyle: FontStyle.italic,
+                              ),
                             ),
-                          ),
-                        ],
-                      ],
+                          );
+                        }
+
+                        final boutique = snapshot.data!;
+                        return Column(
+                          children: [
+                            // Boutique Information
+                            _buildDetailCard(
+                              title: 'Informations de boutique',
+                              icon: Icons.store,
+                              child: Column(
+                                children: [
+                                  _buildDetailRow(
+                                    title: 'Nom',
+                                    value: boutique.nom,
+                                  ),
+                                  Divider(),
+                                  _buildDetailRow(
+                                    title: 'Adresse',
+                                    value: boutique.adresse,
+                                  ),
+                                  Divider(),
+                                  _buildDetailRow(
+                                    title: 'Ville',
+                                    value: boutique.ville,
+                                  ),
+                                  Divider(),
+                                  _buildDetailRow(
+                                    title: 'Téléphone',
+                                    value: boutique.phone ?? 'Non disponible',
+                                    onTap: () async {
+                                      if (boutique.phone != null) {
+                                        final url = 'tel:${boutique.phone}';
+                                        if (await canLaunchUrl(
+                                            Uri.parse(url))) {
+                                          await launchUrl(Uri.parse(url));
+                                        }
+                                      }
+                                    },
+                                    valueStyle: TextStyle(
+                                      color: Colors.indigo.shade700,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                  ),
+                                  Divider(),
+                                  _buildDetailRow(
+                                    title: 'Email',
+                                    value: boutique.email ?? 'Non disponible',
+                                    onTap: () async {
+                                      if (boutique.email != null) {
+                                        final url = 'mailto:${boutique.email}';
+                                        if (await canLaunchUrl(
+                                            Uri.parse(url))) {
+                                          await launchUrl(Uri.parse(url));
+                                        }
+                                      }
+                                    },
+                                    valueStyle: TextStyle(
+                                      color: Colors.indigo.shade700,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                  ),
+                                  Divider(),
+                                  _buildDetailRow(
+                                    title: 'Heures d\'ouverture',
+                                    value: boutique.opening_hours ??
+                                        'Non disponible',
+                                  ),
+                                ],
+                              ),
+                            ),
+                            SizedBox(height: 16),
+
+                            // Products for this boutique
+                            _buildDetailCard(
+                              title: 'Articles commandés',
+                              icon: Icons.shopping_bag_outlined,
+                              child: Column(
+                                children: [
+                                  ...entry.value.map((item) => Column(
+                                        children: [
+                                          _buildOrderItemRow(item),
+                                          if (entry.value.last != item)
+                                            Divider(),
+                                        ],
+                                      )),
+                                ],
+                              ),
+                            ),
+                            SizedBox(height: 16),
+                          ],
+                        );
+                      },
                     ),
-                  ),
-                  if (order.boutique != null) SizedBox(height: 16),
 
                   // Delivery Information
                   _buildDetailCard(
@@ -1254,23 +1285,6 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
                           title: 'Méthode de paiement',
                           value: order.paymentMethod,
                         ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: 16),
-
-                  // Ordered Items
-                  _buildDetailCard(
-                    title: 'Articles commandés',
-                    icon: Icons.shopping_bag_outlined,
-                    child: Column(
-                      children: [
-                        ...order.items.map((item) => Column(
-                              children: [
-                                _buildOrderItemRow(item),
-                                if (order.items.last != item) Divider(),
-                              ],
-                            )),
                       ],
                     ),
                   ),
@@ -1405,6 +1419,109 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
           ),
         );
       },
+    );
+  }
+
+  final List<String> orderStatusSteps = [
+    'En attente',
+    'Confirmée',
+    'En livraison',
+    'Completée',
+  ];
+
+// Méthode qui renvoie l'icône associée à chaque statut
+  IconData getIconForStatus(String status) {
+    switch (status) {
+      case 'En attente':
+        return Icons.access_time; // Icône d'horloge
+      case 'Confirmée':
+        return Icons.check_circle; // Icône de validation
+      case 'En livraison':
+        return Icons.local_shipping; // Icône de livraison
+      case 'Completée':
+        return Icons.done_all; // Icône "terminé"
+      default:
+        return Icons.help_outline; // Icône par défaut si inconnu
+    }
+  }
+
+// Widget pour construire le stepper
+  Widget _buildOrderStatusProgressBar(String currentStatus) {
+    final int currentIndex = orderStatusSteps.indexOf(currentStatus);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Row(
+        children: List.generate(orderStatusSteps.length, (index) {
+          // Détermine si l'étape est déjà complétée, en cours ou à venir
+          final bool isCompleted = index < currentIndex;
+          final bool isActive = index == currentIndex;
+          final String stepStatus = orderStatusSteps[index];
+          final IconData stepIcon = getIconForStatus(stepStatus);
+
+          // Couleurs pour l'arrière-plan du cercle et pour l'icône
+          Color circleColor;
+          Color iconColor;
+
+          if (isCompleted) {
+            circleColor = Colors.green; // Cercle vert si étape terminée
+            iconColor = Colors.white;
+          } else if (isActive) {
+            circleColor = Colors.orange; // Cercle orange si étape en cours
+            iconColor = Colors.white;
+          } else {
+            circleColor = Colors.grey.shade300; // Cercle gris si étape à venir
+            iconColor = Colors.grey.shade600;
+          }
+
+          return Expanded(
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    // Cercle avec l'icône
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: circleColor,
+                      ),
+                      child: Center(
+                        child: Icon(
+                          stepIcon,
+                          color: iconColor,
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                    // Barre de progression entre les cercles
+                    if (index < orderStatusSteps.length - 1)
+                      Expanded(
+                        child: Container(
+                          height: 2,
+                          color:
+                              isCompleted ? Colors.green : Colors.grey.shade300,
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                // Libellé sous chaque cercle
+                Text(
+                  stepStatus,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isCompleted || isActive ? Colors.black : Colors.grey,
+                    fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          );
+        }),
+      ),
     );
   }
 

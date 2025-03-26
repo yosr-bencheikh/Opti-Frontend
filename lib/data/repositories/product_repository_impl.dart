@@ -32,7 +32,7 @@ class ProductRepositoryImpl implements ProductRepository {
     return await dataSource.getProductById(productId);
   }
 
-  Future<List<Opticien>> getOpticiens() async {
+  Future<List<Boutique>> getOpticiens() async {
     return await dataSource.getOpticiens();
   }
 

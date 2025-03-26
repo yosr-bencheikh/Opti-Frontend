@@ -12,6 +12,7 @@ import 'package:opti_app/Presentation/UI/screens/Opticien/LoginScreen.dart';
 import 'package:opti_app/Presentation/UI/screens/Opticien/OpticienDashboardApp.dart';
 import 'package:opti_app/Presentation/UI/screens/Opticien/Product_Screen.dart';
 import 'package:opti_app/Presentation/UI/screens/Opticien/UserScreen.dart';
+import 'package:opti_app/Presentation/UI/screens/Opticien/gestion_boutique.dart';
 import 'package:opti_app/Presentation/UI/screens/User/CheckoutScreen.dart';
 import 'package:opti_app/Presentation/UI/screens/User/SignUpScreen.dart';
 import 'package:opti_app/Presentation/UI/screens/User/WelcomePage.dart';
@@ -69,49 +70,59 @@ void main() async {
   Get.put<http.Client>(client);
 
   // Register UserDataSource and UserController
-  final userDataSource = UserDataSourceImpl(client: client);
+  final userDataSource = UserDataSourceImpl(
+      client: client); // Assurez-vous que cette classe existe
   Get.put<UserDataSource>(userDataSource);
 
-  final userController = UserController(userDataSource);
-  Get.put<UserController>(userController);
+  final userController =
+      UserController(userDataSource); // Initialisez UserController
+  Get.put<UserController>(userController); // Enregistrez-le dans GetX
 
   // Register other dependencies
   final productRemoteDataSource = ProductDatasource();
   Get.put<ProductDatasource>(productRemoteDataSource);
-  final productRepository = ProductRepositoryImpl(dataSource: productRemoteDataSource);
+  final productRepository =
+      ProductRepositoryImpl(dataSource: productRemoteDataSource);
   Get.put<ProductRepository>(productRepository);
   Get.put<ProductRepositoryImpl>(productRepository);
-  Get.put<ProductController>(ProductController(productRepository, productRemoteDataSource));
+  Get.put<ProductController>(
+      ProductController(productRepository, productRemoteDataSource));
 
   final authRemoteDataSource = AuthRemoteDataSourceImpl(client: client);
   Get.put<AuthRemoteDataSource>(authRemoteDataSource);
   final authRepository = AuthRepositoryImpl(authRemoteDataSource);
   Get.put<AuthRepository>(authRepository);
-  Get.put<AuthController>(AuthController(authRepository: authRepository, prefs: prefs));
+  Get.put<AuthController>(
+      AuthController(authRepository: authRepository, prefs: prefs));
 
-  final boutiqueRemoteDataSource = BoutiqueRemoteDataSourceImpl(client: client);
-  Get.put<BoutiqueRemoteDataSource>(boutiqueRemoteDataSource);
-
-  final boutiqueRepository = BoutiqueRepositoryImpl(boutiqueRemoteDataSource);
-  Get.put<BoutiqueRepository>(boutiqueRepository);
-
-  Get.put<BoutiqueController>(
-    BoutiqueController(boutiqueRepository: boutiqueRepository),
-  );
-
+ // Initialisation des dépendances pour Optician
   final opticianDataSource = OpticianDataSourceImpl();
   Get.put<OpticianDataSource>(opticianDataSource);
-
-  // Register the repository
+  
   final opticianRepository = OpticianRepositoryImpl(opticianDataSource);
   Get.put<OpticianRepository>(opticianRepository);
+  
+  final opticianController = OpticianController();
+  Get.put<OpticianController>(opticianController, permanent: true);
 
-  // Register the controller
-  Get.put<OpticianController>(OpticianController());
+  // Initialisation des dépendances pour Boutique
+  final boutiqueRemoteDataSource = BoutiqueRemoteDataSourceImpl(client: client);
+  Get.put<BoutiqueRemoteDataSource>(boutiqueRemoteDataSource);
+  
+  final boutiqueRepository = BoutiqueRepositoryImpl(boutiqueRemoteDataSource);
+  Get.put<BoutiqueRepository>(boutiqueRepository);
+  
+  final boutiqueController = BoutiqueController(
+    opticianController, 
+    boutiqueRepository: boutiqueRepository
+  );
+  Get.put<BoutiqueController>(boutiqueController, permanent: true);
+
 
   final cartItemRemoteDataSource = CartItemDataSourceImpl(client: client);
   Get.put<CartItemDataSource>(cartItemRemoteDataSource);
-  final cartItemRepository = CartItemRepositoryImpl(dataSource: cartItemRemoteDataSource);
+  final cartItemRepository =
+      CartItemRepositoryImpl(dataSource: cartItemRemoteDataSource);
   Get.put<CartItemRepository>(cartItemRepository);
   Get.put<CartItemController>(CartItemController(
     repository: cartItemRepository,
@@ -154,7 +165,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      initialRoute: '/splash',
+      initialRoute: '/LoginOpticien',
       getPages: [
         GetPage(
           name: '/splash',
@@ -255,6 +266,11 @@ class MyApp extends StatelessWidget {
         GetPage(
           name: '/Commande',
           page: () => AdminOrdersPage(),
+          binding: AuthBinding(),
+        ),
+        GetPage(
+          name: '/Boutiques',
+          page: () => GestionBoutique(),
           binding: AuthBinding(),
         ),
         if (kIsWeb)

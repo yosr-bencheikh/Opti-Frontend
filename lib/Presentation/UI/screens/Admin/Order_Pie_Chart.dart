@@ -215,14 +215,14 @@ class _OrderStatusChartState extends State<OrderStatusChart>
       );
     }
 
-    // Calculate total revenue (like the "Target" in the screenshot)
+    // Calculate total revenue
     final double totalRevenue =
         filteredOrders.fold(0, (sum, order) => sum + order.total);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // BIG TITLE: show total revenue
+        // Revenue header (remains fixed)
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -244,91 +244,93 @@ class _OrderStatusChartState extends State<OrderStatusChart>
         ),
         const SizedBox(height: 16),
 
-        // Iterate over orders and display each as a horizontal bar
-        ...filteredOrders.map((order) {
-          final dateString = DateFormat('dd/MM/yy').format(order.createdAt);
-          final orderTotal = order.total;
+        // Scrollable container for the orders
+        Expanded(
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: filteredOrders.map((order) {
+                final dateString =
+                    DateFormat('dd/MM/yy').format(order.createdAt);
+                final orderTotal = order.total;
+                final fractionOfTotal =
+                    totalRevenue > 0 ? orderTotal / totalRevenue : 0.0;
 
-          // Calculate the bar width proportion
-          final fractionOfTotal =
-              totalRevenue > 0 ? orderTotal / totalRevenue : 0.0;
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Display Order ID above the bar
-              Text(
-                'Order #${order.id}',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  // The gradient bar
-                  Expanded(
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final totalWidth = constraints.maxWidth;
-                        final fillWidth = fractionOfTotal * totalWidth;
-
-                        return Stack(
-                          children: [
-                            // Background bar (gray)
-                            Container(
-                              height: 24,
-                              decoration: BoxDecoration(
-                                color: const Color.fromARGB(255, 223, 222, 161),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                            ),
-                            // Gradient-filled bar
-                            Container(
-                              height: 24,
-                              width: fillWidth,
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [
-                                    Color.fromARGB(255, 236, 238, 89),
-                                    Color.fromARGB(255, 229, 140, 24)
-                                  ],
-                                  begin: Alignment.centerLeft,
-                                  end: Alignment.centerRight,
-                                ),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                            ),
-                            // Text inside the bar
-                            Positioned.fill(
-                              child: Center(
-                                child: Text(
-                                  '${orderTotal.toStringAsFixed(2)} TND',
-                                  style: const TextStyle(
-                                    color: Color.fromARGB(255, 140, 66, 66),
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Order #${order.id}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  // Display the date on the right
-                  Text(
-                    dateString,
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-            ],
-          );
-        }).toList(),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              final totalWidth = constraints.maxWidth;
+                              final fillWidth = fractionOfTotal * totalWidth;
+
+                              return Stack(
+                                children: [
+                                  Container(
+                                    height: 24,
+                                    decoration: BoxDecoration(
+                                      color: const Color.fromARGB(
+                                          255, 255, 255, 255),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                  ),
+                                  Container(
+                                    height: 24,
+                                    width: fillWidth,
+                                    decoration: BoxDecoration(
+                                      gradient: const LinearGradient(
+                                        colors: [
+                                          Color.fromARGB(255, 236, 238, 89),
+                                          Color.fromARGB(255, 229, 140, 24)
+                                        ],
+                                        begin: Alignment.centerLeft,
+                                        end: Alignment.centerRight,
+                                      ),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                  ),
+                                  Positioned.fill(
+                                    child: Center(
+                                      child: Text(
+                                        '${orderTotal.toStringAsFixed(2)} TND',
+                                        style: const TextStyle(
+                                          color:
+                                              Color.fromARGB(255, 140, 66, 66),
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          dateString,
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                );
+              }).toList(),
+            ),
+          ),
+        ),
       ],
     );
   }
