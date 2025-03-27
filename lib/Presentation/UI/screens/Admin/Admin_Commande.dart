@@ -1053,7 +1053,7 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
     // Group items by boutiqueId
     final Map<String, List<OrderItem>> groupedItems = {};
     for (var item in order.items) {
-      final boutiqueId = item.opticienId;
+      final boutiqueId = item.boutiqueId;
       if (!groupedItems.containsKey(boutiqueId)) {
         groupedItems[boutiqueId] = [];
       }

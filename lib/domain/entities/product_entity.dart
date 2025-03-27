@@ -10,7 +10,7 @@ class Product {
   String image;
   String model3D; // This can now be either a model ID or a filepath
   String? typeVerre;
-  String opticienId;
+  String boutiqueId;
   double averageRating;
   int totalReviews;
   String style;
@@ -27,7 +27,7 @@ class Product {
     this.image = "",
     this.model3D = '',
     this.typeVerre,
-    this.opticienId = "",
+    this.boutiqueId = "",
     required this.averageRating,
     required this.totalReviews,
     required this.style,
@@ -60,7 +60,7 @@ class Product {
       image: imageUrl ?? '',
       model3D: model3DValue,
       typeVerre: json['type_verre']?.toString() ?? '',
-      opticienId: json['opticienId']?.toString() ?? '',
+      boutiqueId: json['boutiqueId']?.toString() ?? '',
       averageRating: (json['averageRating'] as num?)?.toDouble() ?? 0.0,
       totalReviews: json['totalReviews'] ?? 0,
       style: json['style']?.toString() ?? '',
@@ -93,7 +93,7 @@ class Product {
       'image': image,
       'model3D': model3D,
       'type_verre': typeVerre,
-      'opticienId': opticienId,
+      'boutiqueId': boutiqueId,
       'totalReviews': totalReviews,
       'averageRating': averageRating,
       'style': style,
@@ -111,7 +111,7 @@ class Product {
     int? quantiteStock,
     String? image,
     String? typeVerre,
-    String? opticienId, // Added to copyWith
+    String? boutiqueId, // Added to copyWith
     double? averageRating,
     int? totalReviews,
     String? style, // Ajout du paramètre style dans copyWith
@@ -127,7 +127,7 @@ class Product {
       quantiteStock: quantiteStock ?? this.quantiteStock,
       image: image ?? this.image,
       typeVerre: typeVerre ?? this.typeVerre,
-      opticienId: opticienId ?? this.opticienId, // Handle in copyWith
+      boutiqueId: boutiqueId ?? this.boutiqueId, // Handle in copyWith
       averageRating: averageRating ?? this.averageRating,
       totalReviews: totalReviews ?? this.totalReviews,
       style: style ?? this.style, // Mettre à jour la valeur de style

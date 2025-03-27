@@ -10,6 +10,38 @@ import 'package:opti_app/domain/entities/product_entity.dart';
 class ProductDatasource {
   final String baseUrl = 'http://localhost:3000/api/products';
   final Dio _dio = Dio(); // Créez une instance de Dio
+
+Future<List<Product>> getProductsByBoutiqueId(String boutiqueId) async {
+  final response = await http.get(
+    Uri.parse('$baseUrl/by-boutique/$boutiqueId'),
+  );
+
+  if (response.statusCode == 200) {
+    final List<dynamic> data = json.decode(response.body);
+    return data.map((json) => Product.fromJson(json)).toList();
+  } else {
+    throw Exception('Failed to load products');
+  }
+}
+  Future<List<Product>> getProductsByBoutiques(List<String> boutiqueIds) async {
+  try {
+    final response = await http.post(
+      Uri.parse('$baseUrl/by-boutiques'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({'boutiqueIds': boutiqueIds}),
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = json.decode(response.body);
+      return data.map((json) => Product.fromJson(json)).toList();
+    } else {
+      throw Exception('Failed to load products for boutiques');
+    }
+  } catch (e) {
+    throw Exception('Error fetching products: $e');
+  }
+}
+
   Future<Product> createProduct(Product product) async {
     try {
       final response = await http.post(

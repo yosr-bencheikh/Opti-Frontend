@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:get/get.dart';
+import 'package:opti_app/Presentation/controllers/OpticianController.dart';
+import 'package:opti_app/Presentation/controllers/boutique_controller.dart';
 import 'package:opti_app/data/data_sources/product_datasource.dart';
 import 'package:opti_app/data/repositories/product_repository_impl.dart';
 import 'package:opti_app/domain/entities/Boutique.dart';
@@ -23,14 +25,80 @@ class ProductController extends GetxController {
   List<Boutique> get opticiens => _opticiens;
   bool get isLoading => _isLoading.value;
   String? get error => _error.value;
-  final RxMap<String, List<Product>> _productsByOptician =
-      <String, List<Product>>{}.obs;
+  final RxMap<String, List<Product>> _productsByOptician = <String, List<Product>>{}.obs;
   final RxList<Product> _allProducts = <Product>[].obs;
+
   @override
   void onInit() {
     super.onInit();
     loadProducts();
     loadOpticiens();
+  }
+
+  Future<void> loadAllProductsForOptician() async {
+    try {
+      _isLoading.value = true;  // Changed from isLoading(true)
+      _error.value = '';        // Changed from error('')
+
+      // 1. Get logged-in optician
+      final opticianController = Get.find<OpticianController>();
+      if (!opticianController.isLoggedIn.value) {
+        throw Exception('User not logged in');
+      }
+
+      // 2. Get all boutiques for this optician
+      final boutiqueController = Get.find<BoutiqueController>();
+      await boutiqueController.getboutiqueByOpticianId(opticianController.currentUserId.value);
+      final boutiqueIds = boutiqueController.opticiensList.map((b) => b.id).toList();
+
+      // 3. Load products for all boutiques
+      if (boutiqueIds.isNotEmpty) {
+        final allProducts = <Product>[];
+        for (final boutiqueId in boutiqueIds) {
+          final products = await _repository.getProductsByBoutiqueId(boutiqueId);
+          allProducts.addAll(products);
+        }
+        _products.assignAll(allProducts);
+        _allProducts.assignAll(allProducts);
+      } else {
+        _products.clear();
+        _allProducts.clear();
+      }
+    } catch (e) {
+      _error.value = 'Error: ${e.toString()}';
+    } finally {
+      _isLoading.value = false;  // Changed from isLoading(false)
+    }
+  }
+
+ Future<void> loadProductsForCurrentOptician() async {
+    try {
+      _isLoading.value = true;
+      
+      // 1. Obtenir l'opticien connecté
+      final opticianController = Get.find<OpticianController>();
+      if (!opticianController.isLoggedIn.value) {
+        throw Exception('User not logged in');
+      }
+      
+      // 2. Obtenir les boutiques de cet opticien
+      final boutiqueController = Get.find<BoutiqueController>();
+      await boutiqueController.getboutiqueByOpticianId(opticianController.currentUserId.value);
+      final boutiqueIds = boutiqueController.opticiensList.map((b) => b.id).toList();
+      
+      // 3. Charger les produits de ces boutiques
+      if (boutiqueIds.isNotEmpty) {
+        final products = await _repository.getProductsByBoutiques(boutiqueIds);
+        _products.assignAll(products);
+      } else {
+        _products.clear();
+      }
+      
+    } catch (e) {
+      _error.value = e.toString();
+    } finally {
+      _isLoading.value = false;
+    }
   }
 
   Future<void> loadOpticiens() async {
@@ -93,7 +161,7 @@ class ProductController extends GetxController {
     return opticien?.nom;
   }
 
-  Future<void> loadProductsByOptician(String opticianId) async {
+  Future<void> loadProductsByOptician(String boutiqueId) async {
     // Set loading state
     _isLoading.value = true;
 
@@ -106,7 +174,7 @@ class ProductController extends GetxController {
 
       // Filter the products by optician ID
       final opticianProducts =
-          _allProducts.where((p) => p.opticienId == opticianId).toList();
+          _allProducts.where((p) => p.boutiqueId == boutiqueId).toList();
 
       // After all processing is done, update the UI state
       _products.assignAll(opticianProducts);
@@ -151,7 +219,7 @@ class ProductController extends GetxController {
     _products.assignAll(_allProducts);
   }
 
-  Future<bool> addProduct(Product product) async {
+Future<bool> addProduct(Product product) async {
     try {
       _isLoading.value = true;
       final newProduct = await _repository.createProduct(product);

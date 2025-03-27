@@ -72,14 +72,14 @@ class OrderController extends GetxController {
             quantity: cartItem.quantity,
             unitPrice: unitPrice,
             totalPrice: cartItem.totalPrice,
-            opticienId: product.opticienId,
+            boutiqueId: product.boutiqueId,
           ));
 
           subtotal += cartItem.totalPrice;
 
           // Récupérer le boutiqueId du premier produit
-          if (boutiqueId == null && product.opticienId != null) {
-            boutiqueId = product.opticienId;
+          if (boutiqueId == null && product.boutiqueId != null) {
+            boutiqueId = product.boutiqueId;
           }
         }
       }

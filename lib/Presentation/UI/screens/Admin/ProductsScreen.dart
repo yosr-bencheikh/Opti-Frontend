@@ -87,7 +87,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
       final query = _searchController.text.toLowerCase();
       filteredList = filteredList.where((product) {
         final opticienNom =
-            productController.getOpticienNom(product.opticienId) ?? '';
+            productController.getOpticienNom(product.boutiqueId) ?? '';
         return product.name.toLowerCase().contains(query) ||
             product.category.toLowerCase().contains(query) ||
             product.description.toLowerCase().contains(query) ||
@@ -105,7 +105,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
     // Apply shop filter
     if (_selectedOpticien != null && _selectedOpticien!.isNotEmpty) {
       filteredList = filteredList
-          .where((product) => product.opticienId == _selectedOpticien)
+          .where((product) => product.boutiqueId == _selectedOpticien)
           .toList();
     }
 
@@ -923,7 +923,7 @@ DataCell(
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
-                    productController.getOpticienNom(product.opticienId) ?? 'N/A',
+                    productController.getOpticienNom(product.boutiqueId) ?? 'N/A',
                     style: TextStyle(
                       color: textSecondaryColor,
                       fontWeight: FontWeight.w500,
@@ -1816,10 +1816,10 @@ DataCell(
                           ? 'Veuillez sélectionner un opticien'
                           : null,
                       onChanged: (value) {
-                        product.opticienId = value ?? '';
+                        product.boutiqueId = value ?? '';
                       },
                       onSaved: (value) {
-                        product.opticienId = value ?? '';
+                        product.boutiqueId = value ?? '';
                       },
                     ),
                   ],
@@ -2302,7 +2302,7 @@ DataCell(
 
                   // Opticien dropdown
                   DropdownButtonFormField<String>(
-                    value: product.opticienId,
+                    value: product.boutiqueId,
                     decoration: InputDecoration(
                       labelText: 'Boutique ',
                       border: OutlineInputBorder(
@@ -2320,10 +2320,10 @@ DataCell(
                         ? 'Veuillez sélectionner un opticien'
                         : null,
                     onChanged: (value) {
-                      product.opticienId = value ?? '';
+                      product.boutiqueId = value ?? '';
                     },
                     onSaved: (value) {
-                      product.opticienId = value ?? '';
+                      product.boutiqueId = value ?? '';
                     },
                   ),
                 ],

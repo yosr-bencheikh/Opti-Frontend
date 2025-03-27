@@ -10,4 +10,5 @@ abstract class ProductRepository {
   Future<Product> getProductById(String productId);
   Future<Product> createProduct(Product product);
   Future<Map<String, dynamic>> getProductRatings(String productId);
+  
 }
