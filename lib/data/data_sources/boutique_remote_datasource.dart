@@ -23,8 +23,9 @@ class BoutiqueRemoteDataSourceImpl implements BoutiqueRemoteDataSource {
 @override
 Future<List<Boutique>> getBoutiquesByOpticianId(String opticienId) async {
   try {
-    final url = '$baseUrl/opticiens/by-opticien/$opticienId'; // Changé de 'boutique' à 'opticiens'
+    final url = '$baseUrl/opticiens/by-opticien/$opticienId';
     print('🔍 Fetching boutiques from: $url');
+    print('🔍 Searching with Optician ID: $opticienId');
     
     final response = await client.get(
       Uri.parse(url),
@@ -36,12 +37,18 @@ Future<List<Boutique>> getBoutiquesByOpticianId(String opticienId) async {
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
       print('📊 Data received: ${data.length} items');
+      
+      // Log each boutique's details
+      for (var item in data) {
+        print('Boutique Details: $item');
+      }
+      
       return data.map((json) => Boutique.fromJson(json)).toList();
     } else {
       throw Exception('Server error: ${response.statusCode}');
     }
   } catch (e) {
-    print('❌ Error: $e');
+    print('❌ Error in getBoutiquesByOpticianId: $e');
     throw Exception('Failed to load boutiques: $e');
   }
 }

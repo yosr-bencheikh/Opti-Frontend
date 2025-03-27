@@ -1,0 +1,104 @@
+[33mbc17fd3[m[33m ([m[1;36mHEAD[m[33m)[m HEAD@{0}: checkout: moving from 0b31e6e02096ef593af996f78f2a2363d6bbd9a6 to bc17fd373066babd5be3298ea30b981af5d25585
+[33m0b31e6e[m HEAD@{1}: commit: 'git'
+[33mab40074[m HEAD@{2}: commit: 'boutique_opticien'
+[33m014f7e5[m HEAD@{3}: commit: 'boutique'
+[33mbc17fd3[m[33m ([m[1;36mHEAD[m[33m)[m HEAD@{4}: reset: moving to bc17fd3
+[33m1e0fefb[m HEAD@{5}: commit: 'test
+[33mbc17fd3[m[33m ([m[1;36mHEAD[m[33m)[m HEAD@{6}: commit (merge): 'gestion_boutique_opticien'
+[33mb7f5a2a[m HEAD@{7}: checkout: moving from Sprint2 to b7f5a2a
+[33md374655[m[33m ([m[1;32mSprint2[m[33m)[m HEAD@{8}: reset: moving to HEAD
+[33md374655[m[33m ([m[1;32mSprint2[m[33m)[m HEAD@{9}: commit (merge): color
+[33mb7f5a2a[m HEAD@{10}: commit: color
+[33m2f67e19[m HEAD@{11}: reset: moving to HEAD
+[33m2f67e19[m HEAD@{12}: reset: moving to HEAD
+[33m2f67e19[m HEAD@{13}: reset: moving to HEAD
+[33m2f67e19[m HEAD@{14}: reset: moving to HEAD
+[33m2f67e19[m HEAD@{15}: commit: 'integration'
+[33med61071[m HEAD@{16}: commit (merge): commande
+[33mdae70ab[m HEAD@{17}: commit (merge): command
+[33ma2bc954[m HEAD@{18}: commit: optcien
+[33m979229e[m HEAD@{19}: commit: 'dashboardopticien'
+[33m4ccaf97[m HEAD@{20}: pull origin Sprint2: Fast-forward
+[33mf13efeb[m HEAD@{21}: commit: dashboard_opticien
+[33ma7938c2[m HEAD@{22}: commit: opticien
+[33m3a6b61a[m HEAD@{23}: pull origin Sprint2: Fast-forward
+[33m81611fb[m HEAD@{24}: commit: commande_admin
+[33m86f0095[m HEAD@{25}: pull origin Sprint2: Fast-forward
+[33m1e90636[m HEAD@{26}: pull origin Sprint2: Fast-forward
+[33m6fa3927[m HEAD@{27}: reset: moving to ORIG_HEAD
+[33m1e90636[m HEAD@{28}: pull origin Sprint2: Fast-forward
+[33m6fa3927[m HEAD@{29}: commit: 'commander'
+[33mc3e272b[m HEAD@{30}: reset: moving to HEAD
+[33mc3e272b[m HEAD@{31}: reset: moving to HEAD
+[33mc3e272b[m HEAD@{32}: commit: 'password'
+[33mdef71eb[m HEAD@{33}: commit: commander
+[33ma2838ed[m HEAD@{34}: commit: favoris
+[33mc81ee29[m HEAD@{35}: commit: 'Admin_user'
+[33m9ea370c[m HEAD@{36}: commit: 'optiproduct'
+[33m921b072[m HEAD@{37}: reset: moving to HEAD
+[33m921b072[m HEAD@{38}: commit (merge): 'sprint2'
+[33m59a13f2[m HEAD@{39}: commit: 'sprint2'
+[33ma362170[m[33m ([m[1;31morigin/gestion_panier[m[33m)[m HEAD@{40}: checkout: moving from gestion_product to Sprint2
+[33m39d07a6[m[33m ([m[1;31morigin/gestion_product[m[33m, [m[1;32mgestion_product[m[33m)[m HEAD@{41}: commit: 'wishlist'
+[33m4920435[m HEAD@{42}: commit: 'panier'
+[33m5a7e185[m HEAD@{43}: commit: wishlist
+[33m6520b66[m HEAD@{44}: commit (merge): wishlist
+[33m5d01c7e[m[33m ([m[1;32mgestion_produit[m[33m)[m HEAD@{45}: reset: moving to HEAD
+[33m5d01c7e[m[33m ([m[1;32mgestion_produit[m[33m)[m HEAD@{46}: reset: moving to HEAD
+[33m5d01c7e[m[33m ([m[1;32mgestion_produit[m[33m)[m HEAD@{47}: reset: moving to HEAD
+[33m5d01c7e[m[33m ([m[1;32mgestion_produit[m[33m)[m HEAD@{48}: checkout: moving from gestion_produit to gestion_product
+[33m5d01c7e[m[33m ([m[1;32mgestion_produit[m[33m)[m HEAD@{49}: reset: moving to HEAD
+[33m5d01c7e[m[33m ([m[1;32mgestion_produit[m[33m)[m HEAD@{50}: commit: 'user'
+[33m71cb234[m[33m ([m[1;31morigin/gestion_produit[m[33m)[m HEAD@{51}: commit: admin_product
+[33mafa5d79[m HEAD@{52}: reset: moving to origin/Gestion_panier
+[33mc388601[m[33m ([m[1;31morigin/Auth_integration[m[33m, [m[1;32mAuth_integration[m[33m, [m[1;32mAdmin_product[m[33m)[m HEAD@{53}: checkout: moving from Admin_product to gestion_produit
+[33mc388601[m[33m ([m[1;31morigin/Auth_integration[m[33m, [m[1;32mAuth_integration[m[33m, [m[1;32mAdmin_product[m[33m)[m HEAD@{54}: checkout: moving from Auth_integration to Admin_product
+[33mc388601[m[33m ([m[1;31morigin/Auth_integration[m[33m, [m[1;32mAuth_integration[m[33m, [m[1;32mAdmin_product[m[33m)[m HEAD@{55}: commit: colors and styles
+[33m063febf[m HEAD@{56}: reset: moving to HEAD
+[33m063febf[m HEAD@{57}: pull origin Auth_integration: Fast-forward
+[33mf5d2159[m HEAD@{58}: commit: design
+[33mb566e9e[m HEAD@{59}: reset: moving to HEAD@{1}
+[33m43cc149[m[33m ([m[1;32mintegration_frontend[m[33m)[m HEAD@{60}: reset: moving to HEAD@{1}
+[33mb566e9e[m HEAD@{61}: checkout: moving from integration_frontend to Auth_integration
+[33m43cc149[m[33m ([m[1;32mintegration_frontend[m[33m)[m HEAD@{62}: reset: moving to HEAD
+[33m43cc149[m[33m ([m[1;32mintegration_frontend[m[33m)[m HEAD@{63}: reset: moving to HEAD
+[33m43cc149[m[33m ([m[1;32mintegration_frontend[m[33m)[m HEAD@{64}: reset: moving to HEAD
+[33m43cc149[m[33m ([m[1;32mintegration_frontend[m[33m)[m HEAD@{65}: reset: moving to HEAD
+[33m43cc149[m[33m ([m[1;32mintegration_frontend[m[33m)[m HEAD@{66}: reset: moving to HEAD
+[33m43cc149[m[33m ([m[1;32mintegration_frontend[m[33m)[m HEAD@{67}: commit: 'integration'
+[33m8ece210[m HEAD@{68}: reset: moving to origin/integration_frontend
+[33m8ece210[m HEAD@{69}: reset: moving to HEAD
+[33m8ece210[m HEAD@{70}: pull origin integration_frontend: Fast-forward
+[33mba61ba0[m HEAD@{71}: reset: moving to HEAD
+[33mba61ba0[m HEAD@{72}: reset: moving to ba61ba0
+[33m0a433e6[m HEAD@{73}: pull origin integration_frontend: Fast-forward
+[33mba61ba0[m HEAD@{74}: commit: google fb and auto login
+[33m350c14f[m HEAD@{75}: pull origin integration_frontend: Fast-forward
+[33m7845009[m HEAD@{76}: reset: moving to HEAD
+[33m7845009[m HEAD@{77}: reset: moving to HEAD~1
+[33m350c14f[m HEAD@{78}: checkout: moving from integration_frontend to integration_frontend
+[33m350c14f[m HEAD@{79}: pull origin integration_frontend: Fast-forward
+[33m7845009[m HEAD@{80}: reset: moving to HEAD
+[33m7845009[m HEAD@{81}: pull origin integration_frontend: Fast-forward
+[33mcd54951[m HEAD@{82}: commit (merge): validators
+[33me7bbd1a[m HEAD@{83}: commit: nothing
+[33m05eab85[m HEAD@{84}: pull origin integration_frontend: Fast-forward
+[33m4455867[m HEAD@{85}: pull origin integration_frontend: Fast-forward
+[33mb4b27b9[m HEAD@{86}: commit (merge): validation clean architecture
+[33mc635b4b[m HEAD@{87}: commit: validation clean
+[33me14b256[m HEAD@{88}: commit: password clean architecture
+[33md762475[m HEAD@{89}: commit: signup clean architecture
+[33md84a337[m HEAD@{90}: pull origin integration_frontend: Fast-forward
+[33m752b360[m HEAD@{91}: commit: google login
+[33m0a9f6c5[m HEAD@{92}: commit (merge): login signup update and adminPanel
+[33ma5c0019[m HEAD@{93}: checkout: moving from forgot_password to integration_frontend
+[33mbd6f1cb[m[33m ([m[1;31morigin/forgot_password[m[33m, [m[1;32mforgot_password[m[33m)[m HEAD@{94}: reset: moving to HEAD
+[33mbd6f1cb[m[33m ([m[1;31morigin/forgot_password[m[33m, [m[1;32mforgot_password[m[33m)[m HEAD@{95}: checkout: moving from integration_frontend to forgot_password
+[33ma5c0019[m HEAD@{96}: checkout: moving from 3c38b849bfaefb63c988ddfbb51a5a555a46f763 to integration_frontend
+[33m3c38b84[m HEAD@{97}: commit: login frontend
+[33mcc11e4c[m HEAD@{98}: pull --rebase origin integration_frontend (start): checkout cc11e4c4618c53de188445f9b4ae039bec4a253b
+[33ma5c0019[m HEAD@{99}: commit: login et signup
+[33m20cb2fa[m[33m ([m[1;31morigin/Auth[m[33m, [m[1;32mAuth[m[33m)[m HEAD@{100}: checkout: moving from Auth to integration_frontend
+[33m20cb2fa[m[33m ([m[1;31morigin/Auth[m[33m, [m[1;32mAuth[m[33m)[m HEAD@{101}: commit: second commit
+[33m1d8b6f6[m[33m ([m[1;32mmain[m[33m)[m HEAD@{102}: checkout: moving from main to Auth
+[33m1d8b6f6[m[33m ([m[1;32mmain[m[33m)[m HEAD@{103}: clone: from https://github.com/yosr-bencheikh/Opti-Frontend.git

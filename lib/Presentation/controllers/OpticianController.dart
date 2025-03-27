@@ -25,43 +25,56 @@ class OpticianController extends GetxController {
   var authToken = ''.obs;
   var opticianName = "".obs;
 
- @override
-  void onInit() async {
-    super.onInit();
-    
-    // Injection des dépendances
-    _dataSource = Get.find<OpticianDataSource>();
-    _repository = Get.find<OpticianRepository>();
-    prefs = Get.find<SharedPreferences>();
-
-    // Vérification de la connexion existante
-    final storedToken = prefs.getString('token');
-    final storedOpticianName = prefs.getString('opticianName');
-
-    if (storedToken != null && storedToken.isNotEmpty) {
-      authToken.value = storedToken;
-      isLoggedIn.value = true;
-
-      try {
-        if (JwtDecoder.isExpired(storedToken)) {
-          logout();
-        } else {
-          final decodedToken = JwtDecoder.decode(storedToken);
-          currentUserId.value = decodedToken['id']?.toString() ?? '';
-          opticianName.value = storedOpticianName ?? "Utilisateur";
-
-          if (Get.currentRoute != '/OpticienDashboard') {
-            Get.offAllNamed('/OpticienDashboard', arguments: currentUserId.value);
-          }
-        }
-      } catch (e) {
-        logout();
-      }
-    }
-
-    await fetchOpticians();
+// Ajoutez cette méthode
+bool isUserLoggedIn() {
+  final token = prefs.getString('token');
+  if (token == null || token.isEmpty) {
+    isLoggedIn.value = false;
+    return false;
   }
+  
+  try {
+    if (JwtDecoder.isExpired(token)) {
+      isLoggedIn.value = false;
+      return false;
+    }
+    
+    isLoggedIn.value = true;
+    return true;
+  } catch (e) {
+    isLoggedIn.value = false;
+    return false;
+  }
+}
 
+// Modifiez onInit
+@override
+void onInit() async {
+  super.onInit();
+  _dataSource = Get.find<OpticianDataSource>();
+  _repository = Get.find<OpticianRepository>();
+  prefs = await SharedPreferences.getInstance();
+
+  if (isUserLoggedIn()) {
+    final token = prefs.getString('token')!;
+    final decoded = JwtDecoder.decode(token);
+    currentUserId.value = decoded['id']?.toString() ?? '';
+    opticianName.value = prefs.getString('opticianName') ?? "Utilisateur";
+  }
+  
+  await fetchOpticians();
+}
+// In OpticianController
+void login(String userId) {
+  print('🔐 Login process started');
+  print('🔐 User ID received: $userId');
+  
+  currentUserId.value = userId;
+  isLoggedIn.value = true;
+  
+  print('🔐 Current User ID: ${currentUserId.value}');
+  print('🔐 Is Logged In: $isLoggedIn');
+}
 // Ajouter une méthode de déconnexion
   void logout() async {
     authToken.value = '';

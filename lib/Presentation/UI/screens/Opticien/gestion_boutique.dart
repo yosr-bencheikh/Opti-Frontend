@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:opti_app/Presentation/UI/screens/Opticien/OpticienDashboardApp.dart';
 import 'package:opti_app/Presentation/controllers/OpticianController.dart';
 import 'package:opti_app/Presentation/controllers/boutique_controller.dart';
 import 'package:opti_app/core/constants/regions.dart';
@@ -17,11 +18,9 @@ class GestionBoutique extends StatefulWidget {
 
 class _GestionBoutiqueState extends State<GestionBoutique> {
   final BoutiqueController opticienController = Get.find();
-
-  final OpticianController opticianController = Get.find(); // Ajoutez ce contrôleur
-final RxString selectedOpticianId = ''.obs;
-final RxString selectedOpticianName = 'Non attribué'.obs;
-
+  final OpticianController opticianController = Get.find();
+  final RxString selectedOpticianId = ''.obs;
+  final RxString selectedOpticianName = 'Non attribué'.obs;
   final ImagePicker _picker = ImagePicker();
   File? _imageFile;
   TextEditingController _searchController = TextEditingController();
@@ -37,8 +36,6 @@ final RxString selectedOpticianName = 'Non attribué'.obs;
   bool _showFilters = false;
   String _currentSearchTerm = '';
   List<Boutique> _filteredBoutique = [];
-
-  // Pagination variables
   int _currentPage = 0;
   final int _itemsPerPage = 5;
   final Color _primaryColor = const Color.fromARGB(255, 33, 199, 146);
@@ -49,36 +46,36 @@ final RxString selectedOpticianName = 'Non attribué'.obs;
   final Color _cardColor = Colors.white;
   final Color _textPrimaryColor = const Color(0xFF212121);
   final Color _textSecondaryColor = const Color(0xFF757575);
-@override
-void initState() {
-  super.initState();
-  _searchController.addListener(_filterOpticiens);
-   WidgetsBinding.instance.addPostFrameCallback((_) {
-    _loadInitialData();
-  });
-  // Charge les boutiques en fonction du type d'utilisateur
-  final opticianController = Get.find<OpticianController>();
-  if (opticianController.isLoggedIn.value) {
-    // Charge seulement les boutiques de l'opticien connecté
-    opticienController.getboutiqueByOpticianId(opticianController.currentUserId.value);
-  } 
-}
-Future<void> _loadInitialData() async {
-  final opticianController = Get.find<OpticianController>();
-  if (opticianController.isLoggedIn.value) {
-    await opticienController.getboutiqueByOpticianId(opticianController.currentUserId.value);
-  } 
-  if (mounted) setState(() {});
-}
-  List<Boutique> get _filteredOpticiens {
-      final opticianController = Get.find<OpticianController>();
 
- List<Boutique> filteredList = opticianController.isLoggedIn.value
-      ? opticienController.opticiensList
-          .where((boutique) => boutique.opticien_id == opticianController.currentUserId.value)
-          .toList()
-      : opticienController.opticiensList;
-    // Apply search filter
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(_filterOpticiens);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadInitialData();
+    });
+    final opticianController = Get.find<OpticianController>();
+    if (opticianController.isLoggedIn.value) {
+      opticienController.getboutiqueByOpticianId(opticianController.currentUserId.value);
+    } 
+  }
+
+  Future<void> _loadInitialData() async {
+    final opticianController = Get.find<OpticianController>();
+    if (opticianController.isLoggedIn.value) {
+      await opticienController.getboutiqueByOpticianId(opticianController.currentUserId.value);
+    } 
+    if (mounted) setState(() {});
+  }
+
+  List<Boutique> get _filteredOpticiens {
+    final opticianController = Get.find<OpticianController>();
+    List<Boutique> filteredList = opticianController.isLoggedIn.value
+        ? opticienController.opticiensList
+            .where((boutique) => boutique.opticien_id == opticianController.currentUserId.value)
+            .toList()
+        : opticienController.opticiensList;
+    
     if (_searchController.text.isNotEmpty) {
       final query = _searchController.text.toLowerCase();
       filteredList = filteredList.where((opticien) {
@@ -92,47 +89,28 @@ Future<void> _loadInitialData() async {
       }).toList();
     }
 
-    // Apply advanced filters
     filteredList = filteredList.where((opticien) {
       final matchesNom = _filters['nom'] == null ||
           _filters['nom']!.isEmpty ||
           opticien.nom.toLowerCase().contains(_filters['nom']!.toLowerCase());
-
       final matchesAdresse = _filters['adresse'] == null ||
           _filters['adresse']!.isEmpty ||
-          opticien.adresse
-              .toLowerCase()
-              .contains(_filters['adresse']!.toLowerCase());
-
+          opticien.adresse.toLowerCase().contains(_filters['adresse']!.toLowerCase());
       final matchesVille = _filters['ville'] == null ||
           _filters['ville']!.isEmpty ||
-          opticien.ville
-              .toLowerCase()
-              .contains(_filters['ville']!.toLowerCase());
-
+          opticien.ville.toLowerCase().contains(_filters['ville']!.toLowerCase());
       final matchesEmail = _filters['email'] == null ||
           _filters['email']!.isEmpty ||
-          opticien.email
-              .toLowerCase()
-              .contains(_filters['email']!.toLowerCase());
-
+          opticien.email.toLowerCase().contains(_filters['email']!.toLowerCase());
       final matchesPhone = _filters['phone'] == null ||
           _filters['phone']!.isEmpty ||
-          opticien.phone
-              .toLowerCase()
-              .contains(_filters['phone']!.toLowerCase());
-
+          opticien.phone.toLowerCase().contains(_filters['phone']!.toLowerCase());
       final matchesDescription = _filters['description'] == null ||
           _filters['description']!.isEmpty ||
-          opticien.description
-              .toLowerCase()
-              .contains(_filters['description']!.toLowerCase());
-
+          opticien.description.toLowerCase().contains(_filters['description']!.toLowerCase());
       final matchesHoraires = _filters['horaires'] == null ||
           _filters['horaires']!.isEmpty ||
-          opticien.opening_hours
-              .toLowerCase()
-              .contains(_filters['horaires']!.toLowerCase());
+          opticien.opening_hours.toLowerCase().contains(_filters['horaires']!.toLowerCase());
 
       return matchesNom &&
           matchesAdresse &&
@@ -146,7 +124,6 @@ Future<void> _loadInitialData() async {
     return filteredList;
   }
 
-  // Get paginated data
   List<Boutique> get _paginatedOpticiens {
     final filteredList = _filteredOpticiens;
     final startIndex = _currentPage * _itemsPerPage;
@@ -169,23 +146,36 @@ Future<void> _loadInitialData() async {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
-      body: Obx(
-        () => Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(),
-            _buildSearchBar(),
-            if (_showFilters) _buildAdvancedFilters(), // Add this line
-            Expanded(
-              child: _buildContent(),
+      body: Row(
+        children: [
+          // Ajout de la CustomSidebar
+          CustomSidebar(currentPage: 'Boutiques'),
+          
+          // Contenu principal
+          Expanded(
+            child: Scaffold(
+              backgroundColor: Colors.grey[50],
+              body: Obx(
+                () => Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeader(),
+                    _buildSearchBar(),
+                    if (_showFilters) _buildAdvancedFilters(),
+                    Expanded(
+                      child: _buildContent(),
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
+  // ... (le reste des méthodes reste inchangé)
   void _filterOpticiens() {
     setState(() {});
   }
@@ -877,6 +867,7 @@ Future<void> _loadInitialData() async {
       ],
     );
   }
+
 
   void _showAddBoutiqueDialog(BuildContext context) {
     final formKey = GlobalKey<FormState>();

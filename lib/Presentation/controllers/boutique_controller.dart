@@ -18,28 +18,32 @@ class BoutiqueController extends GetxController {
   BoutiqueController(this.opticianController, {required this.boutiqueRepository});
 
  @override
-  void onInit() {
-    super.onInit();
-    final opticianController = Get.find<OpticianController>();
-    
-    // Définir si on montre seulement les boutiques de l'utilisateur
-    _showOnlyUserBoutiques.value = opticianController.isLoggedIn.value;
-    
-    // Charger les boutiques appropriées
-    if (_showOnlyUserBoutiques.value) {
-      getboutiqueByOpticianId(opticianController.currentUserId.value);
-    } else {
-      getboutique();
+void onInit() {
+  super.onInit();
+  
+  // Force initial load if user is logged in
+  ever(opticianController.isLoggedIn, (isLoggedIn) {
+    print('🔍 Login status changed: $isLoggedIn');
+    if (isLoggedIn) {
+      _loadBoutiquesForCurrentUser();
     }
+  });
+
+  if (opticianController.isLoggedIn.value) {
+    _loadBoutiquesForCurrentUser();
   }
-    Future<void> refreshBoutiques() async {
-    final opticianController = Get.find<OpticianController>();
-    if (_showOnlyUserBoutiques.value) {
-      await getboutiqueByOpticianId(opticianController.currentUserId.value);
-    } else {
-      await getboutique();
-    }
+}
+
+void _loadBoutiquesForCurrentUser() {
+  final currentUserId = opticianController.currentUserId.value;
+  print('🔍 Loading boutiques for user: $currentUserId');
+  if (currentUserId.isNotEmpty) {
+    getboutiqueByOpticianId(currentUserId);
+  } else {
+    print('❌ Current User ID is empty');
   }
+}
+
 String? getOpticienNom(String? opticienId) {  // Accepte maintenant String?
   if (opticienId == null) return null;
   
@@ -50,6 +54,31 @@ String? getOpticienNom(String? opticienId) {  // Accepte maintenant String?
     return opticien != null ? '${opticien.nom} ${opticien.prenom}' : null;
   } catch (e) {
     return null;
+  }
+}
+  void _loadBoutiques() {
+    final opticianController = Get.find<OpticianController>();
+    if (opticianController.isLoggedIn.value) {
+      // Charge seulement les boutiques de l'opticien connecté
+      getboutiqueByOpticianId(opticianController.currentUserId.value);
+    } 
+  }
+
+Future<void> refreshBoutiques() async {
+  try {
+    isLoading(true);
+    error('');
+    
+    final opticianController = Get.find<OpticianController>();
+    if (opticianController.isLoggedIn.value) {
+      await getboutiqueByOpticianId(opticianController.currentUserId.value);
+    } else {
+      await getboutique();
+    }
+  } catch (e) {
+    error(e.toString());
+  } finally {
+    isLoading(false);
   }
 }
 
@@ -68,11 +97,9 @@ String? getOpticienNom(String? opticienId) {  // Accepte maintenant String?
       print('Fetching opticians...');
 
       final result = await boutiqueRepository.getOpticiens();
-          opticiensList.assignAll(result);
+      opticiensList.assignAll(result);
 
       print('Fetched opticians: $result');
-
-      opticiensList.assignAll(result);
       print('Opticians list updated: $opticiensList');
     } catch (e) {
       error(e.toString());
@@ -83,27 +110,29 @@ String? getOpticienNom(String? opticienId) {  // Accepte maintenant String?
     }
   }
 
-  Future<void> getboutiqueByOpticianId(String opticianId) async {
-    try {
-      isLoading(true);
-      opticiensList.clear();
-      error('');
-      print('Fetching boutiques for optician: $opticianId');
-
-      final result = await boutiqueRepository.getBoutiquesByOpticianId(opticianId);
-      
-      // Efface la liste existante avant d'ajouter les nouvelles boutiques
-      opticiensList.clear();
-      opticiensList.addAll(result);
-      
-      print('Boutiques mises à jour: ${opticiensList.length}');
-    } catch (e) {
-      error(e.toString());
-      print('Error fetching boutiques: $e');
-    } finally {
-      isLoading(false);
+ Future<void> getboutiqueByOpticianId(String opticienId) async {
+  try {
+    isLoading(true);
+    error('');
+    
+    print('🔄 Chargement pour opticien: $opticienId');
+    final result = await boutiqueRepository.getBoutiquesByOpticianId(opticienId);
+    
+    opticiensList.assignAll(result);
+    print('✅ Données reçues: ${result.length} | Stockées: ${opticiensList.length}');
+    
+    // Log de vérification
+    if (opticiensList.isNotEmpty) {
+      print('Exemple: ${opticiensList.first.nom} - ${opticiensList.first.opticien_id}');
     }
+  } catch (e) {
+    print('❌ Erreur: $e');
+    error(e.toString());
+  } finally {
+    isLoading(false);
   }
+}
+
 String? getOpticianName(String? opticianId) {
   if (opticianId == null) return null;
   final optician = opticianController.opticians.firstWhereOrNull((o) => o.id == opticianId);

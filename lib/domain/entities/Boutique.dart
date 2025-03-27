@@ -25,49 +25,34 @@ class Boutique extends Equatable {
     this.opticien_nom,
   });
 
-  factory Boutique.fromJson(Map<String, dynamic> json) {
- print('Full JSON data: $json');
-  print('opticien_id: ${json['opticien_id']}');
-  print('opticien_nom: ${json['opticien_nom']}');
-      String? extractOpticienNom() {
-  // Check if opticien_nom is directly provided
-  if (json['opticien_nom'] != null) {
-    return json['opticien_nom'].toString();
+  // Méthode helper pour convertir les IDs
+  static String? _convertId(dynamic id) {
+    if (id == null) return null;
+    if (id is Map) return id['\$oid']?.toString(); // Pour les ObjectId MongoDB
+    return id.toString();
   }
 
-  // Check if opticien_id is an object with a name
-  if (json['opticien_id'] != null) {
-    if (json['opticien_id'] is Map) {
-      // Try multiple ways to extract the name
-      return json['opticien_id']['nom'] ?? 
-             json['opticien_id']['name'] ?? 
-             json['opticien_id']['prenom'] ?? 
-             'Unknown';
-    } else if (json['opticien_id'] is String) {
-      // If it's just an ID, return 'Unknown'
-      return 'Unknown';
-    }
+factory Boutique.fromJson(Map<String, dynamic> json) {
+  // Conversion robuste des IDs
+  String? parseId(dynamic id) {
+    if (id == null) return null;
+    if (id is Map) return id['\$oid']?.toString();
+    return id.toString();
   }
 
-  return 'Unknown';
+  return Boutique(
+    id: parseId(json['_id']) ?? '',
+    nom: json['nom'] ?? '',
+    adresse: json['adresse'] ?? '',
+    ville: json['ville'] ?? '',
+    phone: json['phone']?.toString() ?? '',
+    email: json['email'] ?? '',
+    description: json['description'] ?? '',
+    opening_hours: json['opening_hours'] ?? '',
+    opticien_id: parseId(json['opticien_id']), // Conversion garantie
+    opticien_nom: json['opticien_nom']?.toString(),
+  );
 }
-
-   return Boutique(
-      id: json['_id']?.toString() ?? '',
-      nom: json['nom'] ?? '',
-      adresse: json['adresse'] ?? '',
-      ville: json['ville'] ?? '',
-      phone: json['phone'] ?? '',
-      email: json['email'] ?? '',
-      description: json['description'] ?? '',
-      opening_hours: json['opening_hours'] ?? '',
-      opticien_id: json['opticien_id'] != null 
-          ? json['opticien_id'].toString() 
-          : null,
-      opticien_nom: null, // Set to null explicitly
-    );
-  }
-
   @override
   List<Object?> get props => [
         id,
