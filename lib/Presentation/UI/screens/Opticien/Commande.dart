@@ -6,14 +6,14 @@ import 'package:opti_app/Presentation/UI/screens/Opticien/OpticienDashboardApp.d
 import 'package:opti_app/Presentation/controllers/OrderController.dart';
 import 'package:opti_app/domain/entities/Order.dart';
 
-class AdminOrdersPage extends StatefulWidget {
-  const AdminOrdersPage({Key? key}) : super(key: key);
+class OpticienOrdersPage extends StatefulWidget {
+  const OpticienOrdersPage({Key? key}) : super(key: key);
 
   @override
-  State<AdminOrdersPage> createState() => _AdminOrdersPageState();
+  State<OpticienOrdersPage> createState() => _OpticienOrdersPageState();
 }
 
-class _AdminOrdersPageState extends State<AdminOrdersPage> {
+class _OpticienOrdersPageState extends State<OpticienOrdersPage> {
   final OrderController orderController = Get.find<OrderController>();
   final List<String> statusOptions = [
     'En attente',
@@ -22,18 +22,24 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
     'Annulée'
   ];
 
+final List<String> cancellationReasons = [
+  'Rupture de stock',
+  'Client indisponible',
+  'Problème de paiement',
+  'Autre raison',
+];
   String? _selectedUserId;
   DateTime? _selectedUserTimestamp;
 
-  @override
-  void initState() {
-    super.initState();
-    _loadAllOrders();
-  }
+@override
+void initState() {
+  super.initState();
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    orderController.loadOrdersForCurrentOpticianWithDetails();
+  });
+}
 
-  Future<void> _loadAllOrders() async {
-    await orderController.loadAllOrders();
-  }
+
 
   Color _getStatusColor(String status) {
     switch (status) {
@@ -73,11 +79,11 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
         elevation: 0,
         backgroundColor: const Color.fromARGB(255, 252, 252, 252),
         actions: [
-          IconButton(
-            icon: Icon(Icons.refresh, color: Colors.white),
-            onPressed: () => orderController.loadAllOrders(),
-            tooltip: 'Actualiser',
-          ),
+        IconButton(
+  icon: Icon(Icons.refresh, color: Colors.white),
+  onPressed: () => orderController.loadOrdersForCurrentOpticianWithDetails(),
+  tooltip: 'Actualiser',
+),
         ],
       ),
       body: Row(
@@ -289,52 +295,45 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
                                               child: _buildStatusChip(
                                                   order.status)),
                                         ),
-                                        DataCell(
-                                          Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceEvenly,
-                                            children: [
-                                              _buildActionButton(
-                                                icon: Icons.visibility,
-                                                color: Colors.indigo.shade600,
-                                                tooltip: 'Voir les détails',
-                                                onPressed: () =>
-                                                    _showOrderDetails(order),
-                                                iconSize: 24,
-                                              ),
-                                              _buildActionButton(
-                                                icon: Icons.edit,
-                                                color: Colors.amber.shade700,
-                                                tooltip: 'Modifier le statut',
-                                                onPressed: () =>
-                                                    _showStatusUpdateDialog(
-                                                        order),
-                                                iconSize: 24,
-                                              ),
-                                              if (order.status ==
-                                                  'En attente') ...[
-                                                _buildActionButton(
-                                                  icon: Icons.check_circle,
-                                                  color: Colors.green.shade600,
-                                                  tooltip: 'Accepter',
-                                                  onPressed: () =>
-                                                      _updateOrderStatus(
-                                                          order, 'Confirmée'),
-                                                  iconSize: 24,
-                                                ),
-                                                _buildActionButton(
-                                                  icon: Icons.cancel,
-                                                  color: Colors.red.shade600,
-                                                  tooltip: 'Refuser',
-                                                  onPressed: () =>
-                                                      _updateOrderStatus(
-                                                          order, 'Annulée'),
-                                                  iconSize: 24,
-                                                ),
-                                              ],
-                                            ],
-                                          ),
-                                        ),
+                                      DataCell(
+  Row(
+    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+    children: [
+      _buildActionButton(
+        icon: Icons.visibility,
+        color: Colors.indigo.shade600,
+        tooltip: 'Voir les détails',
+        onPressed: () => _showOrderDetails(order),
+        iconSize: 24,
+      ),
+      // Ne montre le bouton modifier que si le statut n'est pas Annulée
+      if (order.status != 'Annulée')
+        _buildActionButton(
+          icon: Icons.edit,
+          color: Colors.amber.shade700,
+          tooltip: 'Modifier le statut',
+          onPressed: () => _showStatusUpdateDialog(order),
+          iconSize: 24,
+        ),
+      if (order.status == 'En attente') ...[
+        _buildActionButton(
+          icon: Icons.check_circle,
+          color: Colors.green.shade600,
+          tooltip: 'Accepter',
+          onPressed: () => _updateOrderStatus(order, 'Confirmée'),
+          iconSize: 24,
+        ),
+        _buildActionButton(
+          icon: Icons.cancel,
+          color: Colors.red.shade600,
+          tooltip: 'Refuser',
+          onPressed: () => _updateOrderStatus(order, 'Annulée'),
+          iconSize: 24,
+        ),
+      ],
+    ],
+  ),
+),
                                       ],
                                     );
                                   }).toList(),
@@ -656,49 +655,109 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
     return rowColor;
   }
 
-  void _showStatusUpdateDialog(Order order) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Modifier le statut'),
-        content: Container(
-          width: double.minPositive,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: statusOptions.map((status) {
-              return ListTile(
-                title: Text(status),
-                leading: CircleAvatar(
-                  backgroundColor: _getStatusColor(status).withOpacity(0.2),
-                  child: Icon(_getStatusIcon(status),
-                      color: _getStatusColor(status), size: 18),
-                ),
-                selected: order.status == status,
-                selectedTileColor: Colors.grey.shade100,
-                onTap: () {
-                  Navigator.pop(context);
+void _showStatusUpdateDialog(Order order) {
+  final allowedStatuses = getAllowedStatuses(order.status);
+
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text('Modifier le statut'),
+      content: Container(
+        width: double.minPositive,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: allowedStatuses.map((status) {
+            return ListTile(
+              title: Text(status),
+              leading: CircleAvatar(
+                backgroundColor: _getStatusColor(status).withOpacity(0.2),
+                child: Icon(_getStatusIcon(status),
+                    color: _getStatusColor(status), size: 18),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                if (status == 'Annulée') {
+                  _showCancellationReasonDialog(order);
+                } else {
                   _updateOrderStatus(order, status);
-                },
-              );
-            }).toList(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Annuler'),
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.grey.shade700,
-            ),
-          ),
-        ],
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+                }
+              },
+            );
+          }).toList(),
         ),
       ),
-    );
-  }
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text('Annuler'),
+        ),
+      ],
+    ),
+  );
+}
+void _showCancellationReasonDialog(Order order) {
+  String? selectedReason;
+  final TextEditingController customReasonController = TextEditingController();
 
+  showDialog(
+    context: context,
+    builder: (context) {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: Text('Raison d\'annulation'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ...cancellationReasons.map((reason) {
+                  return RadioListTile<String>(
+                    title: Text(reason),
+                    value: reason,
+                    groupValue: selectedReason,
+                    onChanged: (value) {
+                      setState(() {
+                        selectedReason = value;
+                      });
+                    },
+                  );
+                }).toList(),
+                if (selectedReason == 'Autre raison')
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: TextField(
+                      controller: customReasonController,
+                      decoration: InputDecoration(
+                        labelText: 'Précisez la raison',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Annuler'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  final reason = selectedReason == 'Autre raison'
+                      ? customReasonController.text
+                      : selectedReason;
+                  if (reason != null && reason.isNotEmpty) {
+                    Navigator.pop(context);
+                    _updateOrderStatus(order, 'Annulée', cancellationReason: reason);
+                  }
+                },
+                child: Text('Confirmer'),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
+}
   IconData _getStatusIcon(String status) {
     switch (status) {
       case 'En attente':
@@ -714,9 +773,12 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
     }
   }
 
-  void _updateOrderStatus(Order order, String newStatus) async {
-    final success =
-        await orderController.updateOrderStatus(order.id!, newStatus);
+void _updateOrderStatus(Order order, String newStatus, {String? cancellationReason}) async {
+  final success = await orderController.updateOrderStatus(
+    order.id!,
+    newStatus,
+    cancellationReason: cancellationReason,
+  );
     if (success) {
       orderController.updateLocalOrderStatus(order.id!, newStatus);
 
@@ -1173,4 +1235,20 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
       ),
     );
   }
+  List<String> getAllowedStatuses(String currentStatus) {
+  switch (currentStatus) {
+    case 'En attente':
+      return ['Confirmée', 'Annulée'];
+    case 'Confirmée':
+      return ['En livraison', 'Annulée'];
+    case 'En livraison':
+      return ['Completée', 'Annulée'];
+    case 'Completée':
+      return [];
+    case 'Annulée':
+      return [];
+    default:
+      return [];
+  }
+}
 }

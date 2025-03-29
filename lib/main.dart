@@ -265,7 +265,7 @@ class MyApp extends StatelessWidget {
         ),
         GetPage(
           name: '/Commande',
-          page: () => AdminOrdersPage(),
+          page: () => OpticienOrdersPage(),
           binding: AuthBinding(),
         ),
         GetPage(

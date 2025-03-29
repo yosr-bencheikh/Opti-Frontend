@@ -1,5 +1,7 @@
 import 'package:geocoding/geocoding.dart';
 import 'package:get/get.dart';
+import 'package:opti_app/Presentation/controllers/OpticianController.dart';
+import 'package:opti_app/Presentation/controllers/boutique_controller.dart';
 import 'package:opti_app/Presentation/controllers/cart_item_controller.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
 import 'package:opti_app/Presentation/controllers/user_controller.dart';
@@ -17,6 +19,7 @@ class OrderController extends GetxController {
   final BoutiqueRepository boutiqueRepository;
   final UserController userController = Get.find<UserController>();
   final RxList<User> users = <User>[].obs;
+  final Rxn<String> error = Rxn<String>();
   OrderController({
     required this.orderRepository,
     required this.boutiqueRepository,
@@ -34,7 +37,46 @@ class OrderController extends GetxController {
   final RxString selectedPaymentMethod = ''.obs;
 
   final deliveryFee = 5.50;
-
+Future<void> loadOrdersForCurrentOpticianWithDetails() async {
+  try {
+    isLoading.value = true;
+    
+    final opticianController = Get.find<OpticianController>();
+    final boutiqueController = Get.find<BoutiqueController>();
+    
+    // 1. Get boutiques for current optician
+    await boutiqueController.getboutiqueByOpticianId(opticianController.currentUserId.value);
+    final boutiqueIds = boutiqueController.opticiensList.map((b) => b.id).toList();
+    
+    // 2. Load all orders
+    final orders = await orderRepository.getAllOrders();
+    
+    // 3. Filter and enrich with boutique details
+    final enrichedOrders = orders.where((order) {
+      return order.items.any((item) => boutiqueIds.contains(item.boutiqueId));
+    }).map((order) {
+      // Add boutique details to each order
+      final boutiqueId = order.items.firstWhere(
+        (item) => boutiqueIds.contains(item.boutiqueId),
+      )?.boutiqueId;
+      
+      if (boutiqueId != null) {
+        final boutique = boutiqueController.opticiensList.firstWhere(
+          (b) => b.id == boutiqueId,
+        );
+        return order.copyWith(boutique: boutique);
+      }
+      return order;
+    }).toList();
+    
+    allOrders.assignAll(enrichedOrders);
+    
+  } catch (e) {
+    error.value = e.toString();
+  } finally {
+    isLoading.value = false;
+  }
+}
   Future<void> createOrderFromCart(String userId) async {
     try {
       isCreating.value = true;
