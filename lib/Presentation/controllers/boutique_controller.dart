@@ -20,7 +20,10 @@ class BoutiqueController extends GetxController {
  @override
 void onInit() {
   super.onInit();
+  print("Initialisation du BoutiqueController");
   
+  // Chargez les données immédiatement
+  loadInitialData();
   // Force initial load if user is logged in
   ever(opticianController.isLoggedIn, (isLoggedIn) {
     print('🔍 Login status changed: $isLoggedIn');
@@ -43,7 +46,15 @@ void _loadBoutiquesForCurrentUser() {
     print('❌ Current User ID is empty');
   }
 }
-
+Future<void> loadInitialData() async {
+  try {
+    print("Tentative de chargement des boutiques...");
+    await getboutique(); // Ou getboutiqueByOpticianId() si nécessaire
+    print("Boutiques chargées avec succès");
+  } catch (e) {
+    print("Erreur lors du chargement: $e");
+  }
+}
 String? getOpticienNom(String? opticienId) {  // Accepte maintenant String?
   if (opticienId == null) return null;
   

@@ -309,29 +309,22 @@ class StoresScreen extends StatelessWidget {
         return const Center(child: CircularProgressIndicator());
       }
 
-      final filteredOpticians =
-          opticianController.opticiensList.where((optician) {
-        // Name filter
-        final matchesName = optician.nom
-            .toLowerCase()
-            .contains(searchQuery.value.toLowerCase());
+      final filteredOpticians = opticianController.opticiensList.where((optician) {
+  // Name filter - only apply if search query is not empty
+  final matchesName = searchQuery.value.isEmpty || 
+      optician.nom.toLowerCase().contains(searchQuery.value.toLowerCase());
 
-        // Address filter
-        final matchesAddress = selectedAddress.value.isEmpty ||
-            optician.adresse.toLowerCase() ==
-                selectedAddress.value.toLowerCase();
+  // Address filter - only apply if address is selected
+  final matchesAddress = selectedAddress.value.isEmpty ||
+      optician.adresse.toLowerCase().contains(selectedAddress.value.toLowerCase());
 
-        // City filter
-        final matchesCity = selectedCity.value.isEmpty ||
-            (optician.ville != null &&
-                optician.ville.toLowerCase() ==
-                    selectedCity.value.toLowerCase());
+  // City filter - only apply if city is selected
+  final matchesCity = selectedCity.value.isEmpty ||
+      (optician.ville != null && 
+       optician.ville.toLowerCase().contains(selectedCity.value.toLowerCase()));
 
-        // Favorites filter (assume there's a favorites property or method)
-        //final matchesFavorite = !showFavoritesOnly.value || optician.isFavorite;
-
-        return matchesName && matchesAddress && matchesCity;
-      }).toList();
+  return matchesName && matchesAddress && matchesCity;
+}).toList();
 
       if (filteredOpticians.isEmpty) {
         return Center(
