@@ -16,7 +16,6 @@ class WishlistRemoteDataSourceImpl implements WishlistRemoteDataSource {
 
    // Update with your actual API base URL
 
-
   WishlistRemoteDataSourceImpl(this.dio);
 
   // Get token from SharedPreferences

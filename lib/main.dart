@@ -95,29 +95,26 @@ void main() async {
   Get.put<AuthController>(
       AuthController(authRepository: authRepository, prefs: prefs));
 
- // Initialisation des dépendances pour Optician
+  // Initialisation des dépendances pour Optician
   final opticianDataSource = OpticianDataSourceImpl();
   Get.put<OpticianDataSource>(opticianDataSource);
-  
+
   final opticianRepository = OpticianRepositoryImpl(opticianDataSource);
   Get.put<OpticianRepository>(opticianRepository);
-  
+
   final opticianController = OpticianController();
   Get.put<OpticianController>(opticianController, permanent: true);
 
   // Initialisation des dépendances pour Boutique
   final boutiqueRemoteDataSource = BoutiqueRemoteDataSourceImpl(client: client);
   Get.put<BoutiqueRemoteDataSource>(boutiqueRemoteDataSource);
-  
+
   final boutiqueRepository = BoutiqueRepositoryImpl(boutiqueRemoteDataSource);
   Get.put<BoutiqueRepository>(boutiqueRepository);
-  
-  final boutiqueController = BoutiqueController(
-    opticianController, 
-    boutiqueRepository: boutiqueRepository
-  );
-  Get.put<BoutiqueController>(boutiqueController, permanent: true);
 
+  final boutiqueController = BoutiqueController(opticianController,
+      boutiqueRepository: boutiqueRepository);
+  Get.put<BoutiqueController>(boutiqueController, permanent: true);
 
   final cartItemRemoteDataSource = CartItemDataSourceImpl(client: client);
   Get.put<CartItemDataSource>(cartItemRemoteDataSource);
