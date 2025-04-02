@@ -259,114 +259,110 @@ class _UsersScreenState extends State<UsersScreen> {
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return ScaffoldMessenger(
-      key: scaffoldMessengerKey,
-      child: Scaffold(
-        backgroundColor: _backgroundColor,
-        body: Builder(
-          builder: (BuildContext context) {
-            if (_controller.isLoading) {
-              return Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SizedBox(
-                      width: 60,
-                      height: 60,
-                      child: CircularProgressIndicator(
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(_primaryColor),
-                        strokeWidth: 4,
-                      ),
+@override
+Widget build(BuildContext context) {
+  return ScaffoldMessenger(
+    key: scaffoldMessengerKey,
+    child: Scaffold(
+      backgroundColor: _backgroundColor,
+      body: Builder(
+        builder: (BuildContext context) {
+          if (_controller.isLoading) {
+            return Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 60,
+                    height: 60,
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(_primaryColor),
+                      strokeWidth: 4,
                     ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Chargement des utilisateurs...',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: _textSecondaryColor,
-                        fontWeight: FontWeight.w500,
-                      ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Chargement des utilisateurs...',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: _textSecondaryColor,
+                      fontWeight: FontWeight.w500,
                     ),
-                  ],
-                ),
-              );
-            }
-
-            if (_controller.error != null) {
-              return Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.error_outline,
-                      size: 64,
-                      color: _accentColor,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Erreur de chargement',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: _textPrimaryColor,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _controller.error!,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: _textSecondaryColor,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      onPressed: _loadUsers,
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Réessayer'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _primaryColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 24, vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            return SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildHeader(),
-                    const SizedBox(height: 24),
-                    _buildSearchBar(),
-                    if (_showFilters) _buildAdvancedFilters(),
-                    const SizedBox(height: 24),
-                    Expanded(
-                      child: _buildContent(),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildPagination(),
-                  ],
-                ),
+                  ),
+                ],
               ),
             );
-          },
-        ),
+          }
+
+          if (_controller.error != null) {
+            return Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 64,
+                    color: _accentColor,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Erreur de chargement',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: _textPrimaryColor,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _controller.error!,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: _textSecondaryColor,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: _loadUsers,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Réessayer'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _primaryColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          return SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: ListView(
+                children: [
+                  _buildHeader(),
+                  const SizedBox(height: 24),
+                  _buildSearchBar(),
+                  if (_showFilters) _buildAdvancedFilters(),
+                  const SizedBox(height: 24),
+                  _buildContent(), // This can be a widget that returns a ListView or similar
+                  const SizedBox(height: 16),
+                  _buildPagination(),
+                ],
+              ),
+            ),
+          );
+        },
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildHeader() {
     return Container(
@@ -445,7 +441,7 @@ class _UsersScreenState extends State<UsersScreen> {
               Expanded(
                 child: TextField(
                   controller: _searchController,
-                  decoration: InputDecoration(
+                                decoration: InputDecoration(
                     hintText:
                         'Rechercher un utilisateur par nom, email, téléphone...',
                     prefixIcon: Icon(Icons.search, color: _primaryColor),
@@ -476,7 +472,7 @@ class _UsersScreenState extends State<UsersScreen> {
                 icon: Icon(
                     _showFilters ? Icons.filter_list_off : Icons.filter_list),
                 label:
-                    Text(_showFilters ? 'Masquer filtres' : 'Filtres avancés'),
+                    Text(_showFilters ? 'Masquer filtres' : 'Filtrer'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor:
                       _showFilters ? _lightPrimaryColor : _primaryColor,
@@ -550,7 +546,7 @@ class _UsersScreenState extends State<UsersScreen> {
               Icon(Icons.filter_alt, color: _primaryColor),
               const SizedBox(width: 8),
               Text(
-                'Filtres avancés',
+                'Filtres',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -558,14 +554,7 @@ class _UsersScreenState extends State<UsersScreen> {
                 ),
               ),
               const Spacer(),
-              IconButton(
-                icon: const Icon(Icons.help_outline),
-                color: _textSecondaryColor,
-                tooltip: 'Aide sur les filtres',
-                onPressed: () {
-                  // Afficher une aide sur les filtres
-                },
-              ),
+            
             ],
           ),
           const SizedBox(height: 24),
@@ -814,49 +803,11 @@ class _UsersScreenState extends State<UsersScreen> {
     );
   }
 
-  Widget _buildContent() {
-    // Handle empty state
-    if (_filteredUsers.isEmpty) {
-      return Container(
-        height: 300,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.person_search, size: 64, color: Colors.grey[400]),
-              const SizedBox(height: 16),
-              Text(
-                'Aucun utilisateur trouvé',
-                style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Essayez de modifier vos critères de recherche',
-                style: TextStyle(fontSize: 14, color: Colors.grey[500]),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    // Get current page users
-    final displayedUsers = _filteredUsers.length <= _usersPerPage
-        ? _filteredUsers
-        : _filteredUsers.sublist(_startIndex, _endIndex);
-
+Widget _buildContent() {
+  // Handle empty state
+  if (_filteredUsers.isEmpty) {
     return Container(
+      height: 300,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -868,8 +819,48 @@ class _UsersScreenState extends State<UsersScreen> {
           ),
         ],
       ),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.person_search, size: 64, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(
+              'Aucun utilisateur trouvé',
+              style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Essayez de modifier vos critères de recherche',
+              style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Get current page users
+  final displayedUsers = _filteredUsers.length <= _usersPerPage
+      ? _filteredUsers
+      : _filteredUsers.sublist(_startIndex, _endIndex);
+
+  return Container(
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.04),
+          blurRadius: 8,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    ),
+    child: SingleChildScrollView(
+      scrollDirection: Axis.vertical, // Ensure vertical scrolling
       child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
+        scrollDirection: Axis.horizontal, // Ensure horizontal scrolling
         child: DataTable(
           columnSpacing: 20,
           dataRowHeight: 70,
@@ -1041,8 +1032,9 @@ class _UsersScreenState extends State<UsersScreen> {
           }).toList(),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   void _updateIndices() {
     _startIndex = (_currentPage - 1) * _usersPerPage;

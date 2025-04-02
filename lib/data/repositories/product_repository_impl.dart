@@ -8,6 +8,12 @@ class ProductRepositoryImpl implements ProductRepository {
   final ProductDatasource dataSource;
 
   ProductRepositoryImpl({required this.dataSource});
+  Future<List<Product>> getProductsByBoutiques(List<String> boutiqueIds) {
+  return dataSource.getProductsByBoutiques(boutiqueIds);
+}
+Future<List<Product>> getProductsByBoutiqueId(String boutiqueId) async {
+  return await dataSource.getProductsByBoutiqueId(boutiqueId);
+}
   Future<List<Product>> getProducts() async {
     return await dataSource.getProducts();
   }
@@ -32,7 +38,7 @@ class ProductRepositoryImpl implements ProductRepository {
     return await dataSource.getProductById(productId);
   }
 
-  Future<List<Opticien>> getOpticiens() async {
+  Future<List<Boutique>> getOpticiens() async {
     return await dataSource.getOpticiens();
   }
 

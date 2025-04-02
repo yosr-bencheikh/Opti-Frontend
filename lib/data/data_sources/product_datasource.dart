@@ -8,13 +8,62 @@ import 'package:opti_app/domain/entities/Boutique.dart';
 import 'package:opti_app/domain/entities/product_entity.dart';
 
 class ProductDatasource {
-<<<<<<< HEAD
-  final String baseUrl = 'http://192.168.1.11:3000/api/products';
-=======
+
   final String baseUrl = 'http://192.168.1.22:3000/api/products';
->>>>>>> faa1af5b30714013502ee690711c452a74ff0927
+
   final Dio _dio = Dio(); // Créez une instance de Dio
 
+Future<List<Product>> getProductsByBoutiqueId(String boutiqueId) async {
+  final response = await http.get(
+    Uri.parse('$baseUrl/by-boutique/$boutiqueId'),
+  );
+
+  if (response.statusCode == 200) {
+    final List<dynamic> data = json.decode(response.body);
+    return data.map((json) => Product.fromJson(json)).toList();
+  } else {
+    throw Exception('Failed to load products');
+  }
+}
+  Future<List<Product>> getProductsByBoutiques(List<String> boutiqueIds) async {
+  try {
+    final response = await http.post(
+      Uri.parse('$baseUrl/by-boutiques'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({'boutiqueIds': boutiqueIds}),
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = json.decode(response.body);
+      return data.map((json) => Product.fromJson(json)).toList();
+    } else {
+      throw Exception('Failed to load products for boutiques');
+    }
+  } catch (e) {
+    throw Exception('Error fetching products: $e');
+  }
+}
+
+  Future<Product> createProduct(Product product) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/add'), // Ensure this matches the server route
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(product.toJson()),
+      );
+
+      if (response.statusCode == 201) {
+        return Product.fromJson(json.decode(response.body));
+      } else {
+        print('Erreur de création: ${response.body}');
+        throw Exception(
+            'Échec de la création du produit: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Exception lors de la création: $e');
+      throw Exception('Erreur lors de la création du produit: $e');
+    }
+  }
   Future<List<Product>> getProductsByOptician(String opticianId) async {
     try {
       final response =
@@ -46,26 +95,7 @@ class ProductDatasource {
     }
   }
 
-  Future<Product> createProduct(Product product) async {
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/add'), // Ensure this matches the server route
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode(product.toJson()),
-      );
 
-      if (response.statusCode == 201) {
-        return Product.fromJson(json.decode(response.body));
-      } else {
-        print('Erreur de création: ${response.body}');
-        throw Exception(
-            'Échec de la création du produit: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Exception lors de la création: $e');
-      throw Exception('Erreur lors de la création du produit: $e');
-    }
-  }
 
   Future<String> uploadImage(File imageFile) async {
     try {
@@ -73,7 +103,7 @@ class ProductDatasource {
 
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('http://192.168.1.22:3000/upload'),
+        Uri.parse('http://localhost:3000/upload'),
       );
 
       var multipartFile = await http.MultipartFile.fromPath(
@@ -202,14 +232,14 @@ class ProductDatasource {
     }
   }
 
-  Future<List<Opticien>> getOpticiens() async {
+  Future<List<Boutique>> getOpticiens() async {
     try {
       final response =
-          await http.get(Uri.parse('http://192.168.1.11:3000/opticiens'));
+          await http.get(Uri.parse('http://localhost:3000/opticiens'));
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
-        return data.map((json) => Opticien.fromJson(json)).toList();
+        return data.map((json) => Boutique.fromJson(json)).toList();
       } else {
         throw Exception('Échec du chargement des opticiens');
       }

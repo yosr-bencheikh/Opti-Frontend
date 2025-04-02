@@ -560,7 +560,7 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
     );
   }
 
-  Future<Opticien?> _fetchBoutique(String? boutiqueId) async {
+  Future<Boutique?> _fetchBoutique(String? boutiqueId) async {
     if (boutiqueId == null || boutiqueId.isEmpty) return null;
     try {
       return await boutiqueController.getBoutiqueById(boutiqueId);
@@ -1053,7 +1053,7 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
     // Group items by boutiqueId
     final Map<String, List<OrderItem>> groupedItems = {};
     for (var item in order.items) {
-      final boutiqueId = item.opticienId;
+      final boutiqueId = item.boutiqueId;
       if (!groupedItems.containsKey(boutiqueId)) {
         groupedItems[boutiqueId] = [];
       }
@@ -1155,7 +1155,7 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
 
                   // Boutique Information and Products
                   for (final entry in groupedItems.entries)
-                    FutureBuilder<Opticien?>(
+                    FutureBuilder<Boutique?>(
                       future: _fetchBoutique(entry.key), // Fetch boutique by ID
                       builder: (context, snapshot) {
                         if (snapshot.connectionState ==

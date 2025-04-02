@@ -25,12 +25,8 @@ abstract class AuthRemoteDataSource {
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   final http.Client client;
 
-<<<<<<< HEAD
-  
-  final String baseUrl = 'http://192.168.1.11:3000/api';
-=======
+
   final String baseUrl = 'http://192.168.1.22:3000/api';
->>>>>>> faa1af5b30714013502ee690711c452a74ff0927
 
   static String? verifiedEmail; // Made statica
   static String? verificationCode;

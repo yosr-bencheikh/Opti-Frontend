@@ -14,7 +14,7 @@ class Order extends Equatable {
   final DateTime createdAt;
   final DateTime updatedAt;
   final String? boutiqueId;
-  final Opticien? boutique;
+  final Boutique? boutique;
 
   const Order({
     this.id,
@@ -56,7 +56,7 @@ class Order extends Equatable {
       id: orderData['_id'],
       userId: orderData['userId'],
       boutiqueId:
-          orderData['opticienId'], // Use opticienId instead of boutiqueId
+          orderData['boutiqueId'], // Use boutiqueId instead of boutiqueId
       items: (orderData['items'] as List)
           .map((item) => OrderItem.fromJson(item))
           .toList(),
@@ -101,7 +101,7 @@ class Order extends Equatable {
     DateTime? createdAt,
     DateTime? updatedAt,
     String? boutiqueId,
-    Opticien? boutique,
+    Boutique? boutique,
   }) {
     return Order(
       id: id ?? this.id,
@@ -128,7 +128,7 @@ class OrderItem extends Equatable {
   final int quantity;
   final double unitPrice;
   final double totalPrice;
-  final String opticienId; // Added field
+  final String boutiqueId; // Added field
 
   const OrderItem({
     required this.productId,
@@ -137,7 +137,7 @@ class OrderItem extends Equatable {
     required this.quantity,
     required this.unitPrice,
     required this.totalPrice,
-    required this.opticienId, // Added to constructor
+    required this.boutiqueId, // Added to constructor
   });
 
   @override
@@ -148,7 +148,7 @@ class OrderItem extends Equatable {
         quantity,
         unitPrice,
         totalPrice,
-        opticienId, // Added to props
+        boutiqueId, // Added to props
       ];
 
   // Factory method to create OrderItem from JSON
@@ -164,7 +164,7 @@ class OrderItem extends Equatable {
       totalPrice: (json['totalPrice'] is int)
           ? (json['totalPrice'] as int).toDouble()
           : json['totalPrice'],
-      opticienId: json['opticienId'] ?? '', // Provide default value if null
+      boutiqueId: json['boutiqueId'] ?? '', // Provide default value if null
     );
   }
   // Convert OrderItem to JSON
@@ -176,7 +176,7 @@ class OrderItem extends Equatable {
       'quantity': quantity,
       'unitPrice': unitPrice,
       'totalPrice': totalPrice,
-      'opticienId': opticienId, // Added serialization
+      'boutiqueId': boutiqueId, // Added serialization
     };
   }
 }

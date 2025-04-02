@@ -60,18 +60,27 @@ final boutiqueRepository = BoutiqueRepositoryImpl(boutiqueRemoteDataSource);
     boutiqueRepository: boutiqueRepository, // Add this line
   ));
 
-  final opticienRemoteDataSource = OpticianDataSourceImpl();
-  Get.put<OpticianDataSource>(opticienRemoteDataSource);
-  final opticienRepository = OpticianRepositoryImpl(opticienRemoteDataSource);
-  Get.put<OpticianRepository>(opticienRepository);
-  Get.put<OpticianController>(OpticianController());
+// In your main.dart file, modify the OpticianController initialization:
+final opticianDataSource = OpticianDataSourceImpl();
+Get.put<OpticianDataSource>(opticianDataSource);
+
+// Register the repository
+final opticianRepository = OpticianRepositoryImpl(opticianDataSource);
+Get.put<OpticianRepository>(opticianRepository);
+
+// Register the controller with permanent flag to prevent it from being deleted
+Get.put<OpticianController>(
+  OpticianController(),
+  permanent: true, // This ensures the controller stays in memory
+);
 
 
-
-  Get.put<BoutiqueController>(
-    BoutiqueController(
-        boutiqueRepository: boutiqueRepository), // Correct parameter
-  );
+Get.put<BoutiqueController>(
+  BoutiqueController(
+    Get.find<OpticianController>(), // Premier paramètre positionnel
+    boutiqueRepository: boutiqueRepository, // Paramètre nommé requis
+  ),
+);
 
   final productRemoteDataSource = ProductDatasource();
   Get.put<ProductDatasource>(productRemoteDataSource);
@@ -113,7 +122,7 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
   Future<void> _fetchData() async {
     await userController.fetchUsers();
     await productController.loadProducts();
-    await Boutiquecontroller.getOpticien();
+    await Boutiquecontroller.getboutique();
     await orderController.loadAllOrders();
   }
 

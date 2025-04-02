@@ -3,11 +3,12 @@ import 'package:http/http.dart' as http;
 import 'package:opti_app/domain/entities/Boutique.dart';
 
 abstract class BoutiqueRemoteDataSource {
-  Future<List<Opticien>> getOpticiens();
-  Future<void> addOpticien(Opticien opticien);
-  Future<void> updateOpticien(String id, Opticien opticien);
+  Future<List<Boutique>> getOpticiens();
+  Future<void> addOpticien(Boutique opticien);
+  Future<void> updateOpticien(String id, Boutique opticien);
   Future<void> deleteOpticien(String id);
-  Future<Opticien> getOpticienById(String id);
+  Future<Boutique> getOpticienById(String id);
+  Future<List<Boutique>> getBoutiquesByOpticianId(String opticienId);
 }
 
 class BoutiqueRemoteDataSourceImpl implements BoutiqueRemoteDataSource {
@@ -16,14 +17,46 @@ class BoutiqueRemoteDataSourceImpl implements BoutiqueRemoteDataSource {
 
   BoutiqueRemoteDataSourceImpl({
     required this.client,
-<<<<<<< HEAD
-    this.baseUrl = 'http://192.168.1.11:3000',
-=======
+
     this.baseUrl = 'http://192.168.1.22:3000',
->>>>>>> faa1af5b30714013502ee690711c452a74ff0927
+
+
   });
+
+@override
+Future<List<Boutique>> getBoutiquesByOpticianId(String opticienId) async {
+  try {
+    final url = '$baseUrl/opticiens/by-opticien/$opticienId';
+    print('🔍 Fetching boutiques from: $url');
+    print('🔍 Searching with Optician ID: $opticienId');
+    
+    final response = await client.get(
+      Uri.parse(url),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    print('🔄 Response: ${response.statusCode} - ${response.body}');
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = json.decode(response.body);
+      print('📊 Data received: ${data.length} items');
+      
+      // Log each boutique's details
+      for (var item in data) {
+        print('Boutique Details: $item');
+      }
+      
+      return data.map((json) => Boutique.fromJson(json)).toList();
+    } else {
+      throw Exception('Server error: ${response.statusCode}');
+    }
+  } catch (e) {
+    print('❌ Error in getBoutiquesByOpticianId: $e');
+    throw Exception('Failed to load boutiques: $e');
+  }
+}
   @override
-  Future<Opticien> getOpticienById(String id) async {
+  Future<Boutique> getOpticienById(String id) async {
     try {
       final url = '$baseUrl/opticiens/$id';
       print('Fetching optician by ID from: $url');
@@ -40,7 +73,7 @@ class BoutiqueRemoteDataSourceImpl implements BoutiqueRemoteDataSource {
 
       if (response.statusCode == 200) {
         final dynamic data = json.decode(response.body);
-        return Opticien.fromJson(data);
+        return Boutique.fromJson(data);
       } else {
         throw Exception(
             'Server returned ${response.statusCode}: ${response.body}');
@@ -51,7 +84,7 @@ class BoutiqueRemoteDataSourceImpl implements BoutiqueRemoteDataSource {
     }
   }
   @override
-  Future<List<Opticien>> getOpticiens() async {
+  Future<List<Boutique>> getOpticiens() async {
     try {
       final url = '$baseUrl/opticiens';
       print('Fetching opticians from: $url');
@@ -68,7 +101,7 @@ class BoutiqueRemoteDataSourceImpl implements BoutiqueRemoteDataSource {
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
-        return data.map((json) => Opticien.fromJson(json)).toList();
+        return data.map((json) => Boutique.fromJson(json)).toList();
       } else {
         throw Exception(
             'Server returned ${response.statusCode}: ${response.body}');
@@ -80,7 +113,7 @@ class BoutiqueRemoteDataSourceImpl implements BoutiqueRemoteDataSource {
   }
 
   @override
-  Future<void> addOpticien(Opticien opticien) async {
+  Future<void> addOpticien(Boutique opticien) async {
     try {
       final url = '$baseUrl/opticiens';
       print('Adding optician at: $url');
@@ -107,7 +140,7 @@ class BoutiqueRemoteDataSourceImpl implements BoutiqueRemoteDataSource {
   }
 
   @override
-  Future<void> updateOpticien(String id, Opticien opticien) async {
+  Future<void> updateOpticien(String id, Boutique opticien) async {
     try {
       final url = '$baseUrl/opticiens/$id';
       print('Updating optician at: $url');

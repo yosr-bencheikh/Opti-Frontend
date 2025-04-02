@@ -32,17 +32,21 @@ class _OpticianDashboardScreenState extends State<OpticianDashboardScreen> {
   final RxString selectedMonth = DateFormat('MMMM').format(DateTime.now()).obs;
 
   @override
-  void initState() {
-    super.initState();
-    _fetchData(); // Fetch data when the screen is initialized
-  }
+void initState() {
+  super.initState();
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    _fetchData();
+  });
+}
 
-  Future<void> _fetchData() async {
-    await userController.fetchUsers();
-    await productController.loadProducts();
-    await boutiqueController.getOpticien();
-    await orderController.loadAllOrders();
-  }
+Future<void> _fetchData() async {
+  await userController.fetchUsers();
+  await productController.loadProductsForCurrentOptician();
+  await boutiqueController.getboutiqueByOpticianId(
+    Get.find<OpticianController>().currentUserId.value
+  );
+  await orderController.loadOrdersForCurrentOpticianWithDetails();
+}
 
   @override
   Widget build(BuildContext context) {
@@ -153,99 +157,96 @@ class _OpticianDashboardScreenState extends State<OpticianDashboardScreen> {
   }
 
   Widget _buildStatsGrid(
-      UserController userController,
-      ProductController productController,
-      BoutiqueController boutiqueController,
-      OrderController orderController) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final crossAxisCount = constraints.maxWidth < 600
-            ? 1
-            : constraints.maxWidth < 900
-                ? 2
-                : 4;
+    UserController userController,
+    ProductController productController,
+    BoutiqueController boutiqueController,
+    OrderController orderController) {
+  return LayoutBuilder(
+    builder: (context, constraints) {
+      final crossAxisCount = constraints.maxWidth < 600
+          ? 1
+          : constraints.maxWidth < 900
+              ? 2
+              : 4;
 
-        return GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            crossAxisSpacing: 20,
-            mainAxisSpacing: 20,
-            childAspectRatio: 2,
-          ),
-          itemCount: 4,
-          itemBuilder: (context, index) {
-            final stats = [
-              {
-                'title': 'Utilisateurs',
-                'widget': Obx(() =>
-                    _buildStatValue(userController.users.length.toString())),
-                'color': const Color(0xFF7BACD4),
-                'icon': Icons.people
-              },
-              {
-                'title': 'Produits',
-                'widget': Obx(() => _buildStatValue(
-                    productController.products.length.toString())),
-                'color': Colors.purple,
-                'icon': Icons.shopping_bag
-              },
-              {
-                'title': 'Boutiques',
-                'widget': Obx(() => _buildStatValue(boutiqueController
-                    .opticiensList.length
-                    .toString())), // Dynamic value
-                'color': Colors.orange,
-                'icon': Icons.store
-              },
-              {
-                'title': 'Commandes',
-                'widget': Obx(() => _buildStatValue(
-                      // Add Obx here
-                      orderController.allOrders.length.toString(),
-                    )),
-                'color': Colors.green,
-                'icon': Icons.receipt_long
-              },
-            ][index];
-            return Card(
-              elevation: 3,
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: stats['color'] as Color,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child:
-                          Icon(stats['icon'] as IconData, color: Colors.white),
+      return GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: crossAxisCount,
+          crossAxisSpacing: 20,
+          mainAxisSpacing: 20,
+          childAspectRatio: 2,
+        ),
+        itemCount: 4,
+        itemBuilder: (context, index) {
+          final stats = [
+            {
+              'title': 'Utilisateurs',
+              'widget': Obx(() => _buildStatValue(
+                  userController.users.length.toString())),
+              'color': const Color(0xFF7BACD4),
+              'icon': Icons.people
+            },
+            {
+              'title': 'Produits',
+              'widget': Obx(() => _buildStatValue(
+                  productController.products.length.toString())),
+              'color': Colors.purple,
+              'icon': Icons.shopping_bag
+            },
+            {
+              'title': 'Boutiques',
+              'widget': Obx(() => _buildStatValue(boutiqueController
+                  .opticiensList.length
+                  .toString())),
+              'color': Colors.orange,
+              'icon': Icons.store
+            },
+            {
+              'title': 'Commandes',
+              'widget': Obx(() => _buildStatValue(
+                    orderController.allOrders.length.toString(),
+                  )),
+              'color': Colors.green,
+              'icon': Icons.receipt_long
+            },
+          ][index];
+          return Card(
+            elevation: 3,
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: stats['color'] as Color,
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    const SizedBox(width: 15),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          stats['title'] as String,
-                          style: TextStyle(color: Colors.grey[600]),
-                        ),
-                        stats['widget'] as Widget,
-                      ],
-                    )
-                  ],
-                ),
+                    child: Icon(stats['icon'] as IconData, color: Colors.white),
+                  ),
+                  const SizedBox(width: 15),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        stats['title'] as String,
+                        style: TextStyle(color: Colors.grey[600]),
+                      ),
+                      stats['widget'] as Widget,
+                    ],
+                  )
+                ],
               ),
-            );
-          },
-        );
-      },
-    );
-  }
-
+            ),
+          );
+        },
+      );
+    },
+  );
+}
   Widget _buildStatValue(String value) {
     return Text(
       value,
@@ -531,6 +532,7 @@ class NavigationDrawer extends StatelessWidget {
       color: const Color.fromARGB(255, 113, 160, 201),
       child: Column(
         children: [
+          
           const SizedBox(height: 40),
           const Text(
             'Admin Panel',
@@ -544,7 +546,6 @@ class NavigationDrawer extends StatelessWidget {
           ...[
             'Dashboard',
             'Utilisateurs',
-            'Opticiens',
             'Boutiques',
             'Produits',
             'Commandes',
@@ -673,6 +674,12 @@ class CustomSidebar extends StatelessWidget {
               "Dashboard",
               currentPage == 'Dashboard',
               () => _navigateTo(context, '/OpticienDashboard')),
+              _buildMenuItem(
+              context,
+              Icons.shopping_bag,
+              "Boutiques",
+              currentPage == 'Boutiques',
+              () => _navigateTo(context, '/Boutiques')),
           _buildMenuItem(
               context,
               Icons.shopping_bag,

@@ -21,11 +21,9 @@ abstract class OrderDataSource {
 // Implementation of the OrderDataSource interface
 class OrderDataSourceImpl implements OrderDataSource {
   final http.Client client;
-<<<<<<< HEAD
-  final String baseUrl = "http://192.168.1.11:3000";
-=======
+
   final String baseUrl = "http://192.168.1.22:3000";
->>>>>>> faa1af5b30714013502ee690711c452a74ff0927
+
   OrderDataSourceImpl({required this.client});
 
   @override

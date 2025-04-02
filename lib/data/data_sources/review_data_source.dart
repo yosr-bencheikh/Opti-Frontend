@@ -2,11 +2,10 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ReviewDataSource {
-<<<<<<< HEAD
+
   final String baseUrl = 'http://192.168.1.11:3000/api';
-=======
-  final String baseUrl = 'http://192.168.1.22:3000/api';
->>>>>>> faa1af5b30714013502ee690711c452a74ff0927
+
+
 
   Future<List<dynamic>> fetchReviews(String productId) async {
     final response = await http.get(Uri.parse('$baseUrl/reviews/$productId'));
