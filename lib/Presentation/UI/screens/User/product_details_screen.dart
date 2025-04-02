@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:opti_app/Presentation/UI/screens/User/Augmented_faces.dart';
 import 'package:opti_app/Presentation/UI/screens/User/Face_detection.dart';
-import 'package:opti_app/Presentation/UI/screens/User/camera_screen.dart';
 import 'package:opti_app/Presentation/UI/screens/User/home_screen.dart';
 import 'package:opti_app/Presentation/UI/screens/User/reviews_screen.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
@@ -490,27 +489,36 @@ class ProductDetailsScreen extends GetView<ProductController> {
             const SizedBox(width: 16),
             Expanded(
               child: ElevatedButton(
-                onPressed: () {
-                  if (product.id == null || product.id!.isEmpty) {
-                    Get.snackbar('Error', 'Invalid product data');
-                    return;
-                  }
-                  // Make sure you have access to context here
-                  showProductDialog(context, product);
-                },
+                onPressed: product.quantiteStock == 0
+                    ? null // Disable the button when the quantity is 0
+                    : () {
+                        if (product.id == null || product.id!.isEmpty) {
+                          Get.snackbar('Erreur', 'Données produit invalides');
+                          return;
+                        }
+                        // Show product dialog
+                        showProductDialog(context, product);
+                      },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.pink[80],
+                  backgroundColor: product.quantiteStock == 0
+                      ? Colors.grey // Change the button color when disabled
+                      : Colors.pink[80],
                   padding: EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                   elevation: 0,
                 ),
-                child: const Text(
-                  'Ajouter au panier',
+                child: Text(
+                  product.quantiteStock == 0
+                      ? 'Rupture de stock'
+                      : 'Ajouter au panier',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
+                    color: product.quantiteStock == 0
+                        ? Colors.red
+                        : Colors.black, // Set color to red when out of stock
                   ),
                 ),
               ),

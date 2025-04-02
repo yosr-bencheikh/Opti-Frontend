@@ -14,6 +14,7 @@ import 'package:opti_app/Presentation/UI/screens/Opticien/Product_Screen.dart';
 import 'package:opti_app/Presentation/UI/screens/Opticien/UserScreen.dart';
 import 'package:opti_app/Presentation/UI/screens/Opticien/gestion_boutique.dart';
 import 'package:opti_app/Presentation/UI/screens/User/CheckoutScreen.dart';
+import 'package:opti_app/Presentation/UI/screens/User/QuestionnaireScreen.dart';
 import 'package:opti_app/Presentation/UI/screens/User/SignUpScreen.dart';
 import 'package:opti_app/Presentation/UI/screens/User/WelcomePage.dart';
 import 'package:opti_app/Presentation/UI/screens/User/cart_screen.dart';
@@ -162,7 +163,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      initialRoute: '/LoginOpticien',
+      initialRoute: '/splash',
       getPages: [
         GetPage(
           name: '/splash',
@@ -268,6 +269,16 @@ class MyApp extends StatelessWidget {
         GetPage(
           name: '/Boutiques',
           page: () => GestionBoutique(),
+          binding: AuthBinding(),
+        ),
+        GetPage(
+          name: '/questionnaire',
+          page: () => ProGlassesQuestionnaireScreen(),
+          binding: AuthBinding(),
+        ),
+        GetPage(
+          name: '/recommendations',
+          page: () => RecommendationsScreen(),
           binding: AuthBinding(),
         ),
         if (kIsWeb)

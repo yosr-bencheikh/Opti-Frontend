@@ -59,14 +59,13 @@ class CartScreen extends StatelessWidget {
           ],
         );
       }),
-      bottomNavigationBar: _buildBottomNavBar(),
     );
   }
 
   void _loadCartItems() {
     final userId = authController.currentUserId.value;
     cartController.loadCartItems(userId);
-    }
+  }
 
   Widget _buildCartItem(
     String id,
@@ -92,7 +91,7 @@ class CartScreen extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(8) ,
+      padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -226,102 +225,87 @@ class CartScreen extends StatelessWidget {
       ),
     );
   }
-Widget _buildCheckoutSection() {
-  final total = cartController.cartItems.fold<double>(
-    0,
-    (sum, item) => sum + item.totalPrice,
-  );
-  final deliveryFee = 5.50;
-  final totalWithDelivery = total + deliveryFee;
 
-  return Container(
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.05),
-          blurRadius: 4,
-          offset: const Offset(0, -2),
-        ),
-      ],
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const Text(
-          'Facture',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
+  Widget _buildCheckoutSection() {
+    final total = cartController.cartItems.fold<double>(
+      0,
+      (sum, item) => sum + item.totalPrice,
+    );
+    final deliveryFee = 5.50;
+    final totalWithDelivery = total + deliveryFee;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, -2),
           ),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text('Total panier'),
-            Text('${total.toStringAsFixed(2)} €'),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text('Frais de livraison'),
-            Text('${deliveryFee.toStringAsFixed(2)} €'),
-          ],
-        ),
-        const Divider(height: 24),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Total',
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
-            Text(
-              '${totalWithDelivery.toStringAsFixed(2)} €',
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        ElevatedButton(
-          onPressed: cartController.cartItems.isEmpty
-              ? null
-              : () {
-                  // Navigate to the checkout screen
-                  Get.toNamed('/order');
-                },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.black,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text(
+            'Facture',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
             ),
           ),
-          child: const Text('Confirmer la commande'),
-        ),
-      ],
-    ),
-  );
-}
-  Widget _buildBottomNavBar() {
-    return Obx(() => BottomNavigationBar(
-          type: BottomNavigationBarType.fixed,
-          currentIndex: navigationController.selectedIndex.value,
-          selectedItemColor: Colors.blue,
-          unselectedItemColor: Colors.grey,
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-            BottomNavigationBarItem(icon: Icon(Icons.store), label: 'Stores'),
-            BottomNavigationBarItem(
-                icon: Icon(Icons.shopping_cart), label: 'Cart'),
-            BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
-          ],
-          onTap: navigationController.changePage,
-        ));
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Total panier'),
+              Text('${total.toStringAsFixed(2)} €'),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Frais de livraison'),
+              Text('${deliveryFee.toStringAsFixed(2)} €'),
+            ],
+          ),
+          const Divider(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Total',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              Text(
+                '${totalWithDelivery.toStringAsFixed(2)} €',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: cartController.cartItems.isEmpty
+                ? null
+                : () {
+                    // Navigate to the checkout screen
+                    Get.toNamed('/order');
+                  },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.black,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Confirmer la commande'),
+          ),
+        ],
+      ),
+    );
   }
 }

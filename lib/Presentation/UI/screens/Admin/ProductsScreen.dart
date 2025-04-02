@@ -15,6 +15,7 @@ import 'package:opti_app/Presentation/controllers/product_controller.dart';
 import 'package:opti_app/core/constants/champsProduits.dart';
 import 'package:opti_app/domain/entities/product_entity.dart';
 import 'package:http/http.dart' as http;
+
 class ProductsScreen extends StatefulWidget {
   const ProductsScreen({Key? key}) : super(key: key);
 
@@ -27,7 +28,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
   TextEditingController _searchController = TextEditingController();
   final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
       GlobalKey<ScaffoldMessengerState>();
-  
+
   // Pagination variables
   int _currentPage = 0;
   final int _itemsPerPage = 5;
@@ -35,8 +36,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
   // Filter variables
   String? _selectedCategory;
   String? _selectedOpticien;
-  String? _selectedMarque;  // Ajout de cette variable manquante
-  String? _selectedStyle;   // Ajout de cette variable manquante
+  String? _selectedMarque; // Ajout de cette variable manquante
+  String? _selectedStyle; // Ajout de cette variable manquante
   double? _minPrice;
   double? _maxPrice;
   bool _showFilters = false;
@@ -49,7 +50,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
   final Color cardColor = Colors.white;
   final Color textPrimaryColor = const Color(0xFF202124);
   final Color textSecondaryColor = const Color(0xFF5F6368);
-  
+
   // Palette de couleurs pour un design cohérent
   final Color _primaryColor = const Color.fromARGB(255, 33, 199, 146);
   final Color _secondaryColor = const Color.fromARGB(255, 16, 16, 17);
@@ -283,50 +284,50 @@ class _ProductsScreenState extends State<ProductsScreen> {
           ),
         ),
       ),
-    child: Row(
+      child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-              'Gestion des Produits',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: _textPrimaryColor,
-                letterSpacing: 0.5,
+                'Gestion des Produits',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: _textPrimaryColor,
+                  letterSpacing: 0.5,
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '${_filteredProducts.length} produits',
-              style: TextStyle(
-                fontSize: 14,
-                color: _textSecondaryColor,
-                fontWeight: FontWeight.w500,
+              const SizedBox(height: 4),
+              Text(
+                '${_filteredProducts.length} produits',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: _textSecondaryColor,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-            ),
-          ],
-        ),
-        ElevatedButton.icon(
-          onPressed: () => _showAddProductDialog(context),
-          icon: const Icon(Icons.add),
-          label: const Text('Nouveau produit'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: _primaryColor,
-            foregroundColor: Colors.white,
-            elevation: 2,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+            ],
+          ),
+          ElevatedButton.icon(
+            onPressed: () => _showAddProductDialog(context),
+            icon: const Icon(Icons.add),
+            label: const Text('Nouveau produit'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _primaryColor,
+              foregroundColor: Colors.white,
+              elevation: 2,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
           ),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
 
   Widget _buildContent() {
     if (productController.isLoading) {
@@ -405,7 +406,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
-            
           ],
         ),
       );
@@ -420,7 +420,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
     );
   }
 
-Widget _buildSearchBar() {
+  Widget _buildSearchBar() {
     return Container(
       decoration: BoxDecoration(
         color: _cardColor,
@@ -441,9 +441,8 @@ Widget _buildSearchBar() {
               Expanded(
                 child: TextField(
                   controller: _searchController,
-                                decoration: InputDecoration(
-                    hintText:
-                        'Rechercher un produits par nom, catégorie...',
+                  decoration: InputDecoration(
+                    hintText: 'Rechercher un produits par nom, catégorie...',
                     prefixIcon: Icon(Icons.search, color: _primaryColor),
                     filled: true,
                     fillColor: _backgroundColor,
@@ -471,8 +470,7 @@ Widget _buildSearchBar() {
                 },
                 icon: Icon(
                     _showFilters ? Icons.filter_list_off : Icons.filter_list),
-                label:
-                    Text(_showFilters ? 'Masquer filtres' : 'Filtrer'),
+                label: Text(_showFilters ? 'Masquer filtres' : 'Filtrer'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor:
                       _showFilters ? _lightPrimaryColor : _primaryColor,
@@ -541,7 +539,6 @@ Widget _buildSearchBar() {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          
           Row(
             children: [
               Icon(Icons.filter_alt, color: _primaryColor),
@@ -555,7 +552,6 @@ Widget _buildSearchBar() {
                 ),
               ),
               const Spacer(),
-            
             ],
           ),
           const SizedBox(height: 24),
@@ -563,7 +559,6 @@ Widget _buildSearchBar() {
           // Première rangée de filtres
           Row(
             children: [
-            
               const SizedBox(width: 16),
               Expanded(
                 child: _buildFilterDropdown(
@@ -591,7 +586,6 @@ Widget _buildSearchBar() {
                 ),
               ),
               const SizedBox(width: 16),
-            
             ],
           ),
           const SizedBox(height: 24),
@@ -599,7 +593,6 @@ Widget _buildSearchBar() {
           // Deuxième rangée de filtres
           Row(
             children: [
-            
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
@@ -634,8 +627,8 @@ Widget _buildSearchBar() {
                           });
                         },
                         style: TextStyle(color: textPrimaryColor),
-                        keyboardType:
-                            const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
                         decoration: InputDecoration(
                           hintText: 'Prix min',
                           hintStyle: TextStyle(color: textSecondaryColor),
@@ -684,8 +677,8 @@ Widget _buildSearchBar() {
                           });
                         },
                         style: TextStyle(color: textPrimaryColor),
-                        keyboardType:
-                            const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
                         decoration: InputDecoration(
                           hintText: 'Prix max',
                           hintStyle: TextStyle(color: textSecondaryColor),
@@ -703,15 +696,14 @@ Widget _buildSearchBar() {
             ],
           ),
           const SizedBox(height: 24),
-          
+
           // Actions
-        
         ],
       ),
     );
   }
 
- Widget _buildFilterDropdown({
+  Widget _buildFilterDropdown({
     required String label,
     required String hint,
     required IconData icon,
@@ -758,341 +750,355 @@ Widget _buildSearchBar() {
     );
   }
 
-
-Widget _buildProductsTable() {
-  return SingleChildScrollView(
-    scrollDirection: Axis.vertical, // Défilement vertical
-    child: SingleChildScrollView(
-      scrollDirection: Axis.horizontal, // Défilement horizontal
-      child: DataTable(
-        headingRowColor: MaterialStateProperty.all(backgroundColor),
-        dataRowMaxHeight: 100,
-        dataRowMinHeight: 80,
-        headingRowHeight: 56,
-        horizontalMargin: 24,
-        dividerThickness: 0.5,
-        showCheckboxColumn: false,
-        columns: [
-          DataColumn(label: _buildColumnHeader('Image')),
-          DataColumn(label: _buildColumnHeader('Modèle 3D')),
-          DataColumn(label: _buildColumnHeader('Boutique')),
-          DataColumn(label: _buildColumnHeader('Nom')),
-          DataColumn(label: _buildColumnHeader('Catégorie')),
-          DataColumn(label: _buildColumnHeader('Description')),
-          DataColumn(label: _buildColumnHeader('Marque')),
-          DataColumn(label: _buildColumnHeader('Couleur')),
-          DataColumn(label: _buildColumnHeader('Style')),
-          DataColumn(label: _buildColumnHeader('Type de verre')),
-          DataColumn(label: _buildColumnHeader('Prix')),
-          DataColumn(label: _buildColumnHeader('Stock')),
-          DataColumn(label: _buildColumnHeader('Actions')),
-        ],
-        rows: _paginatedProducts.map((product) {
-          return DataRow(
-            cells: [
-              // Cellule pour l'image
-              DataCell(
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey.shade200),
-                    color: Colors.grey.shade50,
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: product.image.isNotEmpty
-                      ? Image.network(
-                          product.image,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Icon(
-                            Icons.broken_image_outlined,
+  Widget _buildProductsTable() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.vertical, // Défilement vertical
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal, // Défilement horizontal
+        child: DataTable(
+          headingRowColor: MaterialStateProperty.all(backgroundColor),
+          dataRowMaxHeight: 100,
+          dataRowMinHeight: 80,
+          headingRowHeight: 56,
+          horizontalMargin: 24,
+          dividerThickness: 0.5,
+          showCheckboxColumn: false,
+          columns: [
+            DataColumn(label: _buildColumnHeader('Image')),
+            DataColumn(label: _buildColumnHeader('Modèle 3D')),
+            DataColumn(label: _buildColumnHeader('Boutique')),
+            DataColumn(label: _buildColumnHeader('Nom')),
+            DataColumn(label: _buildColumnHeader('Catégorie')),
+            DataColumn(label: _buildColumnHeader('Description')),
+            DataColumn(label: _buildColumnHeader('Marque')),
+            DataColumn(label: _buildColumnHeader('Couleur')),
+            DataColumn(label: _buildColumnHeader('Style')),
+            DataColumn(label: _buildColumnHeader('Type de verre')),
+            DataColumn(label: _buildColumnHeader('Prix')),
+            DataColumn(label: _buildColumnHeader('Stock')),
+            DataColumn(label: _buildColumnHeader('Actions')),
+          ],
+          rows: _paginatedProducts.map((product) {
+            return DataRow(
+              cells: [
+                // Cellule pour l'image
+                DataCell(
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey.shade200),
+                      color: Colors.grey.shade50,
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: product.image.isNotEmpty
+                        ? Image.network(
+                            product.image,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Icon(
+                              Icons.broken_image_outlined,
+                              color: Colors.grey.shade400,
+                            ),
+                          )
+                        : Icon(
+                            Icons.image_not_supported_outlined,
                             color: Colors.grey.shade400,
                           ),
-                        )
-                      : Icon(
-                          Icons.image_not_supported_outlined,
-                          color: Colors.grey.shade400,
-                        ),
-                ),
-              ),
-
-              // Cellule pour le modèle 3D
-              // Modification du GestureDetector dans DataCell pour le modèle 3D
-DataCell(
-  GestureDetector(
-    onTap: () async {
-      if (product.model3D != null && product.model3D.isNotEmpty) {
-        try {
-          String modelUrl;
-          
-          // Vérifier si model3D est un ID MongoDB (24 caractères hexadécimaux)
-          bool isMongoId = RegExp(r'^[0-9a-fA-F]{24}$').hasMatch(product.model3D);
-          
-          if (isMongoId) {
-            // Si c'est un ID MongoDB, récupérer les détails du modèle via l'API
-            final response = await http.get(
-              Uri.parse('http://localhost:3000/products/model3d-url/${product.model3D}'),
-              headers: {'Content-Type': 'application/json'},
-            );
-            
-            if (response.statusCode == 200) {
-              final data = jsonDecode(response.body);
-              modelUrl = 'http://localhost:3000${data['filePath']}';
-            } else {
-              throw Exception('Erreur lors de la récupération du modèle: ${response.statusCode}');
-            }
-          } else {
-            // Si c'est déjà une URL ou un chemin, l'utiliser directement
-            modelUrl = product.model3D.startsWith('http')
-                ? product.model3D
-                : 'http://localhost:3000${product.model3D}';
-          }
-          
-          print('URL du modèle 3D: $modelUrl');
-          
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: Text('Modèle 3D - ${product.name}'),
-              content: SizedBox(
-                width: MediaQuery.of(context).size.width * 0.8,
-                height: MediaQuery.of(context).size.height * 0.6,
-                child: ModelViewer(
-                  src: modelUrl,
-                  alt: 'Modèle 3D de ${product.name}',
-                  ar: false,
-                  autoRotate: true,
-                  cameraControls: true,
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text('Fermer'),
-                ),
-              ],
-            ),
-          );
-        } catch (e) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Erreur lors du chargement du modèle 3D: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
-          print('Erreur lors du chargement du modèle 3D: $e');
-        }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Aucun modèle 3D disponible pour ce produit'),
-          ),
-        );
-      }
-    },
-    child: Container(
-      width: 60,
-      height: 60,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade200),
-        color: Colors.grey.shade50,
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: product.model3D != null && product.model3D.isNotEmpty
-          ? Icon(
-              Icons.view_in_ar,
-              color: Colors.blue,
-              size: 30,
-            )
-          : Icon(
-              Icons.view_in_ar_outlined,
-              color: Colors.grey.shade400,
-            ),
-    ),
-  ),
-),
-
-              // Cellule pour la boutique
-              DataCell(
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    productController.getOpticienNom(product.boutiqueId) ?? 'N/A',
-                    style: TextStyle(
-                      color: textSecondaryColor,
-                      fontWeight: FontWeight.w500,
-                    ),
                   ),
                 ),
-              ),
 
-              // Cellule pour le nom du produit
-              DataCell(
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      product.name,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: textPrimaryColor,
-                      ),
-                    ),
-                    if (product.averageRating > 0)
-                      Row(
-                        children: [
-                          Icon(Icons.star, color: Colors.amber, size: 14),
-                          const SizedBox(width: 2),
-                          Text(
-                            '${product.averageRating.toStringAsFixed(1)} (${product.totalReviews})',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: textSecondaryColor,
+                // Cellule pour le modèle 3D
+                // Modification du GestureDetector dans DataCell pour le modèle 3D
+                DataCell(
+                  GestureDetector(
+                    onTap: () async {
+                      if (product.model3D != null &&
+                          product.model3D.isNotEmpty) {
+                        try {
+                          String modelUrl;
+
+                          // Vérifier si model3D est un ID MongoDB (24 caractères hexadécimaux)
+                          bool isMongoId = RegExp(r'^[0-9a-fA-F]{24}$')
+                              .hasMatch(product.model3D);
+
+                          if (isMongoId) {
+                            // Si c'est un ID MongoDB, récupérer les détails du modèle via l'API
+                            final response = await http.get(
+                              Uri.parse(
+                                  'http://localhost:3000/products/model3d-url/${product.model3D}'),
+                              headers: {'Content-Type': 'application/json'},
+                            );
+
+                            if (response.statusCode == 200) {
+                              final data = jsonDecode(response.body);
+                              modelUrl =
+                                  'http://localhost:3000${data['filePath']}';
+                            } else {
+                              throw Exception(
+                                  'Erreur lors de la récupération du modèle: ${response.statusCode}');
+                            }
+                          } else {
+                            // Si c'est déjà une URL ou un chemin, l'utiliser directement
+                            modelUrl = product.model3D.startsWith('http')
+                                ? product.model3D
+                                : 'http://localhost:3000${product.model3D}';
+                          }
+
+                          print('URL du modèle 3D: $modelUrl');
+
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: Text('Modèle 3D - ${product.name}'),
+                              content: SizedBox(
+                                width: MediaQuery.of(context).size.width * 0.8,
+                                height:
+                                    MediaQuery.of(context).size.height * 0.6,
+                                child: ModelViewer(
+                                  src: modelUrl,
+                                  alt: 'Modèle 3D de ${product.name}',
+                                  ar: false,
+                                  autoRotate: true,
+                                  cameraControls: true,
+                                ),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: Text('Fermer'),
+                                ),
+                              ],
                             ),
+                          );
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                  'Erreur lors du chargement du modèle 3D: $e'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          print('Erreur lors du chargement du modèle 3D: $e');
+                        }
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                                'Aucun modèle 3D disponible pour ce produit'),
                           ),
-                        ],
-                      ),
-                  ],
-                ),
-              ),
-
-              // Cellule pour la catégorie
-              DataCell(
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                  decoration: BoxDecoration(
-                    color: primaryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    product.category,
-                    style: TextStyle(
-                      color: primaryColor,
-                      fontWeight: FontWeight.w500,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-              ),
-
-              // Cellule pour la description
-              DataCell(
-                Tooltip(
-                  message: product.description,
-                  child: Text(
-                    product.description.length > 50
-                        ? '${product.description.substring(0, 50)}...'
-                        : product.description,
-                    style: TextStyle(color: textSecondaryColor),
-                  ),
-                ),
-              ),
-
-              // Cellule pour la marque
-              DataCell(Text(product.marque)),
-
-              // Cellule pour la couleur
-              DataCell(
-                Row(
-                  children: [
-                    Container(
-                      width: 12,
-                      height: 12,
+                        );
+                      }
+                    },
+                    child: Container(
+                      width: 60,
+                      height: 60,
                       decoration: BoxDecoration(
-                        color: getColorFromHex(product.couleur),
-                        borderRadius: BorderRadius.circular(8), // Rectangle avec coins arrondis
-                        border: Border.all(color: Colors.grey),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.grey.shade200),
+                        color: Colors.grey.shade50,
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child:
+                          product.model3D != null && product.model3D.isNotEmpty
+                              ? Icon(
+                                  Icons.view_in_ar,
+                                  color: Colors.blue,
+                                  size: 30,
+                                )
+                              : Icon(
+                                  Icons.view_in_ar_outlined,
+                                  color: Colors.grey.shade400,
+                                ),
+                    ),
+                  ),
+                ),
+
+                // Cellule pour la boutique
+                DataCell(
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      productController.getOpticienNom(product.boutiqueId) ??
+                          'N/A',
+                      style: TextStyle(
+                        color: textSecondaryColor,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Text(product.couleur),
-                  ],
-                ),
-              ),
-
-              // Cellule pour le style
-              DataCell(
-                Text(
-                  product.style ?? 'N/A',
-                  style: TextStyle(
-                    color: product.style?.isNotEmpty == true
-                        ? textPrimaryColor
-                        : Colors.grey.shade400,
-                    fontStyle: product.style?.isNotEmpty == true
-                        ? FontStyle.normal
-                        : FontStyle.italic,
                   ),
                 ),
-              ),
 
-              // Cellule pour le type de verre
-              DataCell(
-                Text(
-                  product.typeVerre ?? 'N/A',
-                  style: TextStyle(
-                    color: product.typeVerre?.isNotEmpty == true
-                        ? textPrimaryColor
-                        : Colors.grey.shade400,
-                    fontStyle: product.typeVerre?.isNotEmpty == true
-                        ? FontStyle.normal
-                        : FontStyle.italic,
+                // Cellule pour le nom du produit
+                DataCell(
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        product.name,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: textPrimaryColor,
+                        ),
+                      ),
+                      if (product.averageRating > 0)
+                        Row(
+                          children: [
+                            Icon(Icons.star, color: Colors.amber, size: 14),
+                            const SizedBox(width: 2),
+                            Text(
+                              '${product.averageRating.toStringAsFixed(1)} (${product.totalReviews})',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: textSecondaryColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                    ],
                   ),
                 ),
-              ),
 
-              // Cellule pour le prix
-              DataCell(
-                Text(
-                  '${product.prix.toStringAsFixed(2)} DT',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: accentColor,
-                  ),
-                ),
-              ),
-
-              // Cellule pour le stock
-              DataCell(
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: product.quantiteStock > 10
-                        ? Colors.green.shade50
-                        : product.quantiteStock > 0
-                            ? Colors.orange.shade50
-                            : Colors.red.shade50,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    product.quantiteStock.toString(),
-                    style: TextStyle(
-                      color: product.quantiteStock > 10
-                          ? Colors.green.shade700
-                          : product.quantiteStock > 0
-                              ? Colors.orange.shade700
-                              : Colors.red.shade700,
-                      fontWeight: FontWeight.w600,
+                // Cellule pour la catégorie
+                DataCell(
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                    decoration: BoxDecoration(
+                      color: primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      product.category,
+                      style: TextStyle(
+                        color: primaryColor,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 13,
+                      ),
                     ),
                   ),
                 ),
-              ),
 
-              // Cellule pour les actions
-              DataCell(_buildActionButtons(product)),
-            ],
-          );
-        }).toList(),
+                // Cellule pour la description
+                DataCell(
+                  Tooltip(
+                    message: product.description,
+                    child: Text(
+                      product.description.length > 50
+                          ? '${product.description.substring(0, 50)}...'
+                          : product.description,
+                      style: TextStyle(color: textSecondaryColor),
+                    ),
+                  ),
+                ),
+
+                // Cellule pour la marque
+                DataCell(Text(product.marque)),
+
+                // Cellule pour la couleur
+                DataCell(
+                  Row(
+                    children: [
+                      Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: getColorFromHex(product.couleur),
+                          borderRadius: BorderRadius.circular(
+                              8), // Rectangle avec coins arrondis
+                          border: Border.all(color: Colors.grey),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(product.couleur),
+                    ],
+                  ),
+                ),
+
+                // Cellule pour le style
+                DataCell(
+                  Text(
+                    product.style ?? 'N/A',
+                    style: TextStyle(
+                      color: product.style?.isNotEmpty == true
+                          ? textPrimaryColor
+                          : Colors.grey.shade400,
+                      fontStyle: product.style?.isNotEmpty == true
+                          ? FontStyle.normal
+                          : FontStyle.italic,
+                    ),
+                  ),
+                ),
+
+                // Cellule pour le type de verre
+                DataCell(
+                  Text(
+                    product.typeVerre ?? 'N/A',
+                    style: TextStyle(
+                      color: product.typeVerre?.isNotEmpty == true
+                          ? textPrimaryColor
+                          : Colors.grey.shade400,
+                      fontStyle: product.typeVerre?.isNotEmpty == true
+                          ? FontStyle.normal
+                          : FontStyle.italic,
+                    ),
+                  ),
+                ),
+
+                // Cellule pour le prix
+                DataCell(
+                  Text(
+                    '${product.prix.toStringAsFixed(2)} DT',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: accentColor,
+                    ),
+                  ),
+                ),
+
+                // Cellule pour le stock
+                DataCell(
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: product.quantiteStock > 10
+                          ? Colors.green.shade50
+                          : product.quantiteStock > 0
+                              ? Colors.orange.shade50
+                              : Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      product.quantiteStock.toString(),
+                      style: TextStyle(
+                        color: product.quantiteStock > 10
+                            ? Colors.green.shade700
+                            : product.quantiteStock > 0
+                                ? Colors.orange.shade700
+                                : Colors.red.shade700,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Cellule pour les actions
+                DataCell(_buildActionButtons(product)),
+              ],
+            );
+          }).toList(),
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
+
   Widget _buildColumnHeader(String text) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -1450,92 +1456,93 @@ DataCell(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     // Sélection du type de fichier (image ou modèle 3D)
-                  Row(
-                    children: [
-                      Expanded(
-                        child: RadioListTile<bool>(
-                          title: const Text('Image'),
-                          value: false,
-                          groupValue: isModel3D,
-                          onChanged: (value) {
-                            setState(() {
-                              isModel3D = value!;
-                              _tempSelectedFile = null;
-                            });
-                          },
+                    Row(
+                      children: [
+                        Expanded(
+                          child: RadioListTile<bool>(
+                            title: const Text('Image'),
+                            value: false,
+                            groupValue: isModel3D,
+                            onChanged: (value) {
+                              setState(() {
+                                isModel3D = value!;
+                                _tempSelectedFile = null;
+                              });
+                            },
+                          ),
                         ),
-                      ),
-                      Expanded(
-                        child: RadioListTile<bool>(
-                          title: const Text('Modèle 3D'),
-                          value: true,
-                          groupValue: isModel3D,
-                          onChanged: (value) {
-                            setState(() {
-                              isModel3D = value!;
-                              _tempSelectedFile = null;
-                            });
-                          },
+                        Expanded(
+                          child: RadioListTile<bool>(
+                            title: const Text('Modèle 3D'),
+                            value: true,
+                            groupValue: isModel3D,
+                            onChanged: (value) {
+                              setState(() {
+                                isModel3D = value!;
+                                _tempSelectedFile = null;
+                              });
+                            },
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  
-                  // Container pour le file picker
-                  Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey.shade300),
-                      borderRadius: BorderRadius.circular(8),
+                      ],
                     ),
-                    padding: const EdgeInsets.all(8),
-                    child: isModel3D 
-                      ? Model3DPickerWidget(
-                          onFilePicked: (file) {
-                            setState(() {
-                              _tempSelectedFile = file;
-                            });
-                          },
-                        )
-                      : FilePickerExample( // Utilisez votre composant FilePickerExample existant
-                          onImagePicked: (image) {
-                            setState(() {
-                              _tempSelectedFile = image;
-                            });
-                          },
-                        ),
-                  ),
-                  
-                  // Aperçu du modèle 3D ou de l'image
-                  if (_tempSelectedFile != null)
-                    Container(
-                      height: 50,
-                      margin: const EdgeInsets.symmetric(vertical: 16),
-                      child: Text(
-                        '${isModel3D ? 'Modèle 3D' : 'Image'} sélectionné: ${_tempSelectedFile?.name}',
-                        style: TextStyle(color: Colors.blue[700]),
-                      ),
-                    ),
-                  
-                  const SizedBox(height: 20),
 
-                  // Nom du produit
-                  TextFormField(
-                    decoration: InputDecoration(
-                      labelText: 'Nom du produit',
-                      border: OutlineInputBorder(
+                    // Container pour le file picker
+                    Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade300),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      prefixIcon: const Icon(Icons.shopping_bag),
+                      padding: const EdgeInsets.all(8),
+                      child: isModel3D
+                          ? Model3DPickerWidget(
+                              onFilePicked: (file) {
+                                setState(() {
+                                  _tempSelectedFile = file;
+                                });
+                              },
+                            )
+                          : FilePickerExample(
+                              // Utilisez votre composant FilePickerExample existant
+                              onImagePicked: (image) {
+                                setState(() {
+                                  _tempSelectedFile = image;
+                                });
+                              },
+                            ),
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Veuillez entrer un nom';
-                      }
-                      return null;
-                    },
-                    onSaved: (value) => product.name = value ?? '',
-                  ),
-                  const SizedBox(height: 16),
+
+                    // Aperçu du modèle 3D ou de l'image
+                    if (_tempSelectedFile != null)
+                      Container(
+                        height: 50,
+                        margin: const EdgeInsets.symmetric(vertical: 16),
+                        child: Text(
+                          '${isModel3D ? 'Modèle 3D' : 'Image'} sélectionné: ${_tempSelectedFile?.name}',
+                          style: TextStyle(color: Colors.blue[700]),
+                        ),
+                      ),
+
+                    const SizedBox(height: 20),
+
+                    // Nom du produit
+                    TextFormField(
+                      decoration: InputDecoration(
+                        labelText: 'Nom du produit',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        prefixIcon: const Icon(Icons.shopping_bag),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Veuillez entrer un nom';
+                        }
+                        return null;
+                      },
+                      onSaved: (value) => product.name = value ?? '',
+                    ),
+                    const SizedBox(height: 16),
 
                     // Description
                     TextFormField(
@@ -1864,84 +1871,90 @@ DataCell(
                     );
 
                     try {
-                    // Upload file based on type
-                    if (_tempSelectedFile != null && _tempSelectedFile!.bytes != null) {
-                      if (isModel3D) {
-                        // Upload model 3D using GlassesManagerService
-                        final modelUrl = await GlassesManagerService.uploadModel3D(
-                          _tempSelectedFile!.bytes!,
-                          _tempSelectedFile!.name,
-                          product.id ?? '', // Utilisez l'ID s'il existe, sinon chaîne vide
+                      // Upload file based on type
+                      if (_tempSelectedFile != null &&
+                          _tempSelectedFile!.bytes != null) {
+                        if (isModel3D) {
+                          // Upload model 3D using GlassesManagerService
+                          final modelUrl =
+                              await GlassesManagerService.uploadModel3D(
+                            _tempSelectedFile!.bytes!,
+                            _tempSelectedFile!.name,
+                            product.id ??
+                                '', // Utilisez l'ID s'il existe, sinon chaîne vide
+                          );
+                          product.model3D = modelUrl;
+                        } else {
+                          // Upload de l'image
+                          final imageUrl =
+                              await productController.uploadImageWeb(
+                            _tempSelectedFile!.bytes!,
+                            _tempSelectedFile!.name,
+                            product.id ?? '',
+                          );
+                          product.image = imageUrl;
+                        }
+                      } else if (_tempSelectedFile == null) {
+                        // Si aucun fichier n'est sélectionné, afficher un message d'erreur
+                        Navigator.of(context)
+                            .pop(); // Fermer le dialogue de chargement
+                        ScaffoldMessenger.of(dialogContext).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                                'Veuillez sélectionner une image ou un modèle 3D'),
+                            backgroundColor: Colors.red,
+                          ),
                         );
-                        product.model3D = modelUrl;
-                      } else {
-                        // Upload de l'image
-                        final imageUrl = await productController.uploadImageWeb(
-                          _tempSelectedFile!.bytes!,
-                          _tempSelectedFile!.name,
-                          product.id ?? '',
-                        );
-                        product.image = imageUrl;
+                        return; // Ne pas continuer
                       }
-                    } else if (_tempSelectedFile == null) {
-                      // Si aucun fichier n'est sélectionné, afficher un message d'erreur
-                      Navigator.of(context).pop(); // Fermer le dialogue de chargement
-                      ScaffoldMessenger.of(dialogContext).showSnackBar(
-                        const SnackBar(
-                          content: Text('Veuillez sélectionner une image ou un modèle 3D'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                      return; // Ne pas continuer
-                    }
 
-                    // Création du produit
-                    final success = await productController.addProduct(product);
+                      // Création du produit
+                      final success =
+                          await productController.addProduct(product);
 
-                    // Fermer la boîte de dialogue de chargement
-                    Navigator.of(context).pop();
+                      // Fermer la boîte de dialogue de chargement
+                      Navigator.of(context).pop();
 
-                    if (success) {
-                      // Fermer la boîte de dialogue du formulaire
-                      Navigator.of(dialogContext).pop();
+                      if (success) {
+                        // Fermer la boîte de dialogue du formulaire
+                        Navigator.of(dialogContext).pop();
 
-                      ScaffoldMessenger.of(dialogContext).showSnackBar(
-                        const SnackBar(
-                          content: Text('Produit ajouté avec succès'),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-                    } else {
+                        ScaffoldMessenger.of(dialogContext).showSnackBar(
+                          const SnackBar(
+                            content: Text('Produit ajouté avec succès'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(dialogContext).showSnackBar(
+                          SnackBar(
+                            content: Text('Erreur: ${productController.error}'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      // Fermer la boîte de dialogue de chargement
+                      Navigator.of(context).pop();
+
                       ScaffoldMessenger.of(dialogContext).showSnackBar(
                         SnackBar(
-                          content: Text('Erreur: ${productController.error}'),
+                          content: Text('Erreur: $e'),
                           backgroundColor: Colors.red,
                         ),
                       );
                     }
-                  } catch (e) {
-                    // Fermer la boîte de dialogue de chargement
-                    Navigator.of(context).pop();
-
-                    ScaffoldMessenger.of(dialogContext).showSnackBar(
-                      SnackBar(
-                        content: Text('Erreur: $e'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
                   }
-                }
-              },
-              icon: const Icon(Icons.save),
-              label: const Text('Enregistrer'),
-            ),
-          ],
-        );
-      },
-    ),
-  );
-}
-
+                },
+                icon: const Icon(Icons.save),
+                label: const Text('Enregistrer'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
 
   void _showEditProductDialog(BuildContext context, Product product) {
     final formKey = GlobalKey<FormState>();

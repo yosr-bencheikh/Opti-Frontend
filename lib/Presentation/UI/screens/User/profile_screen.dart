@@ -251,6 +251,8 @@ class ProfileScreen extends GetView<AuthController> {
             title: const Text('Mes commandes'),
             trailing: const Icon(Icons.arrow_forward_ios, size: 16),
             onTap: () {
+              navigationController.setSelectedIndex(2);
+
               Get.to(() => OrdersListPage());
             },
           ),

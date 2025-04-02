@@ -24,4 +24,10 @@ class NavigationController extends GetxController {
     }
     Get.offAllNamed(route); // Replaces current route
   }
+ 
+
+  // New method to set index without animation
+  void setSelectedIndex(int index) {
+    selectedIndex.value = index;
+  }
 }

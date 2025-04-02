@@ -11,7 +11,6 @@ import 'package:opti_app/Presentation/controllers/cart_item_controller.dart';
 import 'package:opti_app/Presentation/controllers/auth_controller.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
 
-
 class CheckoutScreen extends StatefulWidget {
   @override
   _CheckoutScreenState createState() => _CheckoutScreenState();
@@ -87,14 +86,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               _buildSummary(),
               const SizedBox(height: 24),
               // Afficher le bouton d'annulation uniquement si une commande existe
-              Visibility(
-                visible: orderController.currentOrder.value != null,
-                child: Column(
-                  children: [
-                    _buildCancelOrderButton(context),
-                    const SizedBox(height: 16),
-                  ],
-                ),
+              Column(
+                children: [
+                  _buildCancelOrderButton(context),
+                  const SizedBox(height: 16),
+                ],
               ),
               SizedBox(
                 width: double.infinity,
@@ -113,7 +109,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   child: orderController.isCreating.value
                       ? const CircularProgressIndicator(color: Colors.white)
                       : const Text(
-                          'Confirmer et payer',
+                          'Confirmer La commande',
                           style: TextStyle(fontSize: 16),
                         ),
                 ),
@@ -125,6 +121,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
+  // Modify the _buildCancelOrderButton method
   Widget _buildCancelOrderButton(BuildContext context) {
     return SizedBox(
       width: double.infinity,
@@ -134,10 +131,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           'Annuler la commande',
           style: TextStyle(fontSize: 16),
         ),
-        onPressed: orderController.currentOrder.value != null
-            ? () => _showCancelConfirmationDialog(
-                context, orderController.currentOrder.value!.id!)
-            : null,
+        onPressed: () => _showCancelConfirmationDialog(context),
         style: OutlinedButton.styleFrom(
           foregroundColor: Colors.red,
           side: const BorderSide(color: Colors.red),
@@ -150,23 +144,32 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
-  void _showCancelConfirmationDialog(BuildContext context, String orderId) {
+// Update the _showCancelConfirmationDialog method
+  void _showCancelConfirmationDialog(BuildContext context) {
     Get.dialog(
       AlertDialog(
         title: const Text('Annuler la commande'),
-        content: const Text('Êtes-vous sûr de vouloir annuler cette commande?'),
+        content: const Text(
+            'Êtes-vous sûr de vouloir annuler cette commande et retourner au panier?'),
         actions: [
           TextButton(
             onPressed: () => Get.back(),
             child: const Text('Non'),
           ),
           ElevatedButton(
-            onPressed: () async {
-              Get.back();
-              final success = await orderController.cancelOrder(orderId);
-              if (success) {
-                Get.back(); // Retourner à l'écran précédent
-              }
+            onPressed: () {
+              // Clear the current order
+              orderController.currentOrder.value = null;
+
+              // Clear any order-related data if needed
+              orderController.selectedAddress.value = '';
+              orderController.selectedPaymentMethod.value = '';
+
+              // Navigate back to the cart screen
+              Get.offAllNamed(
+                  '/cart'); // Assuming you have a named route for cart
+              // If you don't have named routes, you can use:
+              // Get.offAll(() => CartScreen());
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
@@ -434,7 +437,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Future<void> _placeOrder(BuildContext context) async {
     // Vérifier que l'utilisateur est connecté
     final userId = authController.currentUserId.value;
-    
+
     // Vérifier que l'adresse est renseignée
     if (orderController.selectedAddress.value.isEmpty) {
       Get.snackbar(

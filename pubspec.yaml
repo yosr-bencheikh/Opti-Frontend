@@ -65,6 +65,7 @@ dependencies:
   webview_flutter_android: ^4.3.2
   webview_flutter_wkwebview: ^3.9.0
   onesignal_flutter: ^5.3.0
+  flutter_animate: ^4.2.0
   
   share_plus: ^10.1.4
   
@@ -110,7 +111,11 @@ flutter:
     - assets/images/image.jpg
     - assets/images/b1.jpeg
     - assets/images/b2.jpeg
+    - assets/images/sun.jpeg
+    - assets/images/vu.jpeg
     - assets/images/
+    - assets/
+
   
     - assets/images/login_illustration.png
     - assets/3d_models/scene.gltf

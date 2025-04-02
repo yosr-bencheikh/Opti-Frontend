@@ -29,7 +29,6 @@ class OrdersListPage extends StatelessWidget {
       Get.offAllNamed('/login');
     }
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -75,11 +74,35 @@ class OrdersListPage extends StatelessWidget {
           return _buildEmptyOrderState();
         }
 
+        // Définir l'ordre de priorité des statuts avec des clés en minuscules
+        final Map<String, int> statusPriority = {
+          'en attente': 0,
+          'confirmée': 1,
+          'en livraison': 2,
+          'completée': 3,
+        };
+
+        // Créer une copie triée de la liste des commandes
+        final sortedOrders = orderController.userOrders.toList()
+          ..sort((a, b) {
+            // Récupérer la priorité en convertissant le statut en minuscules
+            int aPriority = statusPriority[a.status.toLowerCase()] ?? 999;
+            int bPriority = statusPriority[b.status.toLowerCase()] ?? 999;
+
+            // Comparaison par statut
+            int statusComparison = aPriority.compareTo(bPriority);
+            if (statusComparison != 0) {
+              return statusComparison;
+            }
+            // Pour le même statut, trier par date (du plus récent au plus ancien)
+            return b.createdAt.compareTo(a.createdAt);
+          });
+
         return ListView.builder(
           padding: EdgeInsets.all(16),
-          itemCount: orderController.userOrders.length,
+          itemCount: sortedOrders.length,
           itemBuilder: (context, index) {
-            final order = orderController.userOrders[index];
+            final order = sortedOrders[index];
             return _buildOrderCard(order, context);
           },
         );

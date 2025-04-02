@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:opti_app/Presentation/UI/screens/User/product_details_screen.dart';
+import 'package:opti_app/Presentation/controllers/auth_controller.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:opti_app/Presentation/controllers/wishlist_controller.dart';
+import 'package:opti_app/Presentation/widgets/productCard.dart';
+import 'package:opti_app/core/constants/champsProduits.dart';
 
 class OpticianProductsScreen extends StatefulWidget {
   final String opticianId;
@@ -15,38 +19,21 @@ class OpticianProductsScreen extends StatefulWidget {
 }
 
 class _OpticianProductsScreenState extends State<OpticianProductsScreen> {
+  final WishlistController wishlistController = Get.find();
+  final AuthController authController = Get.find();
   final TextEditingController _searchController = TextEditingController();
   RangeValues _priceRange = RangeValues(0, 1000);
   String? _selectedCategory;
   String? _selectedTypeVerre;
   String? _selectedMarque;
-
-  final List<String> categories = [
-    'All',
-    'Lunette de soleil',
-    'Lunette de vue',
-    'Frames'
-  ];
-  final List<String> typeVerres = [
-    'All',
-    'Single Vision',
-    'Bifocal',
-    'Progressive'
-  ];
-  final List<String> marques = [
-    'All',
-    'Ray-Ban',
-    'Oakley',
-    'Gucci',
-    'Prada',
-    'Versace'
-  ];
+  String? _selectedStyle; // Nouveau filtre par style
 
   @override
   void initState() {
     super.initState();
-    // Load products for this optician
-    widget.productController.loadProductsByOptician(widget.opticianId);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.productController.loadProductsByOptician(widget.opticianId);
+    });
   }
 
   @override
@@ -81,6 +68,11 @@ class _OpticianProductsScreenState extends State<OpticianProductsScreen> {
           _selectedMarque == 'All' ||
           product.marque == _selectedMarque;
 
+      // Style filter
+      final styleMatch = _selectedStyle == null ||
+          _selectedStyle == 'All' ||
+          product.style == _selectedStyle;
+
       // Price filter
       final priceMatch =
           product.prix >= _priceRange.start && product.prix <= _priceRange.end;
@@ -89,6 +81,7 @@ class _OpticianProductsScreenState extends State<OpticianProductsScreen> {
           categoryMatch &&
           typeVerreMatch &&
           marqueMatch &&
+          styleMatch &&
           priceMatch;
     }).toList();
   }
@@ -220,7 +213,7 @@ class _OpticianProductsScreenState extends State<OpticianProductsScreen> {
                         Expanded(
                           child: _buildDropdown(
                             "Type de lentille",
-                            typeVerres,
+                            typesVerre,
                             _selectedTypeVerre,
                             (value) {
                               setState(() {
@@ -232,15 +225,34 @@ class _OpticianProductsScreenState extends State<OpticianProductsScreen> {
                       ],
                     ),
                     SizedBox(height: 12),
-                    _buildDropdown(
-                      "Marque",
-                      marques,
-                      _selectedMarque,
-                      (value) {
-                        setState(() {
-                          _selectedMarque = value;
-                        });
-                      },
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildDropdown(
+                            "Marque",
+                            marques,
+                            _selectedMarque,
+                            (value) {
+                              setState(() {
+                                _selectedMarque = value;
+                              });
+                            },
+                          ),
+                        ),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: _buildDropdown(
+                            "Style",
+                            styles, // Assurez-vous que 'styles' est défini dans champsProduits.dart
+                            _selectedStyle,
+                            (value) {
+                              setState(() {
+                                _selectedStyle = value;
+                              });
+                            },
+                          ),
+                        ),
+                      ],
                     ),
                     SizedBox(height: 16),
 
@@ -253,6 +265,7 @@ class _OpticianProductsScreenState extends State<OpticianProductsScreen> {
                             _selectedCategory = null;
                             _selectedTypeVerre = null;
                             _selectedMarque = null;
+                            _selectedStyle = null;
                             _priceRange = RangeValues(0, 1000);
                           });
                         },
@@ -330,7 +343,12 @@ class _OpticianProductsScreenState extends State<OpticianProductsScreen> {
                   itemCount: filteredProducts.length,
                   itemBuilder: (context, index) {
                     final product = filteredProducts[index];
-                    return _buildProductCard(product);
+                    return ProductCard(
+                      product: product,
+                      isHorizontalList: true,
+                      wishlistController: wishlistController,
+                      authController: authController,
+                    );
                   },
                 );
               }
@@ -380,143 +398,6 @@ class _OpticianProductsScreenState extends State<OpticianProductsScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildProductCard(dynamic product) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          // Navigate to product details
-          Get.to(() => ProductDetailsScreen(product: product));
-        },
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Product Image
-            Expanded(
-              flex: 3,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(12),
-                    topRight: Radius.circular(12),
-                  ),
-                ),
-                width: double.infinity,
-                child: product.image != null
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(12),
-                          topRight: Radius.circular(12),
-                        ),
-                        child: Image.network(
-                          product.image,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Icon(
-                              Icons.image_not_supported_outlined,
-                              size: 40,
-                              color: Colors.grey.shade400,
-                            );
-                          },
-                        ),
-                      )
-                    : Icon(
-                        Icons.inventory_2_outlined,
-                        size: 40,
-                        color: Colors.grey.shade400,
-                      ),
-              ),
-            ),
-
-            // Product Info
-            Expanded(
-              flex: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          product.marque,
-                          style: GoogleFonts.montserrat(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.blue.shade700,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        SizedBox(height: 2),
-                        Text(
-                          product.name,
-                          style: GoogleFonts.montserrat(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                    // Fix for overflow - Wrap Row in Flexible widget
-                    Flexible(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          // Price with overflow protection
-                          Flexible(
-                            child: Text(
-                              '${product.prix.toStringAsFixed(2)}TND',
-                              style: GoogleFonts.montserrat(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          // Small gap to ensure separation
-                          SizedBox(width: 4),
-                          // Category tag with fixed width
-                          Container(
-                            padding: EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: Colors.blue.shade50,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              product.category,
-                              style: GoogleFonts.montserrat(
-                                fontSize: 9,
-                                color: Colors.blue.shade700,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
