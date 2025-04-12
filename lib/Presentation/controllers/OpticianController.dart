@@ -18,6 +18,9 @@ class OpticianController extends GetxController {
   late final SharedPreferences prefs;
   
   var opticians = <Optician>[].obs;
+    final filteredOpticians = <Optician>[].obs;
+  final filters = <String, String>{}.obs;
+
   var isLoading = true.obs;
   var isLoggedIn = false.obs;
   var error = ''.obs;
@@ -51,6 +54,7 @@ bool isUserLoggedIn() {
 @override
 void onInit() async {
   super.onInit();
+  
   _dataSource = Get.find<OpticianDataSource>();
   _repository = Get.find<OpticianRepository>();
   prefs = await SharedPreferences.getInstance();
@@ -63,8 +67,76 @@ void onInit() async {
   }
   
   await fetchOpticians();
+   ever(filters, (_) => applyFilters());
+    fetchOpticians();
+  
 }
-// In OpticianController
+
+ void applyFilters() {
+    if (opticians.isEmpty) {
+      filteredOpticians.value = [];
+      return;
+    }
+
+    filteredOpticians.value = opticians.where((optician) {
+      // Your filter logic here
+      return true; // Replace with actual filter conditions
+    }).toList();
+  }
+Future<void> sendPasswordResetEmail(String email) async {
+  isLoading.value = true;
+  try {
+    await _repository.sendPasswordResetEmail(email);
+    Get.snackbar('Success', 'Reset email sent',
+        snackPosition: SnackPosition.BOTTOM);
+  } catch (e) {
+    print('Send Reset Email error: $e');
+    Get.snackbar('Error', e.toString(),
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM);
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+Future<bool> verifyResetCode(String email, String code) async {
+  isLoading.value = true;
+  try {
+    await _repository.verifyResetCode(email, code);
+    Get.snackbar('Success', 'Code verified',
+        snackPosition: SnackPosition.BOTTOM);
+    return true;
+  } catch (e) {
+    print('Verify Code error: $e');
+    Get.snackbar('Error', e.toString(),
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM);
+    return false;
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+Future<bool> resetPassword(String email, String code, String newPassword) async {
+  isLoading.value = true;
+  try {
+    await _repository.resetPassword(email, code, newPassword);
+    Get.snackbar('Success', 'Password reset successfully',
+        snackPosition: SnackPosition.BOTTOM);
+    return true;
+  } catch (e) {
+    print('Reset Password error: $e');
+    Get.snackbar('Error', e.toString(),
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM);
+    return false;
+  } finally {
+    isLoading.value = false;
+  }
+}
 void login(String userId) {
   print('🔐 Login process started');
   print('🔐 User ID received: $userId');
@@ -76,13 +148,33 @@ void login(String userId) {
   print('🔐 Is Logged In: $isLoggedIn');
 }
 // Ajouter une méthode de déconnexion
-  void logout() async {
-    authToken.value = '';
-    currentUserId.value = '';
-    isLoggedIn.value = false;
-    await prefs.remove('token');
-    await prefs.remove('userEmail');
-  }
+void logout() async {
+  authToken.value = '';
+  currentUserId.value = '';
+  isLoggedIn.value = false;
+  opticianName.value = '';
+  
+  // Effacer toutes les données stockées
+  await prefs.remove('token');
+  await prefs.remove('userEmail');
+  await prefs.remove('opticianName');
+  
+  // Afficher un message de confirmation
+  Get.snackbar(
+    'Succès',
+    'Vous avez été déconnecté avec succès',
+    backgroundColor: Colors.green,
+    colorText: Colors.white,
+  );
+  
+  // Rediriger vers la page de connexion
+  Get.offAllNamed('/LoginOpticien'); // Assurez-vous que cette route existe
+}
+String? getOpticienNom(String? opticienId) {
+  if (opticienId == null) return null;
+  final optician = opticians.firstWhereOrNull((opticien) => opticien.id == opticienId);
+  return optician != null ? '${optician.nom} ${optician.prenom}' : null;
+}
 
   Future<void> loginWithEmail(String email, String password) async {
   try {

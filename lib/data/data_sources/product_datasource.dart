@@ -9,38 +9,40 @@ import 'package:opti_app/domain/entities/product_entity.dart';
 
 class ProductDatasource {
   final String baseUrl = 'http://localhost:3000/api/products';
+
   final Dio _dio = Dio(); // Créez une instance de Dio
 
-Future<List<Product>> getProductsByBoutiqueId(String boutiqueId) async {
-  final response = await http.get(
-    Uri.parse('$baseUrl/by-boutique/$boutiqueId'),
-  );
-
-  if (response.statusCode == 200) {
-    final List<dynamic> data = json.decode(response.body);
-    return data.map((json) => Product.fromJson(json)).toList();
-  } else {
-    throw Exception('Failed to load products');
-  }
-}
-  Future<List<Product>> getProductsByBoutiques(List<String> boutiqueIds) async {
-  try {
-    final response = await http.post(
-      Uri.parse('$baseUrl/by-boutiques'),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode({'boutiqueIds': boutiqueIds}),
+  Future<List<Product>> getProductsByBoutiqueId(String boutiqueId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/by-boutique/$boutiqueId'),
     );
 
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
       return data.map((json) => Product.fromJson(json)).toList();
     } else {
-      throw Exception('Failed to load products for boutiques');
+      throw Exception('Failed to load products');
     }
-  } catch (e) {
-    throw Exception('Error fetching products: $e');
   }
-}
+
+  Future<List<Product>> getProductsByBoutiques(List<String> boutiqueIds) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/by-boutiques'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'boutiqueIds': boutiqueIds}),
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return data.map((json) => Product.fromJson(json)).toList();
+      } else {
+        throw Exception('Failed to load products for boutiques');
+      }
+    } catch (e) {
+      throw Exception('Error fetching products: $e');
+    }
+  }
 
   Future<Product> createProduct(Product product) async {
     try {
@@ -62,6 +64,7 @@ Future<List<Product>> getProductsByBoutiqueId(String boutiqueId) async {
       throw Exception('Erreur lors de la création du produit: $e');
     }
   }
+
   Future<List<Product>> getProductsByOptician(String opticianId) async {
     try {
       final response =
@@ -92,8 +95,6 @@ Future<List<Product>> getProductsByBoutiqueId(String boutiqueId) async {
       throw Exception('Erreur lors de la récupération des produits: $e');
     }
   }
-
-
 
   Future<String> uploadImage(File imageFile) async {
     try {
@@ -292,6 +293,46 @@ Future<List<Product>> getProductsByBoutiqueId(String boutiqueId) async {
     } catch (e) {
       print('Error adding product review: $e');
       rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> fetchRecommendations(String faceShape) async {
+    try {
+      // Convert face shape to format expected by API
+      final String apiFormatFaceShape = faceShape.replaceAll('Visage ', '');
+      // Fetch recommendations from your API
+      final response = await http.get(Uri.parse(
+          'http://localhost:3000/api/recommendations/$apiFormatFaceShape'));
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception(
+            'Failed to load recommendations: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error fetching recommendations: $e');
+    }
+  }
+
+  List<String> getHardcodedStyleRecommendations(String faceShape) {
+    // Implement your hardcoded recommendations logic here
+    switch (faceShape) {
+      case 'Visage rond':
+        return ['Carré', 'Pixie avec volume sur le dessus', 'Bob asymétrique'];
+      case 'Visage ovale':
+        return [
+          'Toutes les coupes conviennent',
+          'Long avec couches',
+          'Bob classique'
+        ];
+      // Add more cases for other face shapes
+      default:
+        return [
+          'Bob classique',
+          'Coupe moyenne avec couches',
+          'Pixie versatile'
+        ];
     }
   }
 }

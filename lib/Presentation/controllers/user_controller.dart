@@ -35,7 +35,31 @@ class UserController extends GetxController {
   void setCurrentUser(User user) {
     _currentUser.value = user;
   }
-
+  Future<User> fetchUserById(String userId) async {
+    try {
+      _isLoading.value = true;
+      final user = await _dataSource.getUserById(
+          userId); // Utilisez la méthode appropriée dans UserDataSource
+      return user;
+    } catch (e) {
+      print('Error fetching user by ID: $e');
+      throw e; // Re-lancez l'exception pour la gérer dans l'appelant
+    } finally {
+      _isLoading.value = false;
+    }
+  }
+Future<List<User>> getUsersByIds(List<String> userIds) async {
+  try {
+    _isLoading.value = true;
+    final users = await _dataSource.getUsersByIds(userIds);
+    return users;
+  } catch (e) {
+    _error.value = e.toString();
+    rethrow;
+  } finally {
+    _isLoading.value = false;
+  }
+}
   Future<void> fetchUsers() async {
     // Ne rafraîchir que si nous ne sommes pas déjà en train de charger
     if (_isLoading.value) return;
@@ -321,17 +345,5 @@ class UserController extends GetxController {
     return '${user.nom} ${user.prenom}'.trim();
   }
 
-  Future<User> fetchUserById(String userId) async {
-    try {
-      _isLoading.value = true;
-      final user = await _dataSource.getUserById(
-          userId); // Utilisez la méthode appropriée dans UserDataSource
-      return user;
-    } catch (e) {
-      print('Error fetching user by ID: $e');
-      throw e; // Re-lancez l'exception pour la gérer dans l'appelant
-    } finally {
-      _isLoading.value = false;
-    }
-  }
+
 }

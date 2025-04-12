@@ -20,14 +20,35 @@ abstract class UserDataSource {
   Future<void> deleteUser(String email);
   Future<String> uploadImage(String filePath, String email);
   Future<void> updateUserImage(String email, String imageUrl);
-  Future<User> getUserById(String userId);
-}
+  Future<User> getUserById(String userId); 
+  Future<List<User>> getUsersByIds(List<String> userIds);}
 
 class UserDataSourceImpl implements UserDataSource {
   final http.Client client;
   final String baseUrl = 'http://localhost:3000/api';
   final dio_pkg.Dio _dio;
   UserDataSourceImpl({required this.client}) : _dio = dio_pkg.Dio();
+
+   @override
+  Future<List<User>> getUsersByIds(List<String> userIds) async {
+    try {
+      final response = await client.post(
+        Uri.parse('$baseUrl/users/by-ids'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'userIds': userIds}),
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> jsonList = json.decode(response.body);
+        return jsonList.map((json) => User.fromJson(json)).toList();
+      } else {
+        throw Exception('Failed to fetch users by IDs: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error fetching users by IDs: $e');
+    }
+  }
+
   @override
   Future<void> addUser(User user) async {
     try {

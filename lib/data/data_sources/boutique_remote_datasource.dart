@@ -17,7 +17,10 @@ class BoutiqueRemoteDataSourceImpl implements BoutiqueRemoteDataSource {
 
   BoutiqueRemoteDataSourceImpl({
     required this.client,
+
     this.baseUrl = 'http://localhost:3000',
+
+
   });
 
 @override

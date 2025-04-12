@@ -7,6 +7,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:opti_app/Presentation/UI/screens/Admin/FilePickerExample.dart';
 import 'package:opti_app/Presentation/UI/screens/Opticien/OpticienDashboardApp.dart';
+import 'package:opti_app/Presentation/controllers/OpticianController.dart';
+import 'package:opti_app/Presentation/controllers/OrderController.dart';
 import 'package:opti_app/Presentation/controllers/auth_controller.dart';
 import 'package:opti_app/Presentation/controllers/user_controller.dart';
 import 'package:opti_app/core/constants/regions.dart';
@@ -24,9 +26,9 @@ class UsersScreen extends StatefulWidget {
 }
 
 class _UsersScreenState extends State<UsersScreen> {
-  final UserController _controller =
-      UserController(UserDataSourceImpl(client: http.Client()));
+final UserController _controller = UserController(UserDataSourceImpl(client: http.Client()));
   final AuthController _authController = Get.find<AuthController>();
+  final OpticianController _opticianController = Get.find<OpticianController>();
   final ImagePicker _picker = ImagePicker();
   File? _selectedImage;
   String? _highlightedUserId;
@@ -42,7 +44,12 @@ class _UsersScreenState extends State<UsersScreen> {
   final Color _cardColor = Colors.white;
   final Color _textPrimaryColor = const Color(0xFF212121);
   final Color _textSecondaryColor = const Color(0xFF757575);
+  // Professional color palette (identique à la page boutique)
 
+  final Color _successColor = Color(0xFF388E3C); // Success green
+  final Color _errorColor = Color(0xFFD32F2F); // Error red
+  final Color _warningColor = Color(0xFFFFA000); // Warning amber
+  final Color _infoColor = Color(0xFF1976D2); // Info blue
   // Pagination
   int _currentPage = 1;
   int _usersPerPage = 10;
@@ -54,6 +61,7 @@ class _UsersScreenState extends State<UsersScreen> {
   // Search and filtering
   final TextEditingController _searchController = TextEditingController();
   List<User> _filteredUsers = [];
+  final int _itemsPerPage = 5;
   String _currentSearchTerm = '';
   String _sortColumn = '';
   bool _sortAscending = true;
@@ -70,28 +78,59 @@ class _UsersScreenState extends State<UsersScreen> {
   };
   bool _showFilters = false;
 
-  @override
+@override
   void initState() {
     super.initState();
-    _loadUsers();
+    _loadOpticianUsers();
+  }
 
-    // Initialiser la recherche
-    _searchController.addListener(_onSearchChanged);
 
-    // Initialiser la mise en évidence si un ID est passé
-    if (widget.selectedUserId != null) {
-      _highlightedUserId = widget.selectedUserId;
 
-      // Réinitialiser après 3 secondes
-      Future.delayed(const Duration(seconds: 3), () {
-        if (mounted) {
-          setState(() {
-            _highlightedUserId = null;
-          });
-        }
-      });
+  Future<void> _loadOpticianUsers() async {
+    try {
+      final opticianController = Get.find<OpticianController>();
+      final orderController = Get.find<OrderController>();
+      
+      // Récupérer l'ID de l'opticien connecté
+      final opticianId = opticianController.currentUserId.value;
+      
+      if (opticianId != null) {
+        final users = await orderController.getUsersByOptician(opticianId);
+        
+        setState(() {
+          _controller.users.assignAll(users);
+          _filterUsers();
+        });
+      }
+    } catch (e) {
+      _showSnackBar('Erreur: ${e.toString()}', isError: true);
     }
   }
+List<User> get _paginatedUsers {
+    final filteredList = _filteredUsers;
+    final startIndex = _currentPage * _itemsPerPage;
+
+    if (startIndex >= filteredList.length) {
+      return [];
+    }
+
+    final endIndex = (startIndex + _itemsPerPage < filteredList.length)
+        ? startIndex + _itemsPerPage
+        : filteredList.length;
+
+    return filteredList.sublist(startIndex, endIndex);
+  }
+
+  int get _pageCount {
+    return (_filteredUsers.length / _itemsPerPage).ceil();
+  }
+
+Future<void> _loadUsers() async {
+  await _controller.fetchUsers();
+  setState(() {
+    _filterUsers();
+  });
+}
 
   @override
   void dispose() {
@@ -248,473 +287,278 @@ class _UsersScreenState extends State<UsersScreen> {
     });
   }
 
-  Future<void> _loadUsers() async {
-    await _controller.fetchUsers();
-    setState(() {
-      _filterUsers();
-    });
-  }
 
-  @override
+
+@override
   Widget build(BuildContext context) {
     return ScaffoldMessenger(
       key: scaffoldMessengerKey,
       child: Scaffold(
         backgroundColor: _backgroundColor,
-        body: Builder(
-          builder: (BuildContext context) {
-            if (_controller.isLoading) {
-              return Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SizedBox(
-                      width: 60,
-                      height: 60,
-                      child: CircularProgressIndicator(
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(_primaryColor),
-                        strokeWidth: 4,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Chargement des utilisateurs...',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: _textSecondaryColor,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
+        body: Row(
+          children: [
+            CustomSidebar(currentPage: 'Users'),
+            Expanded(
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildHeader(),
+                      const SizedBox(height: 24),
+                
+                // Barre de recherche et filtres
+                _buildSearchFilterBar(),
+                
+                SizedBox(height: 16),
+                      if (_showFilters) _buildAdvancedFilters(),
+                      const SizedBox(height: 24),
+                      Expanded(child: _buildDataTable()),
+                      const SizedBox(height: 16),
+                      _buildPagination(),
+                    ],
+                  ),
                 ),
-              );
-            }
-
-            if (_controller.error != null) {
-              return Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.error_outline,
-                      size: 64,
-                      color: _accentColor,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Erreur de chargement',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: _textPrimaryColor,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _controller.error!,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: _textSecondaryColor,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      onPressed: _loadUsers,
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Réessayer'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _primaryColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 24, vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            // Wrap the main content in a Row to include the sidebar
-            return Row(
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+ Widget _buildHeader() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Gestion des Utilisateurs',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: _textPrimaryColor,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              '${_filteredUsers.length} utilisateurs',
+              style: TextStyle(
+                fontSize: 14,
+                color: _textSecondaryColor,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+ Widget _buildSearchFilterBar() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Row(
               children: [
-                // Add the CustomSidebar here
-                CustomSidebar(currentPage: 'Users'),
-
-                // Main content
                 Expanded(
-                  child: SafeArea(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildHeader(),
-                          const SizedBox(height: 24),
-                          _buildSearchBar(),
-                          if (_showFilters) _buildAdvancedFilters(),
-                          const SizedBox(height: 24),
-                          Expanded(
-                            child: _buildContent(),
-                          ),
-                          const SizedBox(height: 16),
-                          _buildPagination(),
-                        ],
+                  child: TextField(
+                    controller: _searchController,
+
+                     onChanged: (value) {
+    setState(() {
+      _currentSearchTerm = value; // Mettez à jour _currentSearchTerm
+    });
+    _filterUsers(); // Appelez la méthode de filtrage
+  },
+                    decoration: InputDecoration(
+                      hintText: 'Rechercher un utilisateur...',
+                      prefixIcon: Icon(Icons.search, color: _textSecondaryColor),
+                      filled: true,
+                      fillColor: Colors.grey[50],
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide.none,
                       ),
+                      contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 16),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      _showFilters = !_showFilters;
+                    });
+                  },
+                  icon: Icon(_showFilters ? Icons.filter_alt_off : Icons.filter_alt),
+                  label: Text(_showFilters ? 'Cacher Filtres' : 'Filtres'),
+                  style: OutlinedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    side: BorderSide(color: _primaryColor),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
                     ),
                   ),
                 ),
               ],
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: _lightPrimaryColor,
-            width: 2,
-          ),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Gestion des Utilisateurs',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: _textPrimaryColor,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '${_controller.users.length} utilisateurs',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: _textSecondaryColor,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-          
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSearchBar() {
-    return Container(
-      decoration: BoxDecoration(
-        color: _cardColor,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText:
-                        'Rechercher un utilisateur par nom, email, téléphone...',
-                    prefixIcon: Icon(Icons.search, color: _primaryColor),
-                    filled: true,
-                    fillColor: _backgroundColor,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide.none,
+            ),
+            if (_searchController.text.isNotEmpty || _showFilters)
+              Padding(
+                padding: EdgeInsets.only(top: 16),
+                child: Row(
+                  children: [
+                    Chip(
+                      label: Text('${_filteredUsers.length} résultats'),
+                      backgroundColor: _primaryColor.withOpacity(0.1),
                     ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(color: _primaryColor, width: 2),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                        vertical: 16, horizontal: 20),
-                    hintStyle: TextStyle(color: _textSecondaryColor),
-                  ),
-                  style: TextStyle(color: _textPrimaryColor, fontSize: 15),
-                ),
-              ),
-              const SizedBox(width: 16),
-              ElevatedButton.icon(
-                onPressed: () {
-                  setState(() {
-                    _showFilters = !_showFilters;
-                  });
-                },
-                icon: Icon(
-                    _showFilters ? Icons.filter_list_off : Icons.filter_list),
-                label:
-                    Text(_showFilters ? 'Masquer filtres' : 'Filtres avancés'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                      _showFilters ? _lightPrimaryColor : _primaryColor,
-                  foregroundColor: _showFilters ? _primaryColor : Colors.white,
-                  elevation: _showFilters ? 0 : 2,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          if (_filteredUsers.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 16),
-              child: Row(
-                children: [
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: _lightPrimaryColor,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  const Spacer(),
-                  if (_showFilters || _currentSearchTerm.isNotEmpty)
-                    TextButton.icon(
+                    Spacer(),
+                    TextButton(
                       onPressed: _resetFilters,
-                      icon: Icon(Icons.clear_all, color: _accentColor),
-                      label: Text(
-                        'Réinitialiser les filtres',
-                        style: TextStyle(
-                          color: _accentColor,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      child: Text(
+                        'Réinitialiser',
+                        style: TextStyle(color: _errorColor),
                       ),
                     ),
-                ],
+                  ],
+                ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildAdvancedFilters() {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      margin: const EdgeInsets.only(top: 16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: _cardColor,
+
+    Widget _buildAdvancedFilters() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-        border: Border.all(color: _lightPrimaryColor, width: 1),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.filter_alt, color: _primaryColor),
-              const SizedBox(width: 8),
-              Text(
-                'Filtres avancés',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: _primaryColor,
+      margin: EdgeInsets.only(top: 8),
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.filter_list, color: _primaryColor),
+                SizedBox(width: 8),
+                Text(
+                  'Filtres Avancés',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: _primaryColor,
+                  ),
                 ),
-              ),
-              const Spacer(),
-              IconButton(
-                icon: const Icon(Icons.help_outline),
-                color: _textSecondaryColor,
-                tooltip: 'Aide sur les filtres',
-                onPressed: () {
-                  // Afficher une aide sur les filtres
-                },
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-
-          // First row of filters
-          Row(
-            children: [
-              Expanded(
-                child: _buildFilterTextField(
+              ],
+            ),
+            SizedBox(height: 16),
+            Wrap(
+              spacing: 16,
+              runSpacing: 16,
+              children: [
+                _buildFilterField(
                   label: 'Nom',
-                  hintText: 'Filtrer par nom',
-                  icon: Icons.person,
                   value: _filters['nom'],
-                  onChanged: (value) {
-                    setState(() {
-                      _filters['nom'] = value;
-                      _filterUsers();
-                      _currentPage = 1;
-                    });
-                  },
+                  icon: Icons.person,
+                  onChanged: (value) => setState(() {
+                    _filters['nom'] = value;
+                    _filterUsers();
+                  }),
                 ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildFilterTextField(
+                _buildFilterField(
                   label: 'Prénom',
-                  hintText: 'Filtrer par prénom',
-                  icon: Icons.person_outline,
                   value: _filters['prenom'],
-                  onChanged: (value) {
-                    setState(() {
-                      _filters['prenom'] = value;
-                      _filterUsers();
-                      _currentPage = 1;
-                    });
-                  },
+                  icon: Icons.person_outline,
+                  onChanged: (value) => setState(() {
+                    _filters['prenom'] = value;
+                    _filterUsers();
+                  }),
                 ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildFilterTextField(
+                _buildFilterField(
                   label: 'Email',
-                  hintText: 'Filtrer par email',
-                  icon: Icons.email_outlined,
                   value: _filters['email'],
-                  onChanged: (value) {
-                    setState(() {
-                      _filters['email'] = value;
-                      _filterUsers();
-                      _currentPage = 1;
-                    });
-                  },
+                  icon: Icons.email,
+                  onChanged: (value) => setState(() {
+                    _filters['email'] = value;
+                    _filterUsers();
+                  }),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-
-          // Second row of filters
-          Row(
-            children: [
-              Expanded(
-                child: _buildFilterTextField(
+                _buildFilterField(
                   label: 'Téléphone',
-                  hintText: 'Filtrer par téléphone',
-                  icon: Icons.phone_outlined,
                   value: _filters['phone'],
-                  onChanged: (value) {
-                    setState(() {
-                      _filters['phone'] = value;
-                      _filterUsers();
-                      _currentPage = 1;
-                    });
-                  },
+                  icon: Icons.phone,
+                  onChanged: (value) => setState(() {
+                    _filters['phone'] = value;
+                    _filterUsers();
+                  }),
                 ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildFilterTextField(
+                _buildFilterField(
                   label: 'Date de naissance',
-                  hintText: 'YYYY-MM-DD',
-                  icon: Icons.calendar_today,
                   value: _filters['date'],
-                  onChanged: (value) {
-                    setState(() {
-                      _filters['date'] = value;
-                      _filterUsers();
-                      _currentPage = 1;
-                    });
-                  },
+                  icon: Icons.calendar_today,
+                  onChanged: (value) => setState(() {
+                    _filters['date'] = value;
+                    _filterUsers();
+                  }),
                 ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildFilterDropdown(
+                _buildFilterField(
                   label: 'Région',
-                  hint: 'Toutes les régions',
-                  icon: Icons.location_on_outlined,
                   value: _filters['region'],
-                  items: [
-                    const DropdownMenuItem<String>(
-                      value: null,
-                      child: Text('Toutes les régions'),
-                    ),
-                    ...Regions.list.map((region) {
-                      return DropdownMenuItem<String>(
-                        value: region,
-                        child: Text(region),
-                      );
-                    }).toList(),
-                  ],
-                  onChanged: (value) {
-                    setState(() {
-                      _filters['region'] = value;
-                      _filterUsers();
-                      _currentPage = 1;
-                    });
-                  },
+                  icon: Icons.location_on,
+                  onChanged: (value) => setState(() {
+                    _filters['region'] = value;
+                    _filterUsers();
+                  }),
                 ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildFilterDropdown(
+                _buildFilterField(
                   label: 'Genre',
-                  hint: 'Tous les genres',
-                  icon: Icons.people_outline,
                   value: _filters['genre'],
-                  items: [
-                    const DropdownMenuItem<String>(
-                      value: null,
-                      child: Text('Tous les genres'),
-                    ),
-                    ...['Homme', 'Femme', 'Autre'].map((genre) {
-                      return DropdownMenuItem<String>(
-                        value: genre,
-                        child: Text(genre),
-                      );
-                    }).toList(),
-                  ],
-                  onChanged: (value) {
-                    setState(() {
-                      _filters['genre'] = value;
-                      _filterUsers();
-                      _currentPage = 1;
-                    });
-                  },
+                  icon: Icons.people,
+                  onChanged: (value) => setState(() {
+                    _filters['genre'] = value;
+                    _filterUsers();
+                  }),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
+   Widget _buildFilterField({
+    required String label,
+    required String? value,
+    required IconData icon,
+    required Function(String) onChanged,
+  }) {
+    return SizedBox(
+      width: 250,
+      child: TextField(
+        controller: TextEditingController(text: value ?? ''),
+        onChanged: onChanged,
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: Icon(icon, size: 20),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        ),
+      ),
+    );
+  }
   Widget _buildFilterTextField({
     required String label,
     required String hintText,
@@ -752,8 +596,7 @@ class _UsersScreenState extends State<UsersScreen> {
               hintStyle: TextStyle(color: _textSecondaryColor),
               prefixIcon: Icon(icon, color: _primaryColor, size: 20),
               border: InputBorder.none,
-              contentPadding:
-                  const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+              contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
             ),
           ),
         ),
@@ -761,7 +604,7 @@ class _UsersScreenState extends State<UsersScreen> {
     );
   }
 
-  Widget _buildFilterDropdown({
+    Widget _buildFilterDropdown({
     required String label,
     required String hint,
     required IconData icon,
@@ -808,231 +651,332 @@ class _UsersScreenState extends State<UsersScreen> {
     );
   }
 
-  Widget _buildContent() {
-    // Handle empty state
-    if (_filteredUsers.isEmpty) {
-      return Container(
-        height: 300,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.person_search, size: 64, color: Colors.grey[400]),
-              const SizedBox(height: 16),
-              Text(
-                'Aucun utilisateur trouvé',
-                style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Essayez de modifier vos critères de recherche',
-                style: TextStyle(fontSize: 14, color: Colors.grey[500]),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
 
-    // Get current page users
-    final displayedUsers = _filteredUsers.length <= _usersPerPage
-        ? _filteredUsers
-        : _filteredUsers.sublist(_startIndex, _endIndex);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
+Widget _buildDataTable() {
+  return Padding(
+    padding: const EdgeInsets.all(8.0), // Réduire le padding
+    child: Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+      ),
+      child: Column(
+        children: [
+          // Header - sans défilement horizontal
+          Container(
+            padding: EdgeInsets.symmetric(vertical: 8, horizontal: 4), // Padding réduit
+            decoration: BoxDecoration(
+              color: _primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+            ),
+            child: _buildUserTableHeader(),
+          ),
+          
+          // Data rows - sans défilement horizontal
+          Expanded(
+            child: ListView.separated(
+              shrinkWrap: true,
+              itemCount: _filteredUsers.length,
+              separatorBuilder: (context, index) => Divider(height: 1, color: Colors.grey[200]),
+              itemBuilder: (context, index) {
+                final user = _filteredUsers[index];
+                return Container(
+                  padding: EdgeInsets.symmetric(vertical: 6, horizontal: 4), // Padding réduit
+                  color: index.isEven ? Colors.white : Colors.grey[50],
+                  child: _buildUserTableRow(user),
+                );
+              },
+            ),
           ),
         ],
       ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: DataTable(
-          columnSpacing: 20,
-          dataRowHeight: 70,
-          headingRowHeight: 56,
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.blue.shade100, width: 1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          columns: [
-            DataColumn(
-              label: const Text('ID',
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Color.fromARGB(255, 0, 0, 0))),
-            ),
-            DataColumn(
-              label: const Text('Image',
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Color.fromARGB(255, 5, 5, 5))),
-            ),
-            DataColumn(
-              label: const Text('Nom',
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Color.fromARGB(255, 9, 9, 9))),
-              onSort: (_, __) => _sortBy('nom'),
-            ),
-            DataColumn(
-              label: const Text('Prénom',
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Color.fromARGB(255, 4, 4, 4))),
-              onSort: (_, __) => _sortBy('prenom'),
-            ),
-            DataColumn(
-              label: const Text('Email',
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Color.fromARGB(255, 9, 9, 9))),
-              onSort: (_, __) => _sortBy('email'),
-            ),
-            DataColumn(
-              label: const Text('Date',
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Color.fromARGB(255, 10, 10, 10))),
-              onSort: (_, __) => _sortBy('date'),
-            ),
-            DataColumn(
-              label: const Text('Téléphone',
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Color.fromARGB(255, 16, 16, 16))),
-              onSort: (_, __) => _sortBy('phone'),
-            ),
-            DataColumn(
-              label: const Text('Région',
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Color.fromARGB(255, 11, 11, 11))),
-              onSort: (_, __) => _sortBy('region'),
-            ),
-            DataColumn(
-              label: const Text('Genre',
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Color.fromARGB(255, 11, 11, 11))),
-              onSort: (_, __) => _sortBy('genre'),
-            ),
-            const DataColumn(
-              label: Text('Actions',
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Color.fromARGB(255, 14, 14, 14))),
-            ),
-          ],
-          rows: displayedUsers.map((user) {
-            final isSelected = user.id == _highlightedUserId;
+    ),
+  );
+}
 
-            return DataRow(
-              color: MaterialStateProperty.resolveWith<Color>(
-                (Set<MaterialState> states) {
-                  if (isSelected) {
-                    return Colors.blue
-                        .shade100; // Couleur de fond pour la ligne sélectionnée
-                  }
-                  if (displayedUsers.indexOf(user) % 2 == 0) {
-                    return Colors.blue.shade50.withOpacity(0.3);
-                  }
-                  return Colors.white;
-                },
-              ),
-              cells: [
-                DataCell(Text(user.id ?? 'N/A',
-                    style: const TextStyle(
-                        color:
-                            Color.fromARGB(255, 11, 11, 11)))), // Afficher l'ID
-                DataCell(
-                  Container(
-                    width: 50,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      image: user.imageUrl.isNotEmpty
-                          ? DecorationImage(
-                              image: NetworkImage(user.imageUrl),
-                              fit: BoxFit.cover,
-                            )
-                          : null,
-                      color: Colors.grey[200],
+Widget _buildUserTableHeader() {
+  final columns = [
+    TableColumn(flex: 6, label: 'Photo', icon: Icons.photo_camera), // Flex réduit
+    TableColumn(flex: 8, label: 'Nom', icon: Icons.person_outline), // Flex réduit
+    TableColumn(flex: 8, label: 'Prénom', icon: Icons.person_outline), // Flex réduit
+    TableColumn(flex: 12, label: 'Email', icon: Icons.email_outlined), // Flex réduit
+    TableColumn(flex: 7, label: 'Téléphone', icon: Icons.phone_outlined), // Flex réduit
+    TableColumn(flex: 8, label: 'Naiss.', icon: Icons.cake_outlined), // Label raccourci
+    TableColumn(flex: 7, label: 'Région', icon: Icons.location_on_outlined), // Flex réduit
+    TableColumn(flex: 7, label: 'Genre', icon: Icons.transgender),// Flex réduit
+    TableColumn(flex: 6, label: 'Actions', icon: Icons.settings, isActions: true), // Flex réduit
+  ];
+
+  return Row(
+    children: columns.map((col) {
+      return Expanded(
+        flex: col.flex,
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 2), // Padding réduit
+          child: Tooltip(
+            message: col.label,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(col.icon, size: 14, color: _primaryColor), // Taille réduite
+                SizedBox(width: 2), // Espace réduit
+                Flexible(
+                  child: Text(
+                    col.label,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: _textPrimaryColor,
+                      fontSize: 13, // Taille réduite
                     ),
-                    child: user.imageUrl.isEmpty
-                        ? Center(
-                            child: Text(
-                              '${user.nom.isNotEmpty ? user.nom[0] : ''}${user.prenom.isNotEmpty ? user.prenom[0] : ''}',
-                              style: const TextStyle(
-                                color: Colors.blue,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          )
-                        : null,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                DataCell(Text(user.nom,
-                    style: const TextStyle(
-                        color: Color.fromARGB(255, 11, 11, 11)))),
-                DataCell(Text(user.prenom,
-                    style: const TextStyle(
-                        color: Color.fromARGB(255, 16, 16, 16)))),
-                DataCell(Text(user.email,
-                    style: const TextStyle(
-                        color: Color.fromARGB(255, 13, 13, 13)))),
-                DataCell(Text(user.date,
-                    style: const TextStyle(
-                        color: Color.fromARGB(255, 16, 16, 16)))),
-                DataCell(Text(user.phone,
-                    style:
-                        const TextStyle(color: Color.fromARGB(255, 9, 9, 9)))),
-                DataCell(Text(user.region,
-                    style: const TextStyle(
-                        color: Color.fromARGB(255, 11, 11, 11)))),
-                DataCell(Text(user.genre,
-                    style: const TextStyle(
-                        color: Color.fromARGB(255, 11, 11, 11)))),
-                DataCell(Row(
+              ],
+            ),
+          ),
+        ),
+      );
+    }).toList(),
+  );
+}
+
+Widget _buildUserTableRow(User user) {
+  return Row(
+    children: [
+      // Photo - taille réduite
+      Expanded(
+        flex: 6,
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 2),
+          child: CircleAvatar(
+            radius: 44, // Taille réduite
+            backgroundColor: _primaryColor.withOpacity(0.1),
+            backgroundImage: (user.imageUrl != null && user.imageUrl!.isNotEmpty) 
+              ? NetworkImage(user.imageUrl!) 
+              : null,
+            child: user.imageUrl == null || user.imageUrl!.isEmpty
+              ? Text(
+                  '${user.nom.isNotEmpty ? user.nom[0] : ''}${user.prenom.isNotEmpty ? user.prenom[0] : ''}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: _primaryColor,
+                  ),
+                )
+              : null,
+          ),
+        ),
+      ),
+      
+      // Nom
+      Expanded(
+        flex: 8,
+        child: _buildTableCell(
+          icon: Icons.person_outline,
+          text: user.nom,
+          isImportant: true,
+        ),
+      ),
+      
+      // Prénom
+      Expanded(
+        flex: 8,
+        child: _buildTableCell(
+          icon: Icons.person_outline,
+          text: user.prenom,
+        ),
+      ),
+      
+      // Email
+      Expanded(
+        flex: 12,
+        child: _buildTableCell(
+          icon: Icons.email_outlined,
+          text: user.email,
+        ),
+      ),
+      
+      // Téléphone
+      Expanded(
+        flex: 7,
+        child: _buildTableCell(
+          icon: Icons.phone_outlined,
+          text: user.phone,
+        ),
+      ),
+      
+      // Date de naissance
+      Expanded(
+        flex: 8,
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 2),
+          child: Builder(
+            builder: (context) {
+              String displayDate = user.date;
+              try {
+                final parsedDate = DateTime.parse(user.date);
+                displayDate = DateFormat('dd/MM/yy').format(parsedDate); // Format court
+              } catch (e) {
+                displayDate = user.date.length > 6 
+                  ? '${user.date.substring(0, 6)}...' 
+                  : user.date;
+              }
+              
+              return Tooltip(
+                message: user.date,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    IconButton(
-                      icon: const Icon(Icons.edit, color: Colors.blue),
-                      onPressed: () => _showEditDialog(user),
-                      tooltip: 'Modifier',
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () => _showDeleteDialog(user),
-                      tooltip: 'Supprimer',
+                    Icon(Icons.cake_outlined, size: 12, color: _textSecondaryColor),
+                    SizedBox(width: 2),
+                    Text(
+                      displayDate,
+                      style: TextStyle(fontSize: 10), // Taille réduite
                     ),
                   ],
-                )),
-              ],
-            );
-          }).toList(),
+                ),
+              );
+            },
+          ),
         ),
+      ),
+      
+      // Région
+      Expanded(
+        flex: 7,
+        child: _buildTableCell(
+          icon: Icons.location_on_outlined,
+          text: user.region.length > 8 
+            ? '${user.region.substring(0, 7)}...' 
+            : user.region,
+        ),
+      ),
+      
+  // Genre
+Expanded(
+  flex: 7,
+  child: Padding(
+    padding: EdgeInsets.only(right: 4),
+    child: Tooltip(
+      message: user.genre ?? 'Non spécifié',
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            _getGenderIcon(user.genre),
+            size: 16,
+            color: _getGenderColor(user.genre),
+          ),
+          SizedBox(width: 4), // Espace entre l'icône et le texte
+          Text(
+            user.genre ?? 'Non spécifié', // Affiche le genre ou un texte par défaut
+            style: TextStyle(fontSize: 12), // Ajustez la taille si nécessaire
+          ),
+        ],
+      ),
+    ),
+  ),
+),
+      
+      // Actions
+      Expanded(
+        flex: 6,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            IconButton(
+              icon: Icon(Icons.edit, size: 14, color: _infoColor), // Taille réduite
+              onPressed: () => _showEditDialog(user),
+              padding: EdgeInsets.zero,
+              tooltip: 'Modifier',
+            ),
+            IconButton(
+              icon: Icon(Icons.delete, size: 14, color: _errorColor), // Taille réduite
+              onPressed: () => _showDeleteDialog(user),
+              padding: EdgeInsets.zero,
+              tooltip: 'Supprimer',
+            ),
+          ],
+        ),
+      ),
+    ],
+  );
+}
+IconData _getGenderIcon(String? gender) {
+  if (gender == null || gender.isEmpty) return Icons.question_mark;
+  return gender.toLowerCase().contains('femme') 
+    ? Icons.female 
+    : Icons.male;
+}
+
+Color _getGenderColor(String? gender) {
+  if (gender == null || gender.isEmpty) return Colors.grey;
+  return gender.toLowerCase().contains('femme') 
+    ? Colors.pink 
+    : Colors.blue;
+}
+Widget _buildTableCell({required IconData icon, required String text, bool isImportant = false}) {
+  return Padding(
+    padding: EdgeInsets.symmetric(horizontal: 2), // Padding réduit
+    child: Tooltip(
+      message: text,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: _textSecondaryColor), // Taille réduite
+          SizedBox(width: 2), // Espace réduit
+          Flexible(
+            child: Text(
+              text.length > 10 
+                ? '${text.substring(0, 9)}...' 
+                : text,
+              style: TextStyle(
+                fontSize: 13, // Taille réduite
+                fontWeight: isImportant ? FontWeight.w500 : FontWeight.normal,
+                color: isImportant ? _textPrimaryColor : _textSecondaryColor,
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+ Widget _buildPaginationControls() {
+    final totalPages = _pageCount;
+    if (totalPages <= 1) return SizedBox();
+
+    return Padding(
+      padding: EdgeInsets.only(top: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          IconButton(
+            icon: Icon(Icons.chevron_left),
+            onPressed: _currentPage > 0
+                ? () => setState(() => _currentPage--)
+                : null,
+          ),
+          SizedBox(width: 16),
+          Text(
+            'Page ${_currentPage + 1} sur $totalPages',
+            style: TextStyle(
+              color: _textSecondaryColor,
+            ),
+          ),
+          SizedBox(width: 16),
+          IconButton(
+            icon: Icon(Icons.chevron_right),
+            onPressed: _currentPage < totalPages - 1
+                ? () => setState(() => _currentPage++)
+                : null,
+          ),
+        ],
       ),
     );
   }
-
-  Widget _buildPagination() {
+ Widget _buildPagination() {
     if (_filteredUsers.isEmpty || _filteredUsers.length <= _usersPerPage) {
       return const SizedBox.shrink();
     }
@@ -1040,59 +984,14 @@ class _UsersScreenState extends State<UsersScreen> {
     final int totalPages = (_filteredUsers.length / _usersPerPage).ceil();
 
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Displaying range and total
           Text(
             'Affichage de ${_startIndex + 1} à $_endIndex sur ${_filteredUsers.length} utilisateurs',
-            style: TextStyle(
-              color: Colors.grey[700],
-            ),
+            style: TextStyle(color: Colors.grey[700]),
           ),
-
-          // Page size selector
-          Row(
-            children: [
-              const Text('Lignes par page: '),
-              DropdownButton<int>(
-                value: _usersPerPage,
-                items: [5, 10, 20, 50, 100].map((value) {
-                  return DropdownMenuItem<int>(
-                    value: value,
-                    child: Text('$value'),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() {
-                      _usersPerPage = value;
-                      // Adjust current page if needed
-                      int maxPage =
-                          (_filteredUsers.length / _usersPerPage).ceil();
-                      if (_currentPage > maxPage) {
-                        _currentPage = maxPage;
-                      }
-                    });
-                  }
-                },
-              ),
-            ],
-          ),
-
-          // Pagination controls
           Row(
             children: [
               IconButton(
@@ -1100,28 +999,22 @@ class _UsersScreenState extends State<UsersScreen> {
                 onPressed: _currentPage > 1
                     ? () => setState(() => _currentPage = 1)
                     : null,
-                tooltip: 'Première page',
               ),
               IconButton(
                 icon: const Icon(Icons.navigate_before),
                 onPressed: _currentPage > 1
                     ? () => setState(() => _currentPage--)
                     : null,
-                tooltip: 'Page précédente',
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: Colors.blue,
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
                   '$_currentPage / $totalPages',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: const TextStyle(color: Colors.white),
                 ),
               ),
               IconButton(
@@ -1129,14 +1022,12 @@ class _UsersScreenState extends State<UsersScreen> {
                 onPressed: _currentPage < totalPages
                     ? () => setState(() => _currentPage++)
                     : null,
-                tooltip: 'Page suivante',
               ),
               IconButton(
                 icon: const Icon(Icons.last_page),
                 onPressed: _currentPage < totalPages
                     ? () => setState(() => _currentPage = totalPages)
                     : null,
-                tooltip: 'Dernière page',
               ),
             ],
           ),
@@ -1144,7 +1035,6 @@ class _UsersScreenState extends State<UsersScreen> {
       ),
     );
   }
-
   Future<void> _showEditDialog(User user) async {
     final _formKey = GlobalKey<FormState>();
     bool _isLoading = false;
@@ -1173,13 +1063,19 @@ class _UsersScreenState extends State<UsersScreen> {
         TextEditingController(text: userCopy.email);
     final TextEditingController _phoneController =
         TextEditingController(text: userCopy.phone);
-    final TextEditingController _dateController =
-        TextEditingController(text: userCopy.date);
+    final TextEditingController _dateController = TextEditingController(
+      text: user?.date != null
+          ? DateFormat('yyyy-MM-dd').format(DateTime.parse(user!.date))
+          : '',
+    );
+    final TextEditingController _passwordController =
+        TextEditingController(); // Nouveau contrôleur pour le mot de passe
 
     // Initialisez les valeurs sélectionnées
     String _selectedRegion = userCopy.region;
     String _selectedGenre = userCopy.genre;
-    DateTime _selectedDate = DateTime.tryParse(userCopy.date) ?? DateTime.now();
+    DateTime _selectedDate =
+        DateTime.tryParse(user?.date ?? '') ?? DateTime.now();
     PlatformFile? _tempSelectedImage;
 
     await showDialog(
@@ -1224,6 +1120,7 @@ class _UsersScreenState extends State<UsersScreen> {
                               decoration: const InputDecoration(
                                 labelText: 'Nom',
                                 border: OutlineInputBorder(),
+                                hintText: 'Entrez le nom de famille',
                               ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
@@ -1240,6 +1137,7 @@ class _UsersScreenState extends State<UsersScreen> {
                               decoration: const InputDecoration(
                                 labelText: 'Prénom',
                                 border: OutlineInputBorder(),
+                                hintText: 'Entrez le prénom',
                               ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
@@ -1259,15 +1157,47 @@ class _UsersScreenState extends State<UsersScreen> {
                         decoration: const InputDecoration(
                           labelText: 'Email',
                           border: OutlineInputBorder(),
+                          hintText: 'exemple@gmail.com',
                         ),
                         keyboardType: TextInputType.emailAddress,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Veuillez entrer un email';
                           }
-                          if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                          if (!value.endsWith('@gmail.com')) {
+                            return 'L\'email doit être sous format @gmail.com';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Champ de mot de passe (optionnel pour la modification)
+                      TextFormField(
+                        controller: _passwordController,
+                        decoration: const InputDecoration(
+                          labelText: 'Nouveau mot de passe (optionnel)',
+                          border: OutlineInputBorder(),
+                          hintText:
+                              'Minimum 8 caractères avec majuscule, chiffre et caractère spécial',
+                        ),
+                        obscureText: true,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return null; // Le mot de passe est optionnel lors de la modification
+                          }
+                          if (value.length < 8) {
+                            return 'Le mot de passe doit contenir au moins 8 caractères';
+                          }
+                          if (!RegExp(r'[A-Z]').hasMatch(value)) {
+                            return 'Le mot de passe doit contenir au moins une majuscule';
+                          }
+                          if (!RegExp(r'[0-9]').hasMatch(value)) {
+                            return 'Le mot de passe doit contenir au moins un chiffre';
+                          }
+                          if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]')
                               .hasMatch(value)) {
-                            return 'Veuillez entrer un email valide';
+                            return 'Le mot de passe doit contenir au moins un caractère spécial';
                           }
                           return null;
                         },
@@ -1280,11 +1210,16 @@ class _UsersScreenState extends State<UsersScreen> {
                         decoration: const InputDecoration(
                           labelText: 'Téléphone',
                           border: OutlineInputBorder(),
+                          hintText: '8 chiffres',
                         ),
                         keyboardType: TextInputType.phone,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Veuillez entrer un numéro de téléphone';
+                          }
+                          if (value.length != 8 ||
+                              !RegExp(r'^[0-9]{8}$').hasMatch(value)) {
+                            return 'Le téléphone doit contenir exactement 8 chiffres';
                           }
                           return null;
                         },
@@ -1315,10 +1250,29 @@ class _UsersScreenState extends State<UsersScreen> {
                               labelText: 'Date de naissance',
                               border: OutlineInputBorder(),
                               suffixIcon: Icon(Icons.calendar_today),
+                              hintText: 'Minimum 13 ans',
                             ),
                             validator: (value) {
                               if (value == null || value.isEmpty) {
                                 return 'Veuillez sélectionner une date';
+                              }
+
+                              // Vérifier que l'utilisateur a au moins 13 ans
+                              final selectedDate = DateTime.tryParse(value);
+                              if (selectedDate != null) {
+                                final today = DateTime.now();
+                                final age = today.year -
+                                    selectedDate.year -
+                                    (today.month < selectedDate.month ||
+                                            (today.month ==
+                                                    selectedDate.month &&
+                                                today.day < selectedDate.day)
+                                        ? 1
+                                        : 0);
+
+                                if (age < 13) {
+                                  return 'L\'utilisateur doit avoir au moins 13 ans';
+                                }
                               }
                               return null;
                             },
@@ -1360,7 +1314,7 @@ class _UsersScreenState extends State<UsersScreen> {
                                 border: OutlineInputBorder(),
                               ),
                               value: _selectedGenre,
-                              items: ['Homme', 'Femme', 'Autre'].map((genre) {
+                              items: ['Homme', 'Femme'].map((genre) {
                                 return DropdownMenuItem(
                                   value: genre,
                                   child: Text(genre),
@@ -1407,6 +1361,11 @@ class _UsersScreenState extends State<UsersScreen> {
                             userCopy.genre = _selectedGenre;
                             userCopy.phone = _phoneController.text;
 
+                            // Mettez à jour le mot de passe uniquement s'il a été modifié
+                            if (_passwordController.text.isNotEmpty) {
+                              userCopy.password = _passwordController.text;
+                            }
+
                             // Si une nouvelle image est sélectionnée, téléchargez-la
                             if (_tempSelectedImage != null) {
                               final imageUrl = await _uploadImageAndGetUrl(
@@ -1429,22 +1388,39 @@ class _UsersScreenState extends State<UsersScreen> {
                             user.genre = userCopy.genre;
                             user.phone = userCopy.phone;
                             user.imageUrl = userCopy.imageUrl;
+                            if (_passwordController.text.isNotEmpty) {
+                              user.password = userCopy.password;
+                            }
 
                             // Affichez un message de succès
                             _showSnackBar('Utilisateur modifié avec succès');
 
                             // Forcez le rafraîchissement de l'interface utilisateur
+                            // Dans la partie où vous gérez le succès de la mise à jour
+// Remplacez votre appel à fetchUsers suivi de setState par:
+
                             if (mounted) {
-                              _controller.fetchUsers().then((_) {
-                                if (mounted) {
-                                  setState(() {
-                                    _filterUsers();
-                                  });
-                                }
-                              }).catchError((error) {
-                                print(
-                                    "Erreur lors du rafraîchissement des utilisateurs: $error");
-                              });
+                              // Option 1: Mettre à jour directement la liste _filteredUsers si elle existe
+                              final index = _controller.users
+                                  .indexWhere((u) => u.id == user.id);
+                              if (index != -1) {
+                                setState(() {
+                                  // Mise à jour de l'utilisateur dans la liste du contrôleur
+                                  _controller.users[index] = user;
+
+                                  // Ré-appliquer le filtre pour mettre à jour _filteredUsers
+                                  _filterUsers();
+                                });
+                              } else {
+                                // Si l'utilisateur n'est pas trouvé, rechargez la liste complète
+                                _controller.fetchUsers().then((_) {
+                                  if (mounted) {
+                                    setState(() {
+                                      _filterUsers();
+                                    });
+                                  }
+                                });
+                              }
                             }
 
                             // Fermez la boîte de dialogue
@@ -1559,4 +1535,18 @@ class _UsersScreenState extends State<UsersScreen> {
       return '';
     }
   }
+}
+
+class TableColumn {
+  final int flex;
+  final String label;
+  final IconData icon;
+  final bool isActions;
+
+  TableColumn({
+    required this.flex,
+    required this.label,
+    required this.icon,
+    this.isActions = false,
+  });
 }

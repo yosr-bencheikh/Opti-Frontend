@@ -4,16 +4,17 @@ import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 
-import 'package:opti_app/Presentation/UI/screens/Admin/Monthly_sales_chart.dart';
-import 'package:opti_app/Presentation/UI/screens/Admin/Order_Pie_Chart.dart';
+import 'package:opti_app/Presentation/UI/screens/Opticien/MonthlySalesChartOpticien.dart';
+import 'package:opti_app/Presentation/UI/screens/Opticien/OrderStatusChartOpticien.dart';
+import 'package:opti_app/Presentation/UI/screens/Opticien/UserDistributionChartOpticien.dart';
 
-import 'package:opti_app/Presentation/UI/screens/User/User_donut_chart.dart';
 import 'package:opti_app/Presentation/controllers/OpticianController.dart';
 
 import 'package:opti_app/Presentation/controllers/OrderController.dart';
 import 'package:opti_app/Presentation/controllers/boutique_controller.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
 import 'package:opti_app/Presentation/controllers/user_controller.dart';
+import 'package:opti_app/domain/entities/user.dart';
 
 // Dashboard screen
 class OpticianDashboardScreen extends StatefulWidget {
@@ -107,7 +108,7 @@ Future<void> _fetchData() async {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             _buildSectionTitle('Répartition des commandes'),
-                            OrderStatusChart(),
+                            OrderStatusChartOpticien(),
                           ],
                         ),
                       ),
@@ -120,7 +121,7 @@ Future<void> _fetchData() async {
                           children: [
                             _buildSectionTitle(
                                 'Tendances des revenus mensuels'),
-                            MonthlySalesChart(),
+                            MonthlyOpticianSalesChart(),
                           ],
                         ),
                       ),
@@ -143,20 +144,87 @@ Future<void> _fetchData() async {
         ),
       );
 
-  Widget _buildHeader(BuildContext context) {
+Widget _buildHeader(BuildContext context) {
+    final opticianController = Get.find<OpticianController>();
+    
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Text(
-          'Tableau de bord',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(
+                  'Bonjour, ',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey[600],
+                  ),
+                ),
+                Obx(() => Text(
+                  opticianController.opticianName.value,
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF2C3E50),
+                  ),
+                )),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Bienvenue sur votre tableau de bord',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
         ),
-        // Other header elements...
+        Row(
+          children: [
+            // Date selector with elegant styling
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.calendar_today, size: 18, color: Color(0xFF3498DB)),
+                  const SizedBox(width: 8),
+                  Text(
+                    DateFormat('dd MMMM yyyy').format(DateTime.now()),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF2C3E50),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+          
+          
+              
+            
+          ],
+        ),
       ],
     );
   }
 
-  Widget _buildStatsGrid(
+Widget _buildStatsGrid(
     UserController userController,
     ProductController productController,
     BoutiqueController boutiqueController,
@@ -168,7 +236,6 @@ Future<void> _fetchData() async {
           : constraints.maxWidth < 900
               ? 2
               : 4;
-
       return GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
@@ -180,34 +247,93 @@ Future<void> _fetchData() async {
         ),
         itemCount: 4,
         itemBuilder: (context, index) {
+          // Obtenir l'opticien connecté
+          final opticianController = Get.find<OpticianController>();
+          final currentOpticianId = opticianController.currentUserId.value;
+          
+          // Récupérer les boutiques de l'opticien pour filtrer par boutiqueId
+          final opticianBoutiqueIds = boutiqueController.opticiensList
+              .where((b) => b.opticien_id == currentOpticianId)
+              .map((b) => b.id)
+              .toList();
+          
           final stats = [
             {
               'title': 'Utilisateurs',
-              'widget': Obx(() => _buildStatValue(
-                  userController.users.length.toString())),
+              'widget': FutureBuilder<List<User>>(
+                future: orderController.getUsersByOptician(currentOpticianId),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return _buildStatValue("...");
+                  } else if (snapshot.hasError) {
+                    return _buildStatValue("Erreur");
+                  } else if (snapshot.hasData) {
+                    return _buildStatValue(snapshot.data!.length.toString());
+                  } else {
+                    return _buildStatValue("0");
+                  }
+                },
+              ),
               'color': const Color(0xFF7BACD4),
               'icon': Icons.people
             },
-            {
+           {
               'title': 'Produits',
-              'widget': Obx(() => _buildStatValue(
-                  productController.products.length.toString())),
+              'widget': Obx(() {
+                // Charger les produits si nécessaire
+                if (productController.products.isEmpty) {
+                  productController.loadAllProductsForOptician();
+                }
+                
+                // Filtrer les produits par les IDs des boutiques de l'opticien
+                final opticianProducts = productController.products
+                    .where((p) => opticianBoutiqueIds.contains(p.boutiqueId))
+                    .toList();
+                    
+                return _buildStatValue(opticianProducts.length.toString());
+              }),
               'color': Colors.purple,
               'icon': Icons.shopping_bag
             },
             {
               'title': 'Boutiques',
-              'widget': Obx(() => _buildStatValue(boutiqueController
-                  .opticiensList.length
-                  .toString())),
+              'widget': FutureBuilder<void>(
+                future: boutiqueController.getboutiqueByOpticianId(currentOpticianId),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return _buildStatValue("...");
+                  } else {
+                    return Obx(() {
+                      final boutiques = boutiqueController.opticiensList
+                          .where((b) => b.opticien_id == currentOpticianId)
+                          .toList();
+                      return _buildStatValue(boutiques.length.toString());
+                    });
+                  }
+                },
+              ),
               'color': Colors.orange,
               'icon': Icons.store
             },
             {
               'title': 'Commandes',
-              'widget': Obx(() => _buildStatValue(
-                    orderController.allOrders.length.toString(),
-                  )),
+              'widget': FutureBuilder<void>(
+                future: orderController.loadOrdersForCurrentOpticianWithDetails(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return _buildStatValue("...");
+                  } else {
+                    return Obx(() {
+                      // Filtrer par les boutiques de l'opticien pour les commandes
+                      final opticianOrders = orderController.allOrders
+                          .where((order) => order.items.any(
+                              (item) => opticianBoutiqueIds.contains(item.boutiqueId)))
+                          .toList();
+                      return _buildStatValue(opticianOrders.length.toString());
+                    });
+                  }
+                },
+              ),
               'color': Colors.green,
               'icon': Icons.receipt_long
             },
@@ -304,202 +430,414 @@ Future<void> _fetchData() async {
     });
   }
 
-  Widget _buildProductsChart() {
-    final orderController = Get.find<OrderController>();
-    final productController = Get.find<ProductController>();
 
-    // Liste des mois
-    final List<String> months = List.generate(
-        12, (index) => DateFormat('MMMM').format(DateTime(0, index + 1)));
 
-    // Observable pour le nombre de produits à afficher (valeur par défaut : 5)
-    final selectedProductCount = 5.obs;
+Widget _buildProductsChart() {
+  final orderController = Get.find<OrderController>();
+  final productController = Get.find<ProductController>();
 
-    return SizedBox(
-      height: 430,
-      child: Obx(() {
-        final selectedMonthNumber =
-            DateFormat('MMMM').parse(selectedMonth.value).month;
+  // Professional color palette
+  final List<Color> _colorList = const [
+    Color(0xFF355C7D),
+    Color(0xFF6C5B7B),
+    Color(0xFFC06C84),
+    Color(0xFFF67280),
+    Color(0xFFF8B195),
+    Color(0xFF4B86B4),
+    Color(0xFF2A4D69),
+    Color(0xFFADCBE3),
+    Color(0xFF63A69F),
+    Color(0xFFDE6E4B),
+    Color(0xFF9DC8C8),
+    Color(0xFF58C9B9),
+    Color(0xFF519D9E),
+    Color(0xFF1D4E89),
+  ];
 
-        // Calcul de la popularité des produits pour le mois sélectionné
-        final Map<String, int> productPopularity = {};
-        for (final order in orderController.allOrders) {
-          // On ne considère que les commandes avec le statut "Completée"
-          if (order.createdAt.month == selectedMonthNumber &&
-              order.status == 'Completée') {
-            for (final item in order.items) {
-              productPopularity.update(
-                item.productId,
-                (value) => value + item.quantity,
-                ifAbsent: () => item.quantity,
-              );
-            }
-          }
-        }
+  // Get a color from the palette based on index
+  Color _getChartColor(int index) {
+    return _colorList[index % _colorList.length];
+  }
 
-        // Tri des produits par popularité décroissante et prise des N premiers produits
-        final sortedProducts = productPopularity.entries.toList()
-          ..sort((a, b) => b.value.compareTo(a.value));
-        final topProducts =
-            sortedProducts.take(selectedProductCount.value).toList();
+  // List of months
+  final List<String> months = List.generate(
+      12, (index) => DateFormat('MMMM').format(DateTime(0, index + 1)));
 
-        return Card(
-          elevation: 3,
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Dropdown pour sélectionner le mois
-                _buildMonthDropdown(),
-                const SizedBox(height: 20),
-                // Dropdown pour sélectionner le nombre de produits à afficher
-                Row(
-                  children: [
-                    const Text("Nombre de produits : "),
-                    const SizedBox(width: 10),
-                    DropdownButton<int>(
-                      value: selectedProductCount.value,
-                      items: List.generate(
-                        10,
-                        (index) => DropdownMenuItem(
-                          value: index + 1,
-                          child: Text('${index + 1}'),
-                        ),
-                      ),
-                      onChanged: (value) {
-                        if (value != null) {
-                          selectedProductCount.value = value;
-                        }
-                      },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                Expanded(
-                  child: BarChart(
-                    BarChartData(
-                      alignment: BarChartAlignment.spaceAround,
-                      maxY: (topProducts.isNotEmpty
-                              ? topProducts.first.value.toDouble()
-                              : 100) *
-                          1.2,
-                      barTouchData: BarTouchData(
-                        enabled: true,
-                        touchTooltipData: BarTouchTooltipData(
-                          getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                            if (groupIndex >= topProducts.length) return null;
-                            final productId = topProducts[groupIndex].key;
-                            final product =
-                                productController.products.firstWhere(
-                              (p) => p.id == productId,
-                            );
-                            return BarTooltipItem(
-                              '${product.name}\nCommandes : ${rod.toY.toInt()}',
-                              const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      titlesData: FlTitlesData(
-                        show: true,
-                        // Désactivation des titres en haut et à droite
-                        topTitles: AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
-                        ),
-                        rightTitles: AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
-                        ),
-                        bottomTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            reservedSize: 40,
-                            getTitlesWidget: (double value, TitleMeta meta) {
-                              final index = value.toInt();
-                              if (index >= topProducts.length)
-                                return const Text('');
-                              final productId = topProducts[index].key;
-                              final product =
-                                  productController.products.firstWhere(
-                                (p) => p.id == productId,
-                              );
-                              return SideTitleWidget(
-                                angle: 0,
-                                space: 4,
-                                meta: meta,
-                                child: Text(
-                                  product.name,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                        leftTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            reservedSize: 40,
-                            getTitlesWidget: (double value, TitleMeta meta) {
-                              return Text(
-                                value.toInt().toString(),
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey,
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                      borderData: FlBorderData(show: false),
-                      gridData: FlGridData(
-                        show: true,
-                        drawVerticalLine: false,
-                        horizontalInterval: topProducts.isNotEmpty
-                            ? ((topProducts.first.value ~/ 5)
-                                .toDouble()
-                                .clamp(1, double.infinity))
-                            : 10,
-                      ),
-                      barGroups: topProducts.asMap().entries.map((entry) {
-                        final index = entry.key;
-                        final product = entry.value;
-                        return BarChartGroupData(
-                          x: index,
-                          barRods: [
-                            BarChartRodData(
-                              toY: product.value.toDouble(),
-                              color: _getChartColor(index),
-                              width: 28,
-                              borderRadius: BorderRadius.circular(4),
-                              backDrawRodData: BackgroundBarChartRodData(
-                                show: true,
-                                toY: double.infinity,
-                                color: Colors.grey[200],
-                              ),
-                            ),
-                          ],
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+  // Observable for selected month (default current month)
+  final selectedMonth = DateFormat('MMMM').format(DateTime.now()).obs;
+
+  // Observable for number of products to display (default: 5)
+  final selectedProductCount = 5.obs;
+
+  // Build the month dropdown
+  Widget _buildMonthDropdown() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: _colorList[0].withOpacity(0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-        );
-      }),
+        ],
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: selectedMonth.value,
+          icon: Icon(Icons.keyboard_arrow_down, color: _colorList[0]),
+          elevation: 16,
+          style: TextStyle(color: _colorList[6]),
+          onChanged: (String? value) {
+            if (value != null) {
+              selectedMonth.value = value;
+            }
+          },
+          items: months.map<DropdownMenuItem<String>>((String value) {
+            return DropdownMenuItem<String>(
+              value: value,
+              child: Text(value, style: const TextStyle(fontSize: 16)),
+            );
+          }).toList(),
+        ),
+      ),
     );
   }
 
+  return SizedBox(
+    height: 430,
+    child: Obx(() {
+      final selectedMonthNumber =
+          DateFormat('MMMM').parse(selectedMonth.value).month;
+
+      // Calculate product popularity for selected month
+      final Map<String, int> productPopularity = {};
+      for (final order in orderController.allOrders) {
+        // Only consider completed orders
+        if (order.createdAt.month == selectedMonthNumber &&
+            order.status == 'Completée') {
+          for (final item in order.items) {
+            productPopularity.update(
+              item.productId,
+              (value) => value + item.quantity,
+              ifAbsent: () => item.quantity,
+            );
+          }
+        }
+      }
+
+      // Sort products by popularity and take top N
+      final sortedProducts = productPopularity.entries.toList()
+        ..sort((a, b) => b.value.compareTo(a.value));
+      final topProducts =
+          sortedProducts.take(selectedProductCount.value).toList();
+
+      return Card(
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Colors.white, _colorList[7].withOpacity(0.1)],
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Chart title and month dropdown
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Produits Populaires',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: _colorList[6],
+                    ),
+                  ),
+                  _buildMonthDropdown(),
+                ],
+              ),
+              const SizedBox(height: 20),
+              
+              // Product count dropdown
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: _colorList[2].withOpacity(0.3)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      "Nombre de produits : ",
+                      style: TextStyle(color: _colorList[6], fontSize: 14),
+                    ),
+                    const SizedBox(width: 8),
+                    DropdownButtonHideUnderline(
+                      child: DropdownButton<int>(
+                        value: selectedProductCount.value,
+                        icon: Icon(Icons.unfold_more, color: _colorList[2], size: 18),
+                        elevation: 16,
+                        style: TextStyle(color: _colorList[0], fontWeight: FontWeight.w500),
+                        items: List.generate(
+                          10,
+                          (index) => DropdownMenuItem(
+                            value: index + 1,
+                            child: Text('${index + 1}'),
+                          ),
+                        ),
+                        onChanged: (value) {
+                          if (value != null) {
+                            selectedProductCount.value = value;
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              const SizedBox(height: 24),
+              
+              // Legend
+              Wrap(
+                spacing: 16,
+                runSpacing: 8,
+                children: topProducts.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final productId = entry.value.key;
+                  final product = productController.products.firstWhere(
+                    (p) => p.id == productId,
+                  );
+                  return Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: _getChartColor(index),
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        product.name,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: _colorList[6],
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  );
+                }).toList(),
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Chart
+              Expanded(
+                child: topProducts.isEmpty
+                    ? Center(
+                        child: Text(
+                          'Aucune donnée disponible pour ce mois',
+                          style: TextStyle(color: _colorList[6], fontSize: 16),
+                        ),
+                      )
+                    : BarChart(
+                        BarChartData(
+                          alignment: BarChartAlignment.spaceAround,
+                          maxY: (topProducts.isNotEmpty
+                                  ? topProducts.first.value.toDouble()
+                                  : 100) *
+                              1.2,
+                          barTouchData: BarTouchData(
+                            enabled: true,
+                            touchTooltipData: BarTouchTooltipData(
+  // Old version (deprecated):
+  // tooltipBgColor: _colorList[6].withOpacity(0.8),
+  
+  // New version:
+  getTooltipColor: (BarChartGroupData group) => _colorList[6].withOpacity(0.8),
+  tooltipRoundedRadius: 8,
+  tooltipPadding: const EdgeInsets.all(12),
+  getTooltipItem: (group, groupIndex, rod, rodIndex) {
+    if (groupIndex >= topProducts.length) return null;
+    final productId = topProducts[groupIndex].key;
+    final product = productController.products.firstWhere(
+      (p) => p.id == productId,
+    );
+    return BarTooltipItem(
+      '${product.name}\n',
+      TextStyle(
+        color: Colors.white,
+        fontWeight: FontWeight.bold,
+        fontSize: 14,
+      ),
+      children: [
+        TextSpan(
+          text: 'Commandes: ${rod.toY.toInt()}',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.normal,
+          ),
+        ),
+      ],
+    );
+  },
+),
+                          ),
+                          titlesData: FlTitlesData(
+                            show: true,
+                            topTitles: AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                            rightTitles: AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                            bottomTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                reservedSize: 40,
+                                getTitlesWidget: (double value, TitleMeta meta) {
+                                  final index = value.toInt();
+                                  if (index >= topProducts.length)
+                                    return const Text('');
+                                  final productId = topProducts[index].key;
+                                  final product = productController.products.firstWhere(
+                                    (p) => p.id == productId,
+                                  );
+                                  return Padding(
+                                    padding: const EdgeInsets.only(top: 8.0),
+                                    child: SideTitleWidget(
+                                      angle: 0,
+                                      space: 4,
+                                      meta: meta,
+                                      child: Text(
+                                        product.name,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: _colorList[6].withOpacity(0.8),
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            leftTitles: AxisTitles(
+                              axisNameWidget: Text(
+                                'Quantité',
+                                style: TextStyle(
+                                  color: _colorList[0],
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              axisNameSize: 25,
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                reservedSize: 40,
+                                getTitlesWidget: (double value, TitleMeta meta) {
+                                  return Text(
+                                    value.toInt().toString(),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: _colorList[6].withOpacity(0.7),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                          borderData: FlBorderData(
+                            show: true,
+                            border: Border(
+                              bottom: BorderSide(
+                                color: _colorList[7].withOpacity(0.3),
+                                width: 1,
+                              ),
+                              left: BorderSide(
+                                color: _colorList[7].withOpacity(0.3),
+                                width: 1,
+                              ),
+                            ),
+                          ),
+                          gridData: FlGridData(
+                            show: true,
+                            drawVerticalLine: false,
+                            horizontalInterval: topProducts.isNotEmpty
+                                ? ((topProducts.first.value ~/ 5)
+                                    .toDouble()
+                                    .clamp(1, double.infinity))
+                                : 10,
+                            getDrawingHorizontalLine: (value) {
+                              return FlLine(
+                                color: _colorList[7].withOpacity(0.2),
+                                strokeWidth: 1,
+                                dashArray: [5, 5],
+                              );
+                            },
+                          ),
+                          barGroups: topProducts.asMap().entries.map((entry) {
+                            final index = entry.key;
+                            final product = entry.value;
+                            return BarChartGroupData(
+                              x: index,
+                              barRods: [
+                                BarChartRodData(
+                                  toY: product.value.toDouble(),
+                                  gradient: LinearGradient(
+                                    begin: Alignment.bottomCenter,
+                                    end: Alignment.topCenter,
+                                    colors: [
+                                      _getChartColor(index),
+                                      _getChartColor(index).withOpacity(0.7),
+                                    ],
+                                  ),
+                                  width: 28,
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(4),
+                                    topRight: Radius.circular(4),
+                                  ),
+                                  backDrawRodData: BackgroundBarChartRodData(
+                                    show: true,
+                                    toY: (topProducts.isNotEmpty
+                                            ? topProducts.first.value.toDouble()
+                                            : 100) *
+                                        1.2,
+                                    color: Colors.grey[100],
+                                  ),
+                                ),
+                              ],
+                            );
+                          }).toList(),
+                        ),
+                      ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }),
+  );
+}
   // Helper function for chart colors
   Color _getChartColor(int index) {
     final colors = [
@@ -597,7 +935,10 @@ class NavigationDrawer extends StatelessWidget {
   }
 }
 
-class CustomSidebar extends StatelessWidget {
+
+
+
+class CustomSidebar extends StatefulWidget {
   final String currentPage;
 
   const CustomSidebar({
@@ -606,148 +947,498 @@ class CustomSidebar extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<CustomSidebar> createState() => _CustomSidebarState();
+}
+
+class _CustomSidebarState extends State<CustomSidebar> {
+  final List<Map<String, dynamic>> _menuItems = [
+    {
+      'icon': Icons.dashboard_outlined,
+      'activeIcon': Icons.dashboard_rounded,
+      'label': 'Dashboard',
+      'route': '/OpticienDashboard',
+      'id': 'Dashboard',
+    },
+    {
+      'icon': Icons.store_outlined,
+      'activeIcon': Icons.store_rounded,
+      'label': 'Boutiques',
+      'route': '/Boutiques',
+      'id': 'Boutiques',
+    },
+    {
+      'icon': Icons.shopping_bag_outlined,
+      'activeIcon': Icons.shopping_bag_rounded,
+      'label': 'Produits',
+      'route': '/products',
+      'id': 'Products',
+    },
+    {
+      'icon': Icons.people_outline_rounded,
+      'activeIcon': Icons.people_rounded,
+      'label': 'Utilisateurs',
+      'route': '/users',
+      'id': 'Users',
+    },
+    {
+      'icon': Icons.shopping_cart_outlined,
+      'activeIcon': Icons.shopping_cart_rounded,
+      'label': 'Commandes',
+      'route': '/Commande',
+      'id': 'Orders',
+    },
+  ];
+
+  bool _isExpanded = true;
+  bool _isHovering = false;
+
+  void _navigateTo(BuildContext context, String routeName, {dynamic arguments}) {
+    Get.offNamed(routeName, arguments: arguments);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final OpticianController opticianController =
-        Get.find<OpticianController>();
-    return Container(
-      width: 200,
-      color: const Color(0xFFFEF1E9),
-      padding: const EdgeInsets.symmetric(vertical: 20),
-      child: Column(
-        children: [
-          // Logo
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              children: [
-                Container(
-                  width: 30,
-                  height: 30,
-                  child: const Center(),
+    final OpticianController opticianController = Get.find<OpticianController>();
+    final theme = Theme.of(context);
+    final primaryColor = theme.colorScheme.primary;
+    final secondaryColor = Color(0xFF3CAEA3); // Accent color
+    
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovering = true),
+      onExit: (_) => setState(() => _isHovering = false),
+      child: AnimatedContainer(
+        duration: Duration(milliseconds: 250),
+        curve: Curves.easeInOut,
+        width: _isExpanded ? 280 : 80,
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 20,
+              offset: const Offset(0, 0),
+            )
+          ],
+        ),
+        child: Column(
+          children: [
+            // Logo and toggle button
+            Container(
+              height: 90,
+              padding: EdgeInsets.symmetric(horizontal: _isExpanded ? 20 : 16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    primaryColor,
+                    secondaryColor,
+                  ],
                 ),
-                const SizedBox(width: 8),
-                const Text(
-                  "OptiVision",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
+                boxShadow: [
+                  BoxShadow(
+                    color: primaryColor.withOpacity(0.2),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  )
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: _isExpanded 
+                    ? MainAxisAlignment.spaceBetween 
+                    : MainAxisAlignment.center,
+                children: [
+                  if (_isExpanded) 
+                    Row(
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(
+                            Icons.remove_red_eye,
+                            size: 20,
+                            color: primaryColor,
+                          ),
+                        ),
+                        SizedBox(width: 12),
+                        Text(
+                          "OptiVision",
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 22,
+                            color: Colors.white,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    )
+              else
+  Container(
+    padding: EdgeInsets.all(4),  // Réduire le padding
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(8),  // Réduire le rayon
+    ),
+    child: Icon(
+      Icons.remove_red_eye,
+      size: 20,  // Réduire la taille de l'icône
+      color: primaryColor,
+    ),
+  ),
+                  if (_isExpanded || _isHovering)
+                    IconButton(
+                      onPressed: () => setState(() => _isExpanded = !_isExpanded),
+                      icon: Icon(
+                        _isExpanded ? Icons.menu_open : Icons.menu,
+                        color: Colors.white,
+                      ),
+                      tooltip: _isExpanded ? 'Réduire' : 'Étendre',
+                    ),
+                ],
+              ),
+            ),
+            
+            // User profile
+            AnimatedContainer(
+              duration: Duration(milliseconds: 250),
+              curve: Curves.easeInOut,
+              height: 100,
+              width: double.infinity,
+              padding: EdgeInsets.symmetric(
+                horizontal: _isExpanded ? 20 : 16, 
+                vertical: 20
+              ),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.03),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  )
+                ],
+              ),
+              child: _isExpanded
+                  ? Row(
+                      children: [
+                        Stack(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(3),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    primaryColor,
+                                    secondaryColor,
+                                  ],
+                                ),
+                              ),
+                              child: CircleAvatar(
+                                radius: 24,
+                                backgroundColor: theme.colorScheme.surface,
+                                child: Icon(
+                                  Icons.person_outline_rounded,
+                                  size: 26,
+                                  color: primaryColor,
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              right: 0,
+                              bottom: 0,
+                              child: Container(
+                                width: 12,
+                                height: 12,
+                                decoration: BoxDecoration(
+                                  color: Colors.green,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: theme.colorScheme.surface,
+                                    width: 2,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Obx(() => Text(
+                                opticianController.opticianName.value,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 16,
+                                  color: theme.colorScheme.onSurface,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              )),
+                              SizedBox(height: 2),
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 8, 
+                                  vertical: 2
+                                ),
+                                decoration: BoxDecoration(
+                                  color: primaryColor.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  "Opticien Principal",
+                                  style: TextStyle(
+                                    color: primaryColor,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => _navigateTo(context, '/profile'),
+                          icon: Icon(
+                            Icons.settings_outlined,
+                            size: 22,
+                            color: theme.colorScheme.onSurface.withOpacity(0.7),
+                          ),
+                          tooltip: 'Paramètres',
+                        ),
+                      ],
+                    )
+                  : Center(
+                      child: Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              primaryColor,
+                              secondaryColor,
+                            ],
+                          ),
+                        ),
+                        child: CircleAvatar(
+                          radius: 22,
+                          backgroundColor: theme.colorScheme.surface,
+                          child: Icon(
+                            Icons.person_outline_rounded,
+                            size: 24,
+                            color: primaryColor,
+                          ),
+                        ),
+                      ),
+                    ),
+            ),
+            
+            SizedBox(height: 20),
+            
+            // Main navigation
+            Expanded(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: _isExpanded ? 16 : 12
+                  ),
+                  child: Column(
+                    children: _menuItems.map((item) {
+                      final bool isActive = widget.currentPage == item['id'];
+                      return _buildMenuItem(
+                        context: context,
+                        icon: isActive ? item['activeIcon'] : item['icon'],
+                        label: item['label'],
+                        isActive: isActive,
+                        onTap: () => _navigateTo(context, item['route']),
+                        badge: item['badge'],
+                        isExpanded: _isExpanded,
+                      );
+                    }).toList(),
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
-          const SizedBox(height: 20),
-          // Profile
-          Column(
-            children: [
-              const CircleAvatar(
-                radius: 40,
-                backgroundColor: Colors.white,
-                child: Icon(
-                  Icons.person,
-                  size: 40,
-                  color: Colors.grey,
+            
+            // Bottom section with logout
+           Container(
+              padding: EdgeInsets.all(_isExpanded ? 16 : 8), // Réduit le padding
+              child: InkWell(
+                onTap: () => opticianController.logout(),
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    vertical: 12,
+                    horizontal: _isExpanded ? 16 : 0,
+                  ),
+                  constraints: BoxConstraints(
+                    minWidth: _isExpanded ? 280 : 80, // Contraintes de largeur
+                    maxWidth: _isExpanded ? 280 : 80,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: _isExpanded 
+                        ? MainAxisAlignment.start 
+                        : MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.logout_rounded,
+                        size: 20, // Taille réduite
+                        color: theme.colorScheme.error,
+                      ),
+                      if (_isExpanded) SizedBox(width: 12),
+                      if (_isExpanded)
+                        Flexible(
+                          child: Text(
+                            "Déconnexion",
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14, // Taille réduite
+                              color: theme.colorScheme.error,
+                            ),
+                            overflow: TextOverflow.ellipsis, // Ajouté
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 10),
-              Obx(() => Text(
-                    opticianController.opticianName.value,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  )),
-              const Text(
-                "Opticien Principal",
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 40),
-          // Navigation Menu
-          _buildMenuItem(
-              context,
-              Icons.dashboard,
-              "Dashboard",
-              currentPage == 'Dashboard',
-              () => _navigateTo(context, '/OpticienDashboard')),
-              _buildMenuItem(
-              context,
-              Icons.shopping_bag,
-              "Boutiques",
-              currentPage == 'Boutiques',
-              () => _navigateTo(context, '/Boutiques')),
-          _buildMenuItem(
-              context,
-              Icons.shopping_bag,
-              "Produits",
-              currentPage == 'Products',
-              () => _navigateTo(context, '/products')),
-          _buildMenuItem(context, Icons.people, "Utilisateurs",
-              currentPage == 'Users', () => _navigateTo(context, '/users')),
-          _buildMenuItem(context, Icons.shopping_cart, "Commandes",
-              currentPage == 'Orders', () => _navigateTo(context, '/Commande')),
-          const Spacer(), // Pour pousser le bouton de déconnexion vers le bas
-          // Bouton de déconnexion
-          _buildMenuItem(
-            context,
-            Icons.logout,
-            "Déconnexion",
-            false,
-            () => opticianController.logout(),
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  // Helper function to navigate to a new screen
-  void _navigateTo(BuildContext context, String routeName,
-      {dynamic arguments}) {
-    Get.offNamed(routeName, arguments: arguments);
-  }
-
-  // Menu item widget with navigation
-  Widget _buildMenuItem(BuildContext context, IconData icon, String label,
-      bool isActive, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 15),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10),
-          color: isActive ? Colors.white : Colors.transparent,
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
-          child: Row(
-            children: [
-              Icon(
-                icon,
-                color: isActive ? Colors.black : Colors.grey,
-              ),
-              const SizedBox(width: 10),
-              Text(
-                label,
-                style: TextStyle(
-                  color: isActive ? Colors.black : Colors.grey,
-                  fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+  Widget _buildMenuItem({
+    required BuildContext context,
+    required IconData icon,
+    required String label,
+    required bool isActive,
+    required VoidCallback onTap,
+    required bool isExpanded,
+    int? badge,
+  }) {
+    final theme = Theme.of(context);
+    final primaryColor = theme.colorScheme.primary;
+    
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: AnimatedContainer(
+          duration: Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          decoration: BoxDecoration(
+            color: isActive 
+                ? primaryColor 
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: isActive 
+                ? [
+                    BoxShadow(
+                      color: primaryColor.withOpacity(0.25),
+                      blurRadius: 8,
+                      offset: Offset(0, 3),
+                    )
+                  ] 
+                : null,
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(14),
+              splashColor: isActive 
+                  ? Colors.white.withOpacity(0.1) 
+                  : primaryColor.withOpacity(0.05),
+              highlightColor: isActive 
+                  ? Colors.white.withOpacity(0.05) 
+                  : primaryColor.withOpacity(0.1),
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: 16, 
+                  vertical: 14,
+                ),
+                child: Row(
+                  mainAxisAlignment: isExpanded 
+                      ? MainAxisAlignment.start 
+                      : MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      icon,
+                      size: 24,
+                      color: isActive 
+                          ? Colors.white 
+                          : theme.colorScheme.onSurface.withOpacity(0.75),
+                    ),
+                    if (isExpanded) SizedBox(width: 14),
+                    if (isExpanded)
+                      Expanded(
+                        child: Text(
+                          label,
+                          style: TextStyle(
+                            fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                            fontSize: 15,
+                            color: isActive 
+                                ? Colors.white 
+                                : theme.colorScheme.onSurface.withOpacity(0.9),
+                          ),
+                        ),
+                      ),
+                    if (isExpanded && badge != null)
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: isActive 
+                              ? Colors.white.withOpacity(0.25) 
+                              : primaryColor.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          badge.toString(),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: isActive 
+                                ? Colors.white 
+                                : Colors.white,
+                          ),
+                        ),
+                      )
+                    else if (!isExpanded && badge != null)
+                      Positioned(
+                        top: 0,
+                        right: 0,
+                        child: Container(
+                          padding: EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.error,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Text(
+                            badge.toString(),
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
-              if (isActive)
-                Container(
-                  margin: const EdgeInsets.only(left: 5),
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.red,
-                  ),
-                ),
-            ],
+            ),
           ),
         ),
       ),

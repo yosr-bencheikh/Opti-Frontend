@@ -25,7 +25,7 @@ abstract class AuthRemoteDataSource {
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   final http.Client client;
 
-  
+
   final String baseUrl = 'http://localhost:3000/api';
 
   static String? verifiedEmail; // Made statica
@@ -282,7 +282,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   @override
   Future<void> sendCodeToEmail(String email) async {
-    // Use your server's IP address here instead of localhost.
+    
     final url = Uri.parse('$baseUrl/forgot-password');
     final response = await client.post(
       url,
@@ -358,16 +358,18 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   @override
   Future<void> updateUserImage(String email, String imageUrl) async {
-    final url = Uri.parse(
-        '$baseUrl/upload/$email/image'); // Updated URL to match the backend route
+    final url = Uri.parse('$baseUrl/upload/$email/image'); // URL correcte
     try {
-      final response = await client.put(
+      final response = await http.put(
         url,
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'imageUrl': imageUrl}),
       );
-      if (response.statusCode != 200) {
-        throw Exception('Failed to update user image');
+
+      if (response.statusCode == 200) {
+        print("Image URL updated successfully for user $email");
+      } else {
+        throw Exception('Failed to update user image: ${response.body}');
       }
     } catch (e) {
       throw Exception('Error updating user image: $e');
@@ -376,17 +378,17 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   @override
   Future<void> deleteUserImage(String email) async {
-    // Implement the logic to call your backend API to delete the image
-    final response = await http.delete(
-      Uri.parse('$baseUrl/upload/$email/image'),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: json.encode({'email': email}),
-    );
+    final url = Uri.parse('$baseUrl/upload/$email/image'); // URL correcte
+    try {
+      final response = await http.delete(url);
 
-    if (response.statusCode != 200) {
-      throw Exception('Failed to delete image: ${response.body}');
+      if (response.statusCode == 200) {
+        print("Image deleted successfully for user $email");
+      } else {
+        throw Exception('Failed to delete user image: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Error deleting user image: $e');
     }
   }
 }

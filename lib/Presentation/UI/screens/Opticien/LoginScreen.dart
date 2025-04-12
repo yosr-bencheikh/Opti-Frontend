@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:opti_app/Presentation/UI/screens/Opticien/ForgotPasswordScreen.dart';
 import 'package:opti_app/Presentation/controllers/OpticianController.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -220,35 +221,24 @@ class _LoginScreenState extends State<LoginScreenOpticien> {
                               children: [
                                 Row(
                                   children: [
-                                    Checkbox(
-                                      value: true,
-                                      activeColor: Color(0xFF1E5F74),
-                                      onChanged: (value) {
-                                        // TODO: Implement remember me
-                                      },
-                                    ),
-                                    Text(
-                                      'Se souvenir de moi',
-                                      style: TextStyle(
-                                        color: Colors.grey.shade700,
-                                        fontSize: 14,
-                                      ),
-                                    ),
+                                    
+                                  
                                   ],
                                 ),
-                                TextButton(
-                                  onPressed: () {
-                                    // TODO: Implement forgot password
-                                  },
-                                  child: Text(
-                                    'Mot de passe oublié ?',
-                                    style: TextStyle(
-                                      color: Color(0xFF1E5F74),
-                                      fontWeight: FontWeight.w500,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ),
+                                // In your login screen
+TextButton(
+  onPressed: () {
+    Get.to(() => ForgotPasswordScreen());
+  },
+  child: Text(
+    'Mot de passe oublié ?',
+    style: TextStyle(
+      color: Color(0xFF1E5F74),
+      fontWeight: FontWeight.w500,
+      fontSize: 14,
+    ),
+  ),
+),
                               ],
                             ),
                             const SizedBox(height: 30),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:opti_app/Presentation/UI/screens/User/product_details_screen.dart';
+import 'package:opti_app/Presentation/UI/screens/User/stores_screen.dart'; // Make sure to import your stores screen
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
 import 'package:opti_app/Presentation/controllers/wishlist_controller.dart';
 import 'package:opti_app/domain/entities/product_entity.dart';
@@ -20,7 +21,7 @@ class WishlistPage extends StatelessWidget {
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: const Text(
-          'Wishlist',
+          'Liste de souhaits',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w600,
@@ -46,14 +47,13 @@ class WishlistPage extends StatelessWidget {
         if (controller.isLoading.value) {
           return const Center(
             child: CircularProgressIndicator(
-              strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
-            ),
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.blue)),
           );
         }
 
         if (controller.wishlistItems.isEmpty) {
-          return _buildEmptyWishlist();
+          return _buildEmptyWishlist(); // This is the method you wanted
         }
 
         return _buildWishlistContent(controller);
@@ -80,7 +80,7 @@ class WishlistPage extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'Your Wishlist is Empty',
+            'Votre liste de souhaits est vide',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w600,
@@ -89,7 +89,7 @@ class WishlistPage extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Start adding items to your wishlist',
+            'Commencez à ajouter des articles à votre liste',
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey[600],
@@ -97,7 +97,10 @@ class WishlistPage extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: () => Get.back(),
+            onPressed: () {
+              // Navigate to stores screen
+              Get.to(() => StoresScreen());
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue,
               foregroundColor: Colors.white,
@@ -107,7 +110,7 @@ class WishlistPage extends StatelessWidget {
               ),
               elevation: 0,
             ),
-            child: const Text('Explore Products'),
+            child: const Text('Découvrir les produits'),
           ),
         ],
       ),
@@ -120,9 +123,23 @@ class WishlistPage extends StatelessWidget {
       itemCount: controller.wishlistItems.length,
       itemBuilder: (context, index) {
         final wishlistItem = controller.wishlistItems[index];
-        final product = productController.products.firstWhere(
-          (p) => p.id == wishlistItem.productId,
-        );
+        final product = productController.products.firstWhereOrNull(
+              (p) => p.id == wishlistItem.productId,
+            ) ??
+            Product(
+              id: 'not_found',
+              name: 'Produit non disponible',
+              prix: 0,
+              image: '',
+              description: '',
+              category: '',
+              marque: '',
+              couleur: '',
+              quantiteStock: 0,
+              averageRating: 0,
+              totalReviews: 0,
+              style: '',
+            );
 
         if (product.id == 'not_found') return const SizedBox.shrink();
 
@@ -143,18 +160,14 @@ class WishlistPage extends StatelessWidget {
             ),
           ),
           onDismissed: (direction) async {
-            // Store the removed item temporarily
             final removedItem = controller.wishlistItems[index];
-
-            // Remove from UI immediately
             controller.wishlistItems.removeAt(index);
 
-            // Then try to remove from backend
             try {
               await controller.removeFromWishlist(product.id!);
               Get.snackbar(
-                'Removed',
-                'Item removed from wishlist',
+                'Supprimé',
+                'Article retiré de la liste',
                 snackPosition: SnackPosition.BOTTOM,
                 backgroundColor: Colors.black87,
                 colorText: Colors.white,
@@ -163,15 +176,14 @@ class WishlistPage extends StatelessWidget {
                 duration: const Duration(seconds: 2),
               );
             } catch (e) {
-              // If removal fails, put the item back in the list
               if (index <= controller.wishlistItems.length) {
                 controller.wishlistItems.insert(index, removedItem);
               } else {
                 controller.wishlistItems.add(removedItem);
               }
               Get.snackbar(
-                'Error',
-                'Failed to remove item from wishlist',
+                'Erreur',
+                'Échec de la suppression de l\'article',
                 snackPosition: SnackPosition.BOTTOM,
                 backgroundColor: Colors.red,
                 colorText: Colors.white,
@@ -181,7 +193,9 @@ class WishlistPage extends StatelessWidget {
             }
           },
           child: GestureDetector(
-            onTap: () => Get.to(() => ProductDetailsScreen(product: product)),
+            onTap: () => product.id != 'not_found'
+                ? Get.to(() => ProductDetailsScreen(product: product))
+                : null,
             child: Card(
               margin: const EdgeInsets.only(bottom: 12),
               elevation: 2,
@@ -198,16 +212,38 @@ class WishlistPage extends StatelessWidget {
                       child: SizedBox(
                         width: 80,
                         height: 80,
-                        child: Image.network(
-                          product.image,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Container(
-                            color: Colors.grey[100],
-                            child: const Icon(Icons.image_rounded,
-                                color: Colors.grey),
-                          ),
-                        ),
+                        child: product.image.isEmpty
+                            ? Container(
+                                color: Colors.grey[100],
+                                child: const Icon(Icons.image_rounded,
+                                    color: Colors.grey),
+                              )
+                            : Image.network(
+                                product.image,
+                                fit: BoxFit.cover,
+                                loadingBuilder:
+                                    (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return Center(
+                                    child: CircularProgressIndicator(
+                                      value:
+                                          loadingProgress.expectedTotalBytes !=
+                                                  null
+                                              ? loadingProgress
+                                                      .cumulativeBytesLoaded /
+                                                  loadingProgress
+                                                      .expectedTotalBytes!
+                                              : null,
+                                    ),
+                                  );
+                                },
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Container(
+                                  color: Colors.grey[100],
+                                  child: const Icon(Icons.broken_image_rounded,
+                                      color: Colors.grey),
+                                ),
+                              ),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -241,8 +277,8 @@ class WishlistPage extends StatelessWidget {
                                         .removeFromWishlist(product.id!);
                                   } catch (e) {
                                     Get.snackbar(
-                                      'Error',
-                                      'Failed to remove item from wishlist',
+                                      'Erreur',
+                                      'Échec de la suppression de l\'article',
                                       snackPosition: SnackPosition.BOTTOM,
                                       backgroundColor: Colors.red,
                                       colorText: Colors.white,
@@ -277,7 +313,7 @@ class WishlistPage extends StatelessWidget {
                               elevation: 0,
                             ),
                             child: const Text(
-                              'Add to Cart',
+                              'Ajouter au panier',
                               style: TextStyle(fontSize: 14),
                             ),
                           ),

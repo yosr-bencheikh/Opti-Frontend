@@ -1048,17 +1048,17 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
   }
 
   void _showOrderDetails(Order order, {bool showModifyButtons = true}) {
-    final dateFormat = DateFormat('dd/MM/yyyy HH:mm');
+  final dateFormat = DateFormat('dd/MM/yyyy HH:mm');
 
-    // Group items by boutiqueId
-    final Map<String, List<OrderItem>> groupedItems = {};
-    for (var item in order.items) {
-      final boutiqueId = item.boutiqueId;
-      if (!groupedItems.containsKey(boutiqueId)) {
-        groupedItems[boutiqueId] = [];
-      }
-      groupedItems[boutiqueId]!.add(item);
+  // Group items by boutiqueId with null check
+  final Map<String, List<OrderItem>> groupedItems = {};
+  for (var item in order.items) {
+    final boutiqueId = item.boutiqueId ?? 'no_boutique'; // Provide default value for null
+    if (!groupedItems.containsKey(boutiqueId)) {
+      groupedItems[boutiqueId] = [];
     }
+    groupedItems[boutiqueId]!.add(item);
+  }
 
     showModalBottomSheet(
       context: context,

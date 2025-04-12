@@ -1,6 +1,6 @@
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:opti_app/domain/entities/wishlist_item.dart';
 import 'package:dio/dio.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 abstract class WishlistRemoteDataSource {
   Future<List<WishlistItem>> getWishlistItems(String userId);
@@ -12,14 +12,15 @@ abstract class WishlistRemoteDataSource {
 class WishlistRemoteDataSourceImpl implements WishlistRemoteDataSource {
   final Dio dio;
   final String baseUrl =
-      'http://localhost:3000/api'; // Update with your actual API base URL
+      'http://192.168.1.19:3000/api'; // Update with your actual API base URL
+
+  // Update with your actual API base URL
 
   WishlistRemoteDataSourceImpl(this.dio);
-
+  final FlutterSecureStorage _storage = FlutterSecureStorage();
   // Get token from SharedPreferences
   Future<String?> getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('token');
+    return await _storage.read(key: 'token');
   }
 
   @override

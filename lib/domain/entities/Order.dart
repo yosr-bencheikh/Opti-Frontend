@@ -128,7 +128,8 @@ class OrderItem extends Equatable {
   final int quantity;
   final double unitPrice;
   final double totalPrice;
-  final String boutiqueId; // Added field
+  final String? boutiqueId;
+  final String? opticienId;
 
   const OrderItem({
     required this.productId,
@@ -137,37 +138,35 @@ class OrderItem extends Equatable {
     required this.quantity,
     required this.unitPrice,
     required this.totalPrice,
-    required this.boutiqueId, // Added to constructor
+    this.boutiqueId,
+    this.opticienId,
   });
 
   @override
   List<Object?> get props => [
-        productId,
-        productName,
-        productImage,
-        quantity,
-        unitPrice,
-        totalPrice,
-        boutiqueId, // Added to props
-      ];
+    productId,
+    productName,
+    productImage,
+    quantity,
+    unitPrice,
+    totalPrice,
+    boutiqueId,
+    opticienId,
+  ];
 
-  // Factory method to create OrderItem from JSON
   factory OrderItem.fromJson(Map<String, dynamic> json) {
     return OrderItem(
       productId: json['productId'],
       productName: json['productName'],
       productImage: json['productImage'],
       quantity: json['quantity'],
-      unitPrice: (json['unitPrice'] is int)
-          ? (json['unitPrice'] as int).toDouble()
-          : json['unitPrice'],
-      totalPrice: (json['totalPrice'] is int)
-          ? (json['totalPrice'] as int).toDouble()
-          : json['totalPrice'],
-      boutiqueId: json['boutiqueId'] ?? '', // Provide default value if null
+      unitPrice: (json['unitPrice'] as num).toDouble(),
+      totalPrice: (json['totalPrice'] as num).toDouble(),
+      boutiqueId: json['boutiqueId'] ?? json['opticienId'],
+      opticienId: json['opticienId'] ?? json['boutiqueId'],
     );
   }
-  // Convert OrderItem to JSON
+
   Map<String, dynamic> toJson() {
     return {
       'productId': productId,
@@ -176,7 +175,8 @@ class OrderItem extends Equatable {
       'quantity': quantity,
       'unitPrice': unitPrice,
       'totalPrice': totalPrice,
-      'boutiqueId': boutiqueId, // Added serialization
+      'boutiqueId': boutiqueId,
+      'opticienId': opticienId,
     };
   }
 }

@@ -17,13 +17,78 @@ abstract class OpticianDataSource {
   Future<void> updateOpticianImage(String email, String imageUrl);
   Future<Optician> getOpticianByEmail(String email);
   Future<String> loginWithEmail(String email, String password);
+
+  Future<void> sendPasswordResetEmail(String email);
+  Future<bool> verifyResetCode(String email, String code);
+  Future<bool> resetPassword(String email, String code, String newPassword);
 }
 
 class OpticianDataSourceImpl implements OpticianDataSource {
   final String baseUrl =
+
       'http://localhost:3000/api'; // Replace with your API base URL
+
+
   final dio_pkg.Dio _dio = dio_pkg.Dio(); // For web image upload
 
+@override
+Future<void> sendPasswordResetEmail(String email) async {
+  try {
+    final response = await http.post(
+      Uri.parse('$baseUrl/send-reset-code'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({'email': email}),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to send reset email: ${response.body}');
+    }
+  } catch (e) {
+    throw Exception('Failed to send reset email: $e');
+  }
+}
+
+@override
+Future<bool> verifyResetCode(String email, String code) async {
+  try {
+    final response = await http.post(
+      Uri.parse('$baseUrl/verify-reset-code'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({'email': email, 'code': code}),
+    );
+
+    if (response.statusCode == 200) {
+      return true;
+    } else {
+      throw Exception('Invalid verification code');
+    }
+  } catch (e) {
+    throw Exception('Verification failed: $e');
+  }
+}
+
+@override
+Future<bool> resetPassword(String email, String code, String newPassword) async {
+  try {
+    final response = await http.post(
+      Uri.parse('$baseUrl/reset-password'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'email': email,
+        'code': code,
+        'newPassword': newPassword
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return true;
+    } else {
+      throw Exception('Password reset failed: ${response.body}');
+    }
+  } catch (e) {
+    throw Exception('Password reset failed: $e');
+  }
+}
   @override
   Future<String> loginWithEmail(String email, String password) async {
     try {

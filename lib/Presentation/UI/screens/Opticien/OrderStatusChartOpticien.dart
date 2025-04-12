@@ -4,14 +4,14 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:opti_app/Presentation/controllers/OrderController.dart';
 
-class OrderStatusChart extends StatefulWidget {
-  const OrderStatusChart({Key? key}) : super(key: key);
+class OrderStatusChartOpticien extends StatefulWidget {
+  const OrderStatusChartOpticien({Key? key}) : super(key: key);
 
   @override
-  State<OrderStatusChart> createState() => _OrderStatusChartState();
+  State<OrderStatusChartOpticien> createState() => _OrderStatusChartState();
 }
 
-class _OrderStatusChartState extends State<OrderStatusChart>
+class _OrderStatusChartState extends State<OrderStatusChartOpticien>
     with SingleTickerProviderStateMixin {
   final OrderController _orderController = Get.find<OrderController>();
   int touchedIndex = -1;
