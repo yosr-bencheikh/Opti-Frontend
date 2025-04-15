@@ -9,57 +9,38 @@ class GlassesManagerService {
   ));
 
   /// Upload a 3D model file to the server
-  static Future<String> uploadModel3D(
-    Uint8List bytes,
-    String fileName,
-    String productId,
-  ) async {
-    try {
-      // Create FormData for upload
-      FormData formData = FormData.fromMap({
-        'file': MultipartFile.fromBytes(
-          bytes,
-          filename: fileName,
-        ),
-        'productId': productId,
-      });
+// Dans GlassesManagerService.dart
+static Future<String> uploadModel3D(
+  Uint8List bytes,
+  String fileName,
+  String productId,
+) async {
+  try {
+    FormData formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(bytes, filename: fileName),
+      'productId': productId,
+    });
 
-      // Add debug logs
-      print('Uploading model: $fileName, productId: $productId');
-      print('FormData contents: ${formData.fields}');
+    final response = await _dio.post(
+      '/upload-model', 
+      data: formData,
+      options: Options(
+        contentType: 'multipart/form-data',
+        headers: {
+          'Accept': 'application/json',
+        },
+      ),
+    );
 
-      // Send request to the correct endpoint
-      final response = await _dio.post('/upload-model', data: formData);
-
-      print('Upload response: ${response.data}');
-
-      if (response.statusCode == 200) {
-        // Return either the model ID or the file path, depending on what your API returns
-        // This will be set as the model3D field in your Product
-        if (response.data['modelId'] != null) {
-          return response.data['modelId'];
-        } else {
-          return response.data['filePath'];
-        }
-      } else {
-        throw Exception('Upload failed: ${response.statusCode}');
-      }
-    } on DioException catch (e) {
-      print('DioException during 3D model upload:');
-      print('  - Status code: ${e.response?.statusCode}');
-      print('  - Response data: ${e.response?.data}');
-      print('  - Request: ${e.requestOptions.uri}');
-      
-      if (e.response?.statusCode == 404) {
-        throw Exception('Upload route not found. Verify server configuration.');
-      }
-      
-      throw Exception('Upload error: ${e.message}');
-    } catch (e) {
-      print('Error during 3D model upload: $e');
-      throw Exception('Upload error: $e');
+    if (response.statusCode == 200) {
+      return response.data['url']; // Le serveur doit retourner l'URL complète
+    } else {
+      throw Exception('Upload failed: ${response.statusMessage}');
     }
+  } catch (e) {
+    throw Exception('Upload error: ${e.toString()}');
   }
+}
 
 
   /// Récupérer tous les modèles 3D

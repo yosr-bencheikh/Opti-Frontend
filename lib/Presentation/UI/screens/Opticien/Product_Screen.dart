@@ -25,7 +25,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
   final ProductController productController = Get.find();
   File? _imageFile;
   PlatformFile? _tempSelectedImage;
-    String _currentSearchTerm = '';
+  String _currentSearchTerm = '';
 
   TextEditingController _searchController = TextEditingController();
 
@@ -38,8 +38,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
   String? _selectedOpticien;
   double? _minPrice;
   double? _maxPrice;
-    bool _showFilters = false;
-
+  bool _showFilters = false;
 
   // Color scheme for the app
   final Color primaryColor = const Color(0xFF1A73E9);
@@ -51,20 +50,20 @@ class _ProductsScreenState extends State<ProductsScreen> {
   final Color textSecondaryColor = const Color(0xFF5F6368);
 
 // Professional color palette
-final Color _lightPrimaryColor = Color(0xFFE8F5E9); // Light green
-final Color _primaryColor = Color(0xFF2E7D32); // Dark green
-final Color _secondaryColor = Color(0xFF6A1B9A); // Purple
-final Color _accentColor = Color(0xFF00C853); // Light green
-final Color _backgroundColor = Color(0xFFF5F5F6); // Light gray
-final Color _cardColor = Colors.white;
-final Color _textPrimaryColor = Color(0xFF263238); // Dark blue-gray
-final Color _textSecondaryColor = Color(0xFF546E7A); // Medium blue-gray
-final Color _successColor = Color(0xFF388E3C); // Success green
-final Color _errorColor = Color(0xFFD32F2F); // Error red
-final Color _warningColor = Color(0xFFFFA000); // Warning amber
-final Color _infoColor = Color(0xFF1976D2); // Info blue
+  final Color _lightPrimaryColor = Color(0xFFE8F5E9); // Light green
+  final Color _primaryColor = Color(0xFF2E7D32); // Dark green
+  final Color _secondaryColor = Color(0xFF6A1B9A); // Purple
+  final Color _accentColor = Color(0xFF00C853); // Light green
+  final Color _backgroundColor = Color(0xFFF5F5F6); // Light gray
+  final Color _cardColor = Colors.white;
+  final Color _textPrimaryColor = Color(0xFF263238); // Dark blue-gray
+  final Color _textSecondaryColor = Color(0xFF546E7A); // Medium blue-gray
+  final Color _successColor = Color(0xFF388E3C); // Success green
+  final Color _errorColor = Color(0xFFD32F2F); // Error red
+  final Color _warningColor = Color(0xFFFFA000); // Warning amber
+  final Color _infoColor = Color(0xFF1976D2); // Info blue
 
-final Map<String, String?> _filters = {
+  final Map<String, String?> _filters = {
     'name': null,
     'category': null,
     'marque': null,
@@ -74,10 +73,10 @@ final Map<String, String?> _filters = {
     'prixMin': null,
     'prixMax': null,
   };
- @override
+  @override
   void initState() {
     super.initState();
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadInitialData();
     });
@@ -85,20 +84,20 @@ final Map<String, String?> _filters = {
 
   Future<void> _loadInitialData() async {
     try {
-      // Charge d'abord les boutiques de l'opticien
       final opticianController = Get.find<OpticianController>();
       final boutiqueController = Get.find<BoutiqueController>();
-      
+
       if (opticianController.isLoggedIn.value) {
-        await boutiqueController.getboutiqueByOpticianId(
-          opticianController.currentUserId.value
-        );
-        
-        // Puis charge les produits
+        // Chargez d'abord les boutiques
+        await boutiqueController
+            .getboutiqueByOpticianId(opticianController.currentUserId.value);
+
+        // Puis chargez les produits
         await productController.loadProductsForCurrentOptician();
       }
     } catch (e) {
-      Get.snackbar('Erreur', e.toString());
+      Get.snackbar(
+          'Erreur', 'Impossible de charger les données: ${e.toString()}');
     }
   }
 
@@ -196,8 +195,7 @@ final Map<String, String?> _filters = {
     );
   }
 
-
-    Widget _buildHeader() {
+  Widget _buildHeader() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -222,11 +220,9 @@ final Map<String, String?> _filters = {
             ),
           ],
         ),
-      
       ],
     );
   }
-
 
   Color getColorFromHex(String hexColor) {
     // Assurez-vous que le code est au bon format
@@ -246,8 +242,6 @@ final Map<String, String?> _filters = {
       return Colors.black; // Couleur par défaut en cas d'erreur
     }
   }
-
-  
 
   Widget _buildFilterChips() {
     if (_selectedCategory == null &&
@@ -363,9 +357,7 @@ final Map<String, String?> _filters = {
     );
   }
 
-
-
-    Widget _buildSearchFilterBar() {
+  Widget _buildSearchFilterBar() {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -383,14 +375,16 @@ final Map<String, String?> _filters = {
                     onChanged: (value) => _filterProducts(),
                     decoration: InputDecoration(
                       hintText: 'Rechercher un produit...',
-                      prefixIcon: Icon(Icons.search, color: _textSecondaryColor),
+                      prefixIcon:
+                          Icon(Icons.search, color: _textSecondaryColor),
                       filled: true,
                       fillColor: Colors.grey[50],
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide.none,
                       ),
-                      contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      contentPadding:
+                          EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                     ),
                   ),
                 ),
@@ -401,7 +395,8 @@ final Map<String, String?> _filters = {
                       _showFilters = !_showFilters;
                     });
                   },
-                  icon: Icon(_showFilters ? Icons.filter_alt_off : Icons.filter_alt),
+                  icon: Icon(
+                      _showFilters ? Icons.filter_alt_off : Icons.filter_alt),
                   label: Text(_showFilters ? 'Cacher Filtres' : 'Filtres'),
                   style: OutlinedButton.styleFrom(
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -439,326 +434,281 @@ final Map<String, String?> _filters = {
     );
   }
 
+  Widget _buildDataTable() {
+    return Obx(() {
+      // Gestion des états de chargement et d'erreur
+      if (productController.isLoading) {
+        return Center(
+          child: CircularProgressIndicator(color: _primaryColor),
+        );
+      }
 
-
-Widget _buildDataTable() {
-  if (productController.isLoading) {
-    return Center(
-      child: CircularProgressIndicator(color: _primaryColor),
-    );
-  }
-
-  if (productController.error != null) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, size: 48, color: _errorColor),
-          SizedBox(height: 16),
-          Text('Erreur de chargement', style: TextStyle(fontSize: 18, color: _textPrimaryColor)),
-          SizedBox(height: 8),
-          Text(productController.error!, style: TextStyle(color: _textSecondaryColor), textAlign: TextAlign.center),
-          SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: _loadInitialData,
-            child: Text('Réessayer'),
-            style: ElevatedButton.styleFrom(backgroundColor: _primaryColor, foregroundColor: Colors.white),
-          ),
-        ],
-      ),
-    );
-  }
-
-  if (_filteredProducts.isEmpty) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.search_off, size: 48, color: _textSecondaryColor),
-          SizedBox(height: 16),
-          Text(
-            _searchController.text.isEmpty ? 'Aucun produit disponible' : 'Aucun résultat trouvé',
-            style: TextStyle(fontSize: 18, color: _textPrimaryColor),
-          ),
-          if (_searchController.text.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 8.0),
-              child: TextButton(
-                onPressed: _resetFilters,
-                child: Text('Réinitialiser la recherche', style: TextStyle(color: _primaryColor)),
+      if (productController.error != null) {
+        final errorMessage = productController.error!;
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 48, color: _errorColor),
+              SizedBox(height: 16),
+              Text(
+                'Erreur de chargement',
+                style: TextStyle(fontSize: 18, color: _textPrimaryColor),
               ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  return Padding(
-    padding: const EdgeInsets.all(12.0),
-    child: Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Column(
-        children: [
-          // En-tête du tableau
-          Container(
-            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-            decoration: BoxDecoration(
-              color: _primaryColor.withOpacity(0.1),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-            ),
-            child: _buildProductTableHeader(),
+              SizedBox(height: 8),
+              Text(
+                errorMessage,
+                style: TextStyle(color: _textSecondaryColor),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () => productController.loadProducts(),
+                child: Text('Réessayer'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _primaryColor,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ],
           ),
-          
-          // Contenu du tableau
-          Expanded(
-            child: ListView.separated(
-              itemCount: _paginatedProducts.length,
-              separatorBuilder: (context, index) => Divider(height: 1, color: Colors.grey[200]),
-              itemBuilder: (context, index) {
-                final product = _paginatedProducts[index];
-                return Container(
-                  padding: EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-                  color: index.isEven ? Colors.white : Colors.grey[50],
-                  child: _buildProductTableRow(product),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-}
+        );
+      }
 
-Widget _buildProductTableHeader() {
-  final columns = [
-    TableColumn(flex: 10, label: 'Image', icon: Icons.image),
-    TableColumn(flex: 15, label: 'Nom', icon: Icons.label),
-    TableColumn(flex: 15, label: 'Boutique', icon: Icons.store),
-    TableColumn(flex: 12, label: 'Catégorie', icon: Icons.category),
-    TableColumn(flex: 12, label: 'Marque', icon: Icons.branding_watermark),
-    TableColumn(flex: 10, label: 'Couleur', icon: Icons.color_lens),
-    TableColumn(flex: 10, label: 'Type verre', icon: Icons.visibility),
-    TableColumn(flex: 8, label: 'Prix', icon: Icons.attach_money),
-    TableColumn(flex: 8, label: 'Stock', icon: Icons.inventory),
-    TableColumn(flex: 10, label: 'Actions', icon: Icons.settings, isActions: true),
-  ];
+      // Obtenir les produits filtrés
+      final filteredProducts = _filteredProducts;
 
-  return Row(
-    children: columns.map((col) {
-      return Expanded(
-        flex: col.flex,
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 4),
-          child: Tooltip(
-            message: col.label,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(col.icon, size: 16, color: _primaryColor),
-                SizedBox(width: 6),
-                Flexible(
-                  child: Text(
-                    col.label,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: _textPrimaryColor,
-                      fontSize: 12,
+      // Gestion des résultats vides
+      if (filteredProducts.isEmpty) {
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                _searchController.text.isEmpty
+                    ? Icons.inventory_2_outlined
+                    : Icons.search_off,
+                size: 48,
+                color: _textSecondaryColor,
+              ),
+              SizedBox(height: 16),
+              Text(
+                _searchController.text.isEmpty
+                    ? 'Aucun produit disponible'
+                    : 'Aucun résultat trouvé',
+                style: TextStyle(fontSize: 18, color: _textPrimaryColor),
+              ),
+              if (_searchController.text.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: TextButton(
+                    onPressed: _resetFilters,
+                    child: Text(
+                      'Réinitialiser la recherche',
+                      style: TextStyle(color: _primaryColor),
                     ),
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-              ],
-            ),
+            ],
+          ),
+        );
+      }
+
+      // Construction de la table de données
+      return Container(
+        constraints: BoxConstraints(minHeight: 400),
+        child: Card(
+          elevation: 4,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            children: [
+              // En-tête du tableau
+              Container(
+                padding: EdgeInsets.symmetric(vertical: 14, horizontal: 10),
+                decoration: BoxDecoration(
+                  color: _primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(12),
+                  ),
+                ),
+                child: _buildProductTableHeader(),
+              ),
+
+              // Contenu du tableau
+              Expanded(
+                child: ListView.separated(
+                  itemCount: _paginatedProducts.length,
+                  separatorBuilder: (context, index) => Divider(
+                    height: 1,
+                    color: Colors.grey[200],
+                  ),
+                  itemBuilder: (context, index) {
+                    final product = _paginatedProducts[index];
+                    return Container(
+                      padding: EdgeInsets.symmetric(
+                        vertical: 12,
+                        horizontal: 10,
+                      ),
+                      color: index.isEven ? Colors.white : Colors.grey[50],
+                      child: _buildProductTableRow(product),
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
         ),
       );
-    }).toList(),
-  );
-}
+    });
+  }
 
-Widget _buildProductTableRow(Product product) {
-  return Row(
-    children: [
-      // Image
-      Expanded(
-        flex: 10,
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 4),
-          child: Tooltip(
-            message: product.name,
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(6),
-                image: product.image.isNotEmpty
-                    ? DecorationImage(
-                        image: NetworkImage(product.image),
-                        fit: BoxFit.cover,
-                      )
-                    : null,
-                color: Colors.grey[200],
-              ),
-              child: product.image.isEmpty
-                  ? Icon(Icons.image_not_supported, size: 20, color: Colors.grey[400])
-                  : null,
-            ),
-          ),
-        ),
-      ),
-      
-      // Nom
-      Expanded(
-        flex: 15,
-        child: _buildTableCell(
-          icon: Icons.label_outline,
-          text: product.name,
-          isImportant: true,
-        ),
-      ),
-      
-      // Boutique
-      Expanded(
-        flex: 15,
-        child: _buildTableCell(
-          icon: Icons.store_mall_directory_outlined,
-          text: productController.getOpticienNom(product.boutiqueId) ?? 'N/A',
-        ),
-      ),
-      
-      // Catégorie
-      Expanded(
-        flex: 12,
-        child: _buildTableCell(
-          icon: Icons.category_outlined,
-          text: product.category,
-        ),
-      ),
-      
-      // Marque
-      Expanded(
-        flex: 12,
-        child: _buildTableCell(
-          icon: Icons.branding_watermark_outlined,
-          text: product.marque,
-        ),
-      ),
-      
-      // Couleur
-      Expanded(
-        flex: 10,
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 4),
-          child: Tooltip(
-            message: product.couleur,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.color_lens_outlined, size: 16, color: _textSecondaryColor),
-                SizedBox(width: 6),
-                Container(
-                  width: 12,
-                  height: 12,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: _getColorFromString(product.couleur),
-                    border: Border.all(color: Colors.grey.shade300),
-                  ),
-                ),
-                SizedBox(width: 6),
-                Flexible(
-                  child: Text(
-                    product.couleur,
-                    style: TextStyle(fontSize: 12),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-      
-      // Type verre
-      Expanded(
-        flex: 10,
-        child: _buildTableCell(
-          icon: Icons.visibility_outlined,
-          text: product.typeVerre ?? 'N/A',
-        ),
-      ),
-      
-      // Prix
-      Expanded(
-        flex: 8,
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 4),
-          child: Tooltip(
-            message: '${product.prix.toStringAsFixed(2)} DT',
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.attach_money, size: 16, color: _accentColor),
-                SizedBox(width: 6),
-                Flexible(
-                  child: Text(
-                    '${product.prix.toStringAsFixed(2)} DT',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: _accentColor,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-      
-      // Stock
-      Expanded(
-        flex: 8,
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 4),
-          child: Tooltip(
-            message: 'Quantité en stock',
-            child: Container(
-              padding: EdgeInsets.symmetric(vertical: 2, horizontal: 6),
-              decoration: BoxDecoration(
-                color: product.quantiteStock > 10
-                    ? _successColor.withOpacity(0.1)
-                    : product.quantiteStock > 0
-                        ? _warningColor.withOpacity(0.1)
-                        : _errorColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
+  Widget _buildProductTableHeader() {
+    final columns = [
+      TableColumn(flex: 10, label: 'Image', icon: Icons.image),
+      TableColumn(flex: 15, label: 'Nom', icon: Icons.label),
+      TableColumn(flex: 15, label: 'Boutique', icon: Icons.store),
+      TableColumn(flex: 12, label: 'Catégorie', icon: Icons.category),
+      TableColumn(flex: 12, label: 'Marque', icon: Icons.branding_watermark),
+      TableColumn(flex: 10, label: 'Couleur', icon: Icons.color_lens),
+      TableColumn(flex: 10, label: 'Type verre', icon: Icons.visibility),
+      TableColumn(flex: 8, label: 'Prix', icon: Icons.attach_money),
+      TableColumn(flex: 8, label: 'Stock', icon: Icons.inventory),
+      TableColumn(
+          flex: 10, label: 'Actions', icon: Icons.settings, isActions: true),
+    ];
+
+    return Row(
+      children: columns.map((col) {
+        return Expanded(
+          flex: col.flex,
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 4),
+            child: Tooltip(
+              message: col.label,
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.inventory,
-                    size: 16,
-                    color: product.quantiteStock > 10
-                        ? _successColor
-                        : product.quantiteStock > 0
-                            ? _warningColor
-                            : _errorColor,
+                  Icon(col.icon, size: 16, color: _primaryColor),
+                  SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      col.label,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: _textPrimaryColor,
+                        fontSize: 12,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildProductTableRow(Product product) {
+    return Row(
+      children: [
+        // Image
+        Expanded(
+          flex: 10,
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 4),
+            child: Tooltip(
+              message: product.name,
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(6),
+                  image: product.image.isNotEmpty
+                      ? DecorationImage(
+                          image: NetworkImage(product.image),
+                          fit: BoxFit.cover,
+                        )
+                      : null,
+                  color: Colors.grey[200],
+                ),
+                child: product.image.isEmpty
+                    ? Icon(Icons.image_not_supported,
+                        size: 20, color: Colors.grey[400])
+                    : null,
+              ),
+            ),
+          ),
+        ),
+
+        // Nom
+        Expanded(
+          flex: 15,
+          child: _buildTableCell(
+            icon: Icons.label_outline,
+            text: product.name,
+            isImportant: true,
+          ),
+        ),
+
+        // Boutique
+        Expanded(
+          flex: 15,
+          child: _buildTableCell(
+            icon: Icons.store_mall_directory_outlined,
+            text: productController.getOpticienNom(product.boutiqueId) ?? 'N/A',
+          ),
+        ),
+
+        // Catégorie
+        Expanded(
+          flex: 12,
+          child: _buildTableCell(
+            icon: Icons.category_outlined,
+            text: product.category,
+          ),
+        ),
+
+        // Marque
+        Expanded(
+          flex: 12,
+          child: _buildTableCell(
+            icon: Icons.branding_watermark_outlined,
+            text: product.marque,
+          ),
+        ),
+
+        // Couleur
+        Expanded(
+          flex: 10,
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 4),
+            child: Tooltip(
+              message: product.couleur,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.color_lens_outlined,
+                      size: 16, color: _textSecondaryColor),
+                  SizedBox(width: 6),
+                  Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _getColorFromString(product.couleur),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
                   ),
                   SizedBox(width: 6),
-                  Text(
-                    product.quantiteStock.toString(),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: product.quantiteStock > 10
-                          ? _successColor
-                          : product.quantiteStock > 0
-                              ? _warningColor
-                              : _errorColor,
-                      fontWeight: FontWeight.bold,
+                  Flexible(
+                    child: Text(
+                      product.couleur,
+                      style: TextStyle(fontSize: 12),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
@@ -766,77 +716,179 @@ Widget _buildProductTableRow(Product product) {
             ),
           ),
         ),
-      ),
-      
-      // Actions
-      Expanded(
-        flex: 10,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            IconButton(
-              icon: Icon(Icons.edit, size: 18, color: _infoColor),
-              onPressed: () => _showEditProductDialog(context, product),
-              padding: EdgeInsets.zero,
-              visualDensity: VisualDensity.compact,
-              tooltip: 'Modifier',
+
+        // Type verre
+        Expanded(
+          flex: 10,
+          child: _buildTableCell(
+            icon: Icons.visibility_outlined,
+            text: product.typeVerre ?? 'N/A',
+          ),
+        ),
+
+        // Prix
+        Expanded(
+          flex: 8,
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 4),
+            child: Tooltip(
+              message: '${product.prix.toStringAsFixed(2)} DT',
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.attach_money, size: 16, color: _accentColor),
+                  SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      '${product.prix.toStringAsFixed(2)} DT',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: _accentColor,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            SizedBox(width: 8),
-            IconButton(
-              icon: Icon(Icons.delete, size: 18, color: _errorColor),
-              onPressed: () => _showDeleteConfirmation(context, product),
-              padding: EdgeInsets.zero,
-              visualDensity: VisualDensity.compact,
-              tooltip: 'Supprimer',
+          ),
+        ),
+
+        // Stock
+        Expanded(
+          flex: 8,
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 4),
+            child: Tooltip(
+              message: 'Quantité en stock',
+              child: Container(
+                padding: EdgeInsets.symmetric(vertical: 2, horizontal: 6),
+                decoration: BoxDecoration(
+                  color: product.quantiteStock > 10
+                      ? _successColor.withOpacity(0.1)
+                      : product.quantiteStock > 0
+                          ? _warningColor.withOpacity(0.1)
+                          : _errorColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.inventory,
+                      size: 16,
+                      color: product.quantiteStock > 10
+                          ? _successColor
+                          : product.quantiteStock > 0
+                              ? _warningColor
+                              : _errorColor,
+                    ),
+                    SizedBox(width: 6),
+                    Text(
+                      product.quantiteStock.toString(),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: product.quantiteStock > 10
+                            ? _successColor
+                            : product.quantiteStock > 0
+                                ? _warningColor
+                                : _errorColor,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        // Actions
+        Expanded(
+          flex: 10,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                icon: Icon(Icons.edit, size: 18, color: _infoColor),
+                onPressed: () => _showEditProductDialog(context, product),
+                padding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
+                tooltip: 'Modifier',
+              ),
+              SizedBox(width: 8),
+              IconButton(
+                icon: Icon(Icons.delete, size: 18, color: _errorColor),
+                onPressed: () => _showDeleteConfirmation(context, product),
+                padding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
+                tooltip: 'Supprimer',
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTableCell(
+      {required IconData icon,
+      required String text,
+      bool isImportant = false}) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 4),
+      child: Tooltip(
+        message: text,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: _textSecondaryColor),
+            SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                text,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: isImportant ? FontWeight.w500 : FontWeight.normal,
+                  color: isImportant ? _textPrimaryColor : _textSecondaryColor,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),
       ),
-    ],
-  );
-}
+    );
+  }
 
-Widget _buildTableCell({required IconData icon, required String text, bool isImportant = false}) {
-  return Padding(
-    padding: EdgeInsets.symmetric(horizontal: 4),
-    child: Tooltip(
-      message: text,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: _textSecondaryColor),
-          SizedBox(width: 6),
-          Flexible(
-            child: Text(
-              text,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: isImportant ? FontWeight.w500 : FontWeight.normal,
-                color: isImportant ? _textPrimaryColor : _textSecondaryColor,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-}
   // Helper function to generate a color from a string
- Color _getColorFromString(String colorName) {
+  Color _getColorFromString(String colorName) {
     switch (colorName.toLowerCase()) {
-      case 'noir': return Colors.black;
-      case 'blanc': return Colors.white;
-      case 'rouge': return Colors.red;
-      case 'bleu': return Colors.blue;
-      case 'vert': return Colors.green;
-      case 'jaune': return Colors.yellow;
-      case 'orange': return Colors.orange;
-      case 'violet': return Colors.purple;
-      case 'rose': return Colors.pink;
-      case 'gris': return Colors.grey;
-      case 'marron': return Colors.brown;
-      default: return Color((colorName.hashCode & 0xFFFFFF) | 0xFF000000);
+      case 'noir':
+        return Colors.black;
+      case 'blanc':
+        return Colors.white;
+      case 'rouge':
+        return Colors.red;
+      case 'bleu':
+        return Colors.blue;
+      case 'vert':
+        return Colors.green;
+      case 'jaune':
+        return Colors.yellow;
+      case 'orange':
+        return Colors.orange;
+      case 'violet':
+        return Colors.purple;
+      case 'rose':
+        return Colors.pink;
+      case 'gris':
+        return Colors.grey;
+      case 'marron':
+        return Colors.brown;
+      default:
+        return Color((colorName.hashCode & 0xFFFFFF) | 0xFF000000);
     }
   }
 
@@ -932,52 +984,6 @@ Widget _buildTableCell({required IconData icon, required String text, bool isImp
     );
   }
 
-  Widget _buildActionButtons(Product product) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _buildActionButton(
-          icon: Icons.edit_outlined,
-          onPressed: () => _showEditProductDialog(context, product),
-          tooltip: 'Modifier',
-          color: primaryColor,
-        ),
-        _buildActionButton(
-          icon: Icons.delete_outline,
-          onPressed: () => _showDeleteConfirmation(context, product),
-          tooltip: 'Supprimer',
-          color: accentColor,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActionButton({
-    required IconData icon,
-    required VoidCallback onPressed,
-    required String tooltip,
-    required Color color,
-  }) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      child: Tooltip(
-        message: tooltip,
-        child: IconButton(
-          icon: Icon(icon, size: 20),
-          onPressed: onPressed,
-          color: color,
-          visualDensity: VisualDensity.compact,
-          style: IconButton.styleFrom(
-            backgroundColor: color.withOpacity(0.1),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-  
   Widget _buildPaginationControls() {
     final totalPages = _pageCount;
     if (totalPages <= 1) return SizedBox();
@@ -989,9 +995,8 @@ Widget _buildTableCell({required IconData icon, required String text, bool isImp
         children: [
           IconButton(
             icon: Icon(Icons.chevron_left),
-            onPressed: _currentPage > 0
-                ? () => setState(() => _currentPage--)
-                : null,
+            onPressed:
+                _currentPage > 0 ? () => setState(() => _currentPage--) : null,
           ),
           SizedBox(width: 16),
           Text(
@@ -1011,7 +1016,8 @@ Widget _buildTableCell({required IconData icon, required String text, bool isImp
       ),
     );
   }
-void _filterProducts() {
+
+  void _filterProducts() {
     setState(() {});
   }
 
@@ -1026,9 +1032,10 @@ void _filterProducts() {
       _currentPage = 0;
     });
   }
+
   Widget _buildAdvancedFilters() {
     final boutiqueController = Get.find<BoutiqueController>();
-    
+
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -1131,7 +1138,8 @@ void _filterProducts() {
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      contentPadding:
+                          EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                     ),
                     items: [
                       DropdownMenuItem(
@@ -1158,6 +1166,7 @@ void _filterProducts() {
       ),
     );
   }
+
   void _showFilterDialog() {
     showDialog(
       context: context,
@@ -1303,7 +1312,8 @@ void _filterProducts() {
       },
     );
   }
- Widget _buildFilterField({
+
+  Widget _buildFilterField({
     required String label,
     required String? value,
     required IconData icon,
@@ -1325,6 +1335,7 @@ void _filterProducts() {
       ),
     );
   }
+
   void _showEditProductDialog(BuildContext context, Product product) {
     final formKey = GlobalKey<FormState>();
     PlatformFile? _tempSelectedImage;
@@ -1519,65 +1530,57 @@ void _filterProducts() {
                   if (formKey.currentState?.validate() ?? false) {
                     formKey.currentState?.save();
 
-                    // Afficher l'indicateur de chargement
-                    showDialog(
+                    final loadingDialog = showDialog(
                       context: context,
                       barrierDismissible: false,
-                      builder: (BuildContext context) {
-                        return AlertDialog(
-                          title: const Text('Modification en cours'),
-                          content: Row(
-                            children: [
-                              const CircularProgressIndicator(),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Text(
-                                    'Mise à jour du produit "${product.name}"...'),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
+                      builder: (context) => AlertDialog(
+                        content: Row(
+                          children: [
+                            CircularProgressIndicator(),
+                            SizedBox(width: 16),
+                            Text("Mise à jour en cours..."),
+                          ],
+                        ),
+                      ),
                     );
 
                     try {
-                      // Uploader la nouvelle image si sélectionnée
-                      if (hasNewImage &&
-                          _tempSelectedImage != null &&
-                          _tempSelectedImage!.bytes != null) {
-                        final imageUrl = await productController.uploadImageWeb(
+                      // Upload de la nouvelle image si nécessaire
+                      if (hasNewImage && _tempSelectedImage != null) {
+                        product.image = await productController.uploadImageWeb(
                           _tempSelectedImage!.bytes!,
-                          _tempSelectedImage!.name ?? 'image.jpg',
+                          _tempSelectedImage!.name ?? 'product_image.jpg',
                           product.id ?? '',
                         );
-                        product.image = imageUrl;
                       }
 
-                      // Mettre à jour le produit
+                      // Mise à jour du produit
                       await productController.updateProduct(
                           product.id!, product);
 
-                      // Fermer la boîte de dialogue de chargement
+                      // Fermer le dialogue de chargement
                       Navigator.of(context).pop();
 
-                      // Fermer la boîte de dialogue du formulaire
+                      // Fermer le dialogue d'édition
                       Navigator.of(context).pop();
+
+                      // Rafraîchir la liste des produits
+                      await productController.loadProductsForCurrentOptician();
 
                       // Afficher un message de succès
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
+                        SnackBar(
                           content: Text('Produit mis à jour avec succès'),
                           backgroundColor: Colors.green,
                         ),
                       );
                     } catch (e) {
-                      // Fermer la boîte de dialogue de chargement
+                      // Fermer le dialogue de chargement en cas d'erreur
                       Navigator.of(context).pop();
 
-                      // Afficher un message d'erreur
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Erreur: $e'),
+                          content: Text('Erreur lors de la mise à jour: $e'),
                           backgroundColor: Colors.red,
                         ),
                       );
@@ -1818,7 +1821,8 @@ void _filterProducts() {
     }
   }
 }
-  class TableColumn {
+
+class TableColumn {
   final int flex;
   final String label;
   final IconData icon;

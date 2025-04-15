@@ -285,95 +285,97 @@ Widget build(BuildContext context) {
   }
 
 
-Widget _buildDataTable() {
-  if (opticienController.isLoading.value) {
-    return Center(
-      child: CircularProgressIndicator(color: _primaryColor),
-    );
-  }
-
-  if (opticienController.error.isNotEmpty) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, size: 48, color: _errorColor),
-          SizedBox(height: 16),
-          Text('Erreur de chargement', style: TextStyle(fontSize: 18, color: _textPrimaryColor)),
-          SizedBox(height: 8),
-          Text(opticienController.error.value, style: TextStyle(color: _textSecondaryColor), textAlign: TextAlign.center),
-          SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: () => opticienController.refreshBoutiques(),
-            child: Text('Réessayer'),
-            style: ElevatedButton.styleFrom(backgroundColor: _primaryColor, foregroundColor: Colors.white),
-          ),
-        ],
-      ),
-    );
-  }
-
-  if (_filteredOpticiens.isEmpty) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.store_mall_directory, size: 48, color: _textSecondaryColor),
-          SizedBox(height: 16),
-          Text(
-            _searchController.text.isEmpty ? 'Aucune boutique disponible' : 'Aucun résultat trouvé',
-            style: TextStyle(fontSize: 18, color: _textPrimaryColor),
-          ),
-          if (_searchController.text.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 8.0),
-              child: TextButton(
-                onPressed: _resetFilters,
-                child: Text('Réinitialiser la recherche', style: TextStyle(color: _primaryColor)),
+  Widget _buildDataTable() {
+     return Obx(() {
+    if (opticienController.isLoading.value) {
+      return Center(
+        child: CircularProgressIndicator(color: _primaryColor),
+      );
+    }
+    if (opticienController.error.value.isNotEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 48, color: _errorColor),
+            SizedBox(height: 16),
+            Text('Erreur de chargement', style: TextStyle(fontSize: 18, color: _textPrimaryColor)),
+            SizedBox(height: 8),
+            Text(opticienController.error.value, style: TextStyle(color: _textSecondaryColor), textAlign: TextAlign.center),
+            SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () => opticienController.refreshBoutiques(),
+              child: Text('Réessayer'),
+              style: ElevatedButton.styleFrom(backgroundColor: _primaryColor, foregroundColor: Colors.white),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    if (_filteredOpticiens.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.store_mall_directory, size: 48, color: _textSecondaryColor),
+            SizedBox(height: 16),
+            Text(
+              _searchController.text.isEmpty ? 'Aucune boutique disponible' : 'Aucun résultat trouvé',
+              style: TextStyle(fontSize: 18, color: _textPrimaryColor),
+            ),
+            if (_searchController.text.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: TextButton(
+                  onPressed: _resetFilters,
+                  child: Text('Réinitialiser la recherche', style: TextStyle(color: _primaryColor)),
+                ),
               ),
+          ],
+        ),
+      );
+    }
+    
+    return Padding(
+      padding: const EdgeInsets.all(12.0),
+      child: Card(
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Column(
+          children: [
+            // En-tête du tableau
+            Container(
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+              decoration: BoxDecoration(
+                color: _primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+              ),
+              child: _buildTableHeader(),
             ),
-        ],
-      ),
-    );
+            
+            // Contenu du tableau
+            Expanded(
+              child: ListView.separated(
+                itemCount: _paginatedOpticiens.length,
+                separatorBuilder: (context, index) => Divider(height: 1, color: Colors.grey[200]),
+                itemBuilder: (context, index) {
+                  final boutique = _paginatedOpticiens[index];
+                  return Container(
+                    padding: EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                    color: index.isEven ? Colors.white : Colors.grey[50],
+                    child: _buildTableRow(boutique),
+);
+                        },
+                      ),
+              ),
+     ]),
+          ));
+  });
+      
+  
   }
 
-  return Padding(
-    padding: const EdgeInsets.all(12.0),
-    child: Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Column(
-        children: [
-          // En-tête du tableau
-          Container(
-            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-            decoration: BoxDecoration(
-              color: _primaryColor.withOpacity(0.1),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-            ),
-            child: _buildTableHeader(),
-          ),
-          
-          // Contenu du tableau
-          Expanded(
-            child: ListView.separated(
-              itemCount: _paginatedOpticiens.length,
-              separatorBuilder: (context, index) => Divider(height: 1, color: Colors.grey[200]),
-              itemBuilder: (context, index) {
-                final boutique = _paginatedOpticiens[index];
-                return Container(
-                  padding: EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-                  color: index.isEven ? Colors.white : Colors.grey[50],
-                  child: _buildTableRow(boutique),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-}
 
 Widget _buildTableHeader() {
   final columns = [
@@ -1078,29 +1080,24 @@ Widget _buildOpticianDropdown(
     return selectedSchedule;
   }
 
-    void _showEditBoutiqueDialog(BuildContext context, Boutique opticien) {
+  void _showEditBoutiqueDialog(BuildContext context, Boutique boutique) {
   final formKey = GlobalKey<FormState>();
-  final nomController = TextEditingController(text: opticien.nom);
-  final adresseController = TextEditingController(text: opticien.adresse);
-  final phoneController = TextEditingController(text: opticien.phone);
-  final emailController = TextEditingController(text: opticien.email);
-  final descriptionController = TextEditingController(text: opticien.description);
-  final openingHoursController = TextEditingController(text: opticien.opening_hours);
-  final villeController = TextEditingController(text: opticien.ville);
+  final nomController = TextEditingController(text: boutique.nom);
+  final adresseController = TextEditingController(text: boutique.adresse);
+  final phoneController = TextEditingController(text: boutique.phone);
+  final emailController = TextEditingController(text: boutique.email);
+  final descriptionController = TextEditingController(text: boutique.description);
+  final openingHoursController = TextEditingController(text: boutique.opening_hours);
+  final villeController = TextEditingController(text: boutique.ville);
 
   // Initialiser les valeurs de l'opticien sélectionné
-  final RxString selectedOpticianId = (opticien.opticien_id ?? '').obs;
-  final RxString selectedOpticianName = (opticien.opticien_nom ?? 'Non attribué').obs;
-
-  // Charger la liste des opticiens
-  opticianController.fetchOpticians();
+  final RxString selectedOpticianId = (boutique.opticien_id ?? '').obs;
+  final RxString selectedOpticianName = (boutique.opticien_nom ?? 'Non attribué').obs;
 
   showDialog(
     context: context,
     builder: (dialogContext) => Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
         width: 500,
         padding: const EdgeInsets.all(24),
@@ -1139,8 +1136,7 @@ Widget _buildOpticianDropdown(
                         label: 'Nom',
                         hint: 'Entrez le nom de la boutique',
                         prefixIcon: Icons.store,
-                        validator: (value) =>
-                            value?.isEmpty ?? true ? 'Champ requis' : null,
+                        validator: (value) => value?.isEmpty ?? true ? 'Champ requis' : null,
                       ),
                       const SizedBox(height: 16),
                       _buildFormField(
@@ -1148,36 +1144,26 @@ Widget _buildOpticianDropdown(
                         label: 'Adresse',
                         hint: 'Entrez l\'adresse complète',
                         prefixIcon: Icons.location_on,
-                        validator: (value) =>
-                            value?.isEmpty ?? true ? 'Champ requis' : null,
+                        validator: (value) => value?.isEmpty ?? true ? 'Champ requis' : null,
                       ),
                       _buildFormField(
                         controller: villeController,
                         label: 'Ville',
                         hint: 'Sélectionnez la ville',
                         prefixIcon: Icons.location_city,
-                        validator: (value) =>
-                            value?.isEmpty ?? true ? 'Champ requis' : null,
+                        validator: (value) => value?.isEmpty ?? true ? 'Champ requis' : null,
                         isDropdown: true,
                       ),
                       const SizedBox(height: 16),
-                      TextFormField(
+                      _buildFormField(
                         controller: phoneController,
-                        decoration: const InputDecoration(
-                          labelText: 'Téléphone',
-                          border: OutlineInputBorder(),
-                          hintText: '8 chiffres',
-                          contentPadding: EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 16),
-                        ),
-                        keyboardType: TextInputType.phone,
+                        label: 'Téléphone',
+                        hint: '8 chiffres',
+                        prefixIcon: Icons.phone,
                         validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Veuillez entrer un numéro de téléphone';
-                          }
-                          if (value.length != 8 ||
-                              !RegExp(r'^[0-9]{8}$').hasMatch(value)) {
-                            return 'Le téléphone doit contenir exactement 8 chiffres';
+                          if (value == null || value.isEmpty) return 'Veuillez entrer un numéro';
+                          if (value.length != 8 || !RegExp(r'^[0-9]{8}$').hasMatch(value)) {
+                            return '8 chiffres requis';
                           }
                           return null;
                         },
@@ -1189,9 +1175,7 @@ Widget _buildOpticianDropdown(
                         hint: 'Ex: contact@boutique.com',
                         prefixIcon: Icons.email,
                         validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Veuillez entrer un email';
-                          }
+                          if (value == null || value.isEmpty) return 'Veuillez entrer un email';
                           if (!value.endsWith('@gmail.com')) {
                             return 'L\'email doit être sous format @gmail.com';
                           }
@@ -1205,12 +1189,7 @@ Widget _buildOpticianDropdown(
                         hint: 'Décrivez la boutique en quelques mots',
                         prefixIcon: Icons.description,
                         maxLines: 3,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Veuillez entrer une description';
-                          }
-                          return null;
-                        },
+                        validator: (value) => value?.isEmpty ?? true ? 'Champ requis' : null,
                       ),
                       const SizedBox(height: 16),
                       _buildFormField(
@@ -1218,8 +1197,7 @@ Widget _buildOpticianDropdown(
                         label: 'Horaires d\'ouverture',
                         hint: 'Ex: Lun-Ven: 9h-18h, Sam: 9h-12h',
                         prefixIcon: Icons.access_time,
-                        validator: (value) =>
-                            value?.isEmpty ?? true ? 'Champ requis' : null,
+                        validator: (value) => value?.isEmpty ?? true ? 'Champ requis' : null,
                         isSchedulePicker: true,
                       ),
                       const SizedBox(height: 16),
@@ -1239,22 +1217,14 @@ Widget _buildOpticianDropdown(
               children: [
                 OutlinedButton(
                   onPressed: () => Navigator.pop(dialogContext),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
                   child: const Text('Annuler'),
                 ),
                 const SizedBox(width: 16),
                 ElevatedButton(
                   onPressed: () async {
                     if (formKey.currentState?.validate() ?? false) {
-                      // Create updated Boutique with form data
                       final updatedBoutique = Boutique(
-                        id: opticien.id,
+                        id: boutique.id,
                         nom: nomController.text,
                         adresse: adresseController.text,
                         ville: villeController.text,
@@ -1263,61 +1233,34 @@ Widget _buildOpticianDropdown(
                         description: descriptionController.text,
                         opening_hours: openingHoursController.text,
                         opticien_id: selectedOpticianId.value.isNotEmpty 
-                          ? selectedOpticianId.value 
-                          : null,
+                            ? selectedOpticianId.value 
+                            : null,
                         opticien_nom: selectedOpticianName.value != 'Non attribué'
-                          ? selectedOpticianName.value
-                          : null,
+                            ? selectedOpticianName.value
+                            : null,
                       );
 
-                      // Close the dialog first to avoid context issues
                       Navigator.pop(dialogContext);
-
-                      // Update the boutique
+                      
                       final success = await opticienController.updateOpticien(
-                          opticien.id, updatedBoutique);
-
-                      // Show a snackbar with the result
+                          boutique.id, updatedBoutique);
+                      
                       if (!context.mounted) return;
-                      final scaffold = ScaffoldMessenger.of(context);
-                      scaffold.showSnackBar(
+                      ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
                             success
                                 ? 'Boutique mise à jour avec succès'
-                                : 'Erreur: ${opticienController.error.value}',
-                            style: const TextStyle(color: Colors.white),
+                                : 'Erreur lors de la mise à jour',
+                            style: TextStyle(color: Colors.white),
                           ),
-                          backgroundColor:
-                              success ? Colors.green : Colors.red,
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          margin: const EdgeInsets.all(16),
-                          action: SnackBarAction(
-                            label: 'OK',
-                            textColor: Colors.white,
-                            onPressed: () {
-                              scaffold.hideCurrentSnackBar();
-                            },
-                          ),
+                          backgroundColor: success ? Colors.green : Colors.red,
+                          duration: Duration(seconds: 2),
                         ),
                       );
                     }
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF3A7BD5),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: const Text(
-                    'Mettre à jour',
-                    style: TextStyle(color: Colors.white),
-                  ),
+                  child: const Text('Mettre à jour'),
                 ),
               ],
             ),
@@ -1328,44 +1271,41 @@ Widget _buildOpticianDropdown(
   );
 }
 
-  void _showDeleteConfirmation(BuildContext context, Boutique opticien) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Confirmer la suppression'),
-        content: Text('Voulez-vous vraiment supprimer ${opticien.nom} ?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Annuler'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () async {
-              // Close the dialog first to avoid context issues
-              Navigator.pop(dialogContext);
-
-              // Delete the optician
-              final success =
-                  await opticienController.deleteOpticien(opticien.id);
-
-              // Show a snackbar with the result
-              final scaffold = ScaffoldMessenger.of(context);
-              scaffold.showSnackBar(
-                SnackBar(
-                  content: Text(success
-                      ? 'Boutique supprimée avec succès'
-                      : 'Erreur: ${opticienController.error.value}'),
-                  backgroundColor: success ? Colors.green : Colors.red,
+void _showDeleteConfirmation(BuildContext context, Boutique boutique) {
+  showDialog(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('Confirmer la suppression'),
+      content: Text('Voulez-vous vraiment supprimer ${boutique.nom} ?'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext),
+          child: const Text('Annuler'),
+        ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+          onPressed: () async {
+            Navigator.pop(dialogContext);
+            final success = await opticienController.deleteOpticien(boutique.id);
+            
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  success ? 'Boutique supprimée avec succès' : 'Erreur lors de la suppression',
+                  style: TextStyle(color: Colors.white),
                 ),
-              );
-            },
-            child: const Text('Supprimer'),
-          ),
-        ],
-      ),
-    );
-  }
+                backgroundColor: success ? Colors.green : Colors.red,
+                duration: Duration(seconds: 2),
+              ),
+            );
+          },
+          child: const Text('Supprimer', style: TextStyle(color: Colors.white)),
+        ),
+      ],
+    ),
+  );
+}
 }
  class TableColumn {
   final int flex;
