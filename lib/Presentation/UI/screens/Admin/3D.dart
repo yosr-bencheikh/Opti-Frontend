@@ -9,9 +9,8 @@ class GlassesManagerService {
   ));
 
   /// Upload a 3D model file to the server
-// Dans GlassesManagerService.dart
 static Future<String> uploadModel3D(
-  Uint8List bytes,
+  Uint8List bytes, 
   String fileName,
   String productId,
 ) async {
@@ -22,22 +21,41 @@ static Future<String> uploadModel3D(
     });
 
     final response = await _dio.post(
-      '/upload-model', 
+      '/upload-model',
       data: formData,
       options: Options(
         contentType: 'multipart/form-data',
-        headers: {
-          'Accept': 'application/json',
-        },
+        headers: {'Accept': 'application/json'},
       ),
     );
 
+    // Debug: Afficher la réponse complète
+    print('Réponse du serveur: ${response.data}');
+
     if (response.statusCode == 200) {
-      return response.data['url']; // Le serveur doit retourner l'URL complète
+      // Plusieurs formats de réponse possibles
+      final responseData = response.data;
+      
+      if (responseData is String) {
+        return responseData; // Si le serveur renvoie directement l'URL
+      } else if (responseData is Map) {
+        // Essayer différents formats de clés
+        return responseData['url'] ?? 
+               responseData['filePath'] ?? 
+               responseData['modelUrl'] ??
+               (throw Exception('Format de réponse inattendu: ${responseData}'));
+      } else {
+        throw Exception('Format de réponse inattendu: ${responseData.runtimeType}');
+      }
     } else {
       throw Exception('Upload failed: ${response.statusMessage}');
     }
   } catch (e) {
+    // Debug plus détaillé
+    print('Erreur d\'upload: $e');
+    if (e is DioException) {
+      print('Erreur Dio: ${e.response?.data}');
+    }
     throw Exception('Upload error: ${e.toString()}');
   }
 }

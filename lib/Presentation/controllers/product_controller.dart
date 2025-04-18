@@ -34,6 +34,20 @@ class ProductController extends GetxController {
   set error(String? value) => _error.value = value;
   set isLoading(bool value) => _isLoading.value = value;
 
+ Future<void> loadMoreProductsByOptician(String opticianId) async {
+    try {
+      isLoading = true;
+      // Implémentez votre logique pour charger plus de produits ici
+      // Par exemple :
+      // final newProducts = await productRepository.getMoreProductsByOptician(opticianId, products.length);
+      // products.addAll(newProducts);
+      isLoading = false;
+    } catch (e) {
+      isLoading = false;
+      Get.snackbar('Erreur', 'Impossible de charger plus de produits');
+    }
+  }
+
   Future<void> loadOpticiens() async {
     try {
       // This will need to be implemented in your repository

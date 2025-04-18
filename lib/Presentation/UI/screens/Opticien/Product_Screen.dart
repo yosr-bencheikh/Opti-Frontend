@@ -7,6 +7,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:get/get.dart';
 import 'package:opti_app/Presentation/UI/screens/Admin/FilePickerExample.dart';
+import 'package:opti_app/Presentation/UI/screens/Admin/Model3DPickerWidget.dart';
+import 'package:opti_app/Presentation/UI/screens/Admin/Product3DViewer.dart';
 import 'package:opti_app/Presentation/UI/screens/Opticien/OpticienDashboardApp.dart';
 import 'package:opti_app/Presentation/controllers/OpticianController.dart';
 import 'package:opti_app/Presentation/controllers/boutique_controller.dart';
@@ -566,7 +568,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
   Widget _buildProductTableHeader() {
     final columns = [
-      TableColumn(flex: 10, label: 'Image', icon: Icons.image),
+      TableColumn(flex: 10, label: 'Modèle 3D', icon: Icons.view_in_ar),
       TableColumn(flex: 15, label: 'Nom', icon: Icons.label),
       TableColumn(flex: 15, label: 'Boutique', icon: Icons.store),
       TableColumn(flex: 12, label: 'Catégorie', icon: Icons.category),
@@ -615,34 +617,40 @@ class _ProductsScreenState extends State<ProductsScreen> {
   Widget _buildProductTableRow(Product product) {
     return Row(
       children: [
-        // Image
-        Expanded(
-          flex: 10,
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 4),
-            child: Tooltip(
-              message: product.name,
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(6),
-                  image: product.image.isNotEmpty
-                      ? DecorationImage(
-                          image: NetworkImage(product.image),
-                          fit: BoxFit.cover,
-                        )
-                      : null,
-                  color: Colors.grey[200],
-                ),
-                child: product.image.isEmpty
-                    ? Icon(Icons.image_not_supported,
-                        size: 20, color: Colors.grey[400])
-                    : null,
+      Expanded(
+  flex: 10,
+  child: Padding(
+    padding: EdgeInsets.symmetric(horizontal: 4),
+    child: Container(
+      width: 60,  // Largeur fixe pour la cellule
+      height: 60, // Hauteur fixe pour la cellule
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(6),
+        color: Colors.grey[200],
+      ),
+      child: product.model3D.isNotEmpty
+          ? ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: Fixed3DViewer(
+                modelUrl: product.model3D,
+                compactMode: true, // Ajoutez ce paramètre à votre Fixed3DViewer
               ),
+            )
+          : Center(
+              child: Icon(Icons.do_not_disturb_on,
+                  size: 24,
+                  color: Colors.grey[400]),
             ),
-          ),
-        ),
+    ),
+  ),
+),
+// Dans la colonne Actions (flex: 10)
+if (product.model3D.isNotEmpty) IconButton(
+  icon: Icon(Icons.view_in_ar, size: 18, color: _primaryColor),
+  onPressed: () => _show3DModelDialog(context, product.model3D),
+  tooltip: 'Voir en 3D',
+),
+      
 
         // Nom
         Expanded(
@@ -831,7 +839,15 @@ class _ProductsScreenState extends State<ProductsScreen> {
       ],
     );
   }
-
+void _show3DModelDialog(BuildContext context, String modelUrl) {
+  showDialog(
+    context: context,
+    builder: (context) => Dialog(
+      insetPadding: EdgeInsets.all(10),
+      child: Fixed3DViewer(modelUrl: modelUrl), // Utilisez l'URL du produit ici
+    ),
+  );
+}
   Widget _buildTableCell(
       {required IconData icon,
       required String text,
@@ -1340,6 +1356,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
     final formKey = GlobalKey<FormState>();
     PlatformFile? _tempSelectedImage;
     bool hasNewImage = false;
+      PlatformFile? _tempSelectedFile;
+  bool isModel3D = false;
+  bool hasNewFile = false;
 
     showDialog(
       context: context,
@@ -1354,69 +1373,77 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Affichage conditionnel de l'image
-                    if (hasNewImage && _tempSelectedImage != null)
-                      Container(
-                        height: 120,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey),
+                  // Sélection du type de fichier (image ou modèle 3D)
+                  Row(
+                    children: [
+                    
+                      Expanded(
+                        child: RadioListTile<bool>(
+                          title: const Text('Modèle 3D'),
+                          value: true,
+                          groupValue: isModel3D,
+                          onChanged: (value) {
+                            setState(() {
+                              isModel3D = value!;
+                              _tempSelectedFile = null;
+                            });
+                          },
                         ),
-                        child: _tempSelectedImage!.bytes != null
-                            ? Image.memory(
-                                _tempSelectedImage!.bytes!,
-                                fit: BoxFit.contain,
-                              )
-                            : const Center(
-                                child: Text('Aperçu non disponible')),
-                      )
-                    else if (product.image.isNotEmpty)
-                      Container(
-                        height: 120,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          image: DecorationImage(
-                            image: NetworkImage(product.image),
-                            fit: BoxFit.contain,
-                          ),
-                          border: Border.all(color: Colors.grey),
-                        ),
-                      )
-                    else
-                      Container(
-                        height: 120,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey),
-                        ),
-                        child: const Center(child: Text('Aucune image')),
                       ),
-                    const SizedBox(height: 8),
+                    ],
+                  ),
 
-                    // Sélection d'une nouvelle image
-                    FilePickerExample(
-                      onImagePicked: (image) {
+                   // Container pour le file picker (uniquement modèle 3D)
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.all(8),
+                    child: Model3DPickerWidget(
+                      onFilePicked: (file) {
                         setState(() {
-                          _tempSelectedImage = image;
-                          hasNewImage = true;
+                          _tempSelectedFile = file;
+                          hasNewFile = true;
+                        });
+                      },
+                    ),
+                  ),
+
+                  // Aperçu du fichier actuel ou nouveau
+                  if (hasNewFile && _tempSelectedFile != null)
+                    Container(
+                      height: 50,
+                      margin: const EdgeInsets.symmetric(vertical: 16),
+                      child: Text(
+                        'Nouveau Modèle 3D sélectionné: ${_tempSelectedFile?.name}',
+                        style: TextStyle(color: Colors.blue[700]),
+                      ),
+                    )
+                  else if (product.model3D.isNotEmpty)
+                    Container(
+                      height: 50,
+                      margin: const EdgeInsets.symmetric(vertical: 16),
+                      child: Text(
+                        'Modèle 3D actuel',
+                        style: TextStyle(color: Colors.green[700]),
+                      ),
+                    ),
+
+                  // Bouton pour supprimer le modèle 3D actuel
+                  if (!hasNewFile && product.model3D.isNotEmpty)
+                    TextButton.icon(
+                      icon: Icon(Icons.delete, color: Colors.red),
+                      label: Text('Supprimer modèle 3D actuel'),
+                      onPressed: () {
+                        setState(() {
+                          product.model3D = '';
+                          hasNewFile = true; // Pour forcer la mise à jour
                         });
                       },
                     ),
 
-                    // Bouton pour revenir à l'image précédente
-                    if (hasNewImage && product.image.isNotEmpty)
-                      TextButton.icon(
-                        icon: const Icon(Icons.restore),
-                        label: const Text('Revenir à l\'image précédente'),
-                        onPressed: () {
-                          setState(() {
-                            _tempSelectedImage = null;
-                            hasNewImage = false;
-                          });
-                        },
-                      ),
-
-                    const SizedBox(height: 16),
+                  const SizedBox(height: 20),
 
                     // Formulaire de modification
                     TextFormField(
@@ -1596,169 +1623,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
     );
   }
 
-  Widget _buildProductForm(GlobalKey<FormState> formKey, Product product,
-      {required bool isEditing}) {
-    return Form(
-      key: formKey,
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Dropdown pour sélectionner la boutique (opticien)
-            DropdownButtonFormField<String>(
-              value: product.boutiqueId.isEmpty ||
-                      !productController.opticiens
-                          .any((opticien) => opticien.id == product.boutiqueId)
-                  ? null
-                  : product.boutiqueId,
-              decoration: const InputDecoration(labelText: 'Boutique'),
-              items: productController.opticiens.map((opticien) {
-                return DropdownMenuItem<String>(
-                  value: opticien.id,
-                  child: Text(opticien.nom),
-                );
-              }).toList(),
-              validator: (value) =>
-                  value?.isEmpty ?? true ? 'Champ requis' : null,
-              onChanged: (value) {
-                if (value != null) {
-                  product.boutiqueId = value;
-                }
-              },
-            ),
-            const SizedBox(height: 16),
-
-            // Champ pour le nom du produit
-            TextFormField(
-              initialValue: product.name,
-              decoration: const InputDecoration(labelText: 'Nom'),
-              validator: (value) =>
-                  value?.isEmpty ?? true ? 'Champ requis' : null,
-              onSaved: (value) => product.name = value ?? '',
-            ),
-            const SizedBox(height: 16),
-
-            // Champ pour le prix du produit
-            TextFormField(
-              initialValue: product.prix.toString(),
-              decoration: const InputDecoration(labelText: 'Prix'),
-              keyboardType: TextInputType.number,
-              validator: (value) {
-                if (value?.isEmpty ?? true) return 'Champ requis';
-                if (double.tryParse(value!) == null) return 'Prix invalide';
-                return null;
-              },
-              onSaved: (value) => product.prix = double.tryParse(value!) ?? 0,
-            ),
-            const SizedBox(height: 16),
-
-            // Champ pour la quantité en stock
-            TextFormField(
-              initialValue: product.quantiteStock.toString(),
-              decoration: const InputDecoration(labelText: 'Quantité en stock'),
-              keyboardType: TextInputType.number,
-              validator: (value) {
-                if (value?.isEmpty ?? true) return 'Champ requis';
-                if (int.tryParse(value!) == null) return 'Quantité invalide';
-                return null;
-              },
-              onSaved: (value) =>
-                  product.quantiteStock = int.tryParse(value!) ?? 0,
-            ),
-            const SizedBox(height: 16),
-
-            // Champ pour la catégorie du produit
-            TextFormField(
-              initialValue: product.category,
-              decoration: const InputDecoration(labelText: 'Catégorie'),
-              validator: (value) =>
-                  value?.isEmpty ?? true ? 'Champ requis' : null,
-              onSaved: (value) => product.category = value ?? '',
-            ),
-            const SizedBox(height: 16),
-
-            // Champ pour la marque du produit
-            TextFormField(
-              initialValue: product.marque,
-              decoration: const InputDecoration(labelText: 'Marque'),
-              validator: (value) =>
-                  value?.isEmpty ?? true ? 'Champ requis' : null,
-              onSaved: (value) => product.marque = value ?? '',
-            ),
-            const SizedBox(height: 16),
-
-            // Champ pour la couleur du produit
-            TextFormField(
-              initialValue: product.couleur,
-              decoration: const InputDecoration(labelText: 'Couleur'),
-              validator: (value) =>
-                  value?.isEmpty ?? true ? 'Champ requis' : null,
-              onSaved: (value) => product.couleur = value ?? '',
-            ),
-            const SizedBox(height: 16),
-
-            // Champ pour la description du produit
-            TextFormField(
-              initialValue: product.description,
-              decoration: const InputDecoration(labelText: 'Description'),
-              validator: (value) =>
-                  value?.isEmpty ?? true ? 'Champ requis' : null,
-              onSaved: (value) => product.description = value ?? '',
-            ),
-            const SizedBox(height: 16),
-
-            // Section pour l'image du produit
-            Column(
-              children: [
-                const Text('Image du produit', style: TextStyle(fontSize: 16)),
-                const SizedBox(height: 8),
-                Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Container(
-                      width: 200,
-                      height: 200,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[200],
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: Column(
-                        children: [
-                          FilePickerExample(
-                            onImagePicked: (PlatformFile? file) {
-                              setState(() {
-                                _tempSelectedImage = file;
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 8),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-              ],
-            ),
-
-            // Champ pour le type de verre
-            TextFormField(
-              initialValue: product.typeVerre,
-              decoration: const InputDecoration(labelText: 'Type de verre'),
-              validator: (value) =>
-                  value?.isEmpty ?? true ? 'Champ requis' : null,
-              onSaved: (value) => product.typeVerre = value ?? '',
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
-    );
-  }
 
   void _showDeleteConfirmation(BuildContext context, Product product) {
     showDialog(

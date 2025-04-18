@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:opti_app/Presentation/UI/screens/Admin/Product3DViewer.dart';
 import 'package:opti_app/Presentation/UI/screens/User/product_details_screen.dart';
 import 'package:opti_app/Presentation/controllers/auth_controller.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:opti_app/Presentation/controllers/wishlist_controller.dart';
-import 'package:opti_app/Presentation/widgets/productCard.dart';
 import 'package:opti_app/core/constants/champsProduits.dart';
+import 'package:opti_app/domain/entities/product_entity.dart';
+import 'package:opti_app/domain/entities/wishlist_item.dart';
 
 class OpticianProductsScreen extends StatefulWidget {
   final String opticianId;
@@ -26,7 +28,8 @@ class _OpticianProductsScreenState extends State<OpticianProductsScreen> {
   String? _selectedCategory;
   String? _selectedTypeVerre;
   String? _selectedMarque;
-  String? _selectedStyle; // Nouveau filtre par style
+  String? _selectedStyle;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -34,24 +37,28 @@ class _OpticianProductsScreenState extends State<OpticianProductsScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       widget.productController.loadProductsByOptician(widget.opticianId);
     });
+    _scrollController.addListener(_scrollListener);
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
-  List<dynamic> _getFilteredProducts() {
+  void _scrollListener() {
+    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
+      widget.productController.loadMoreProductsByOptician(widget.opticianId);
+    }
+  }
+
+  List<Product> _getFilteredProducts() {
     return widget.productController.products.where((product) {
       // Search filter
       final searchMatch = _searchController.text.isEmpty ||
-          product.name
-              .toLowerCase()
-              .contains(_searchController.text.toLowerCase()) ||
-          product.marque
-              .toLowerCase()
-              .contains(_searchController.text.toLowerCase());
+          product.name.toLowerCase().contains(_searchController.text.toLowerCase()) ||
+          product.marque.toLowerCase().contains(_searchController.text.toLowerCase());
 
       // Category filter
       final categoryMatch = _selectedCategory == null ||
@@ -84,6 +91,51 @@ class _OpticianProductsScreenState extends State<OpticianProductsScreen> {
           styleMatch &&
           priceMatch;
     }).toList();
+  }
+
+  void _toggleWishlist(Product product) async {
+    final userEmail = authController.currentUser?.email;
+    if (userEmail == null) {
+      Get.snackbar('Erreur', 'Veuillez vous connecter d\'abord');
+      return;
+    }
+
+    try {
+      final isInWishlist = wishlistController.isProductInWishlist(product.id!);
+      
+      if (isInWishlist) {
+        await wishlistController.removeFromWishlist(product.id!);
+      } else {
+        final wishlistItem = WishlistItem(
+          userId: userEmail,
+          productId: product.id!,
+        );
+        await wishlistController.addToWishlist(wishlistItem);
+      }
+    } catch (e) {
+      Get.snackbar('Erreur', 'Impossible de mettre à jour la liste de souhaits');
+    }
+  }
+
+  void _showFullScreen3DModel(BuildContext context, Product product) {
+    if (product.model3D.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Aucun modèle 3D disponible pour ce produit')),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          appBar: AppBar(
+            title: Text('Vue 3D - ${product.name}'),
+          ),
+          body: Fixed3DViewer(modelUrl: product.model3D),
+        ),
+      ),
+    );
   }
 
   @override
@@ -243,7 +295,7 @@ class _OpticianProductsScreenState extends State<OpticianProductsScreen> {
                         Expanded(
                           child: _buildDropdown(
                             "Style",
-                            styles, // Assurez-vous que 'styles' est défini dans champsProduits.dart
+                            styles,
                             _selectedStyle,
                             (value) {
                               setState(() {
@@ -290,22 +342,19 @@ class _OpticianProductsScreenState extends State<OpticianProductsScreen> {
           // Products List
           Expanded(
             child: Obx(() {
-              if (widget.productController.isLoading) {
+              if (widget.productController.isLoading && widget.productController.products.isEmpty) {
                 return Center(child: CircularProgressIndicator());
               } else if (widget.productController.products.isEmpty) {
                 return Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.inventory_2_outlined,
-                          size: 64, color: Colors.grey),
+                      Icon(Icons.inventory_2_outlined, size: 64, color: Colors.grey),
                       SizedBox(height: 16),
                       Text(
                         "Aucun produit disponible",
                         style: GoogleFonts.montserrat(
-                          fontSize: 16,
-                          color: Colors.grey.shade700,
-                        ),
+                          fontSize: 16, color: Colors.grey.shade700),
                       ),
                     ],
                   ),
@@ -317,15 +366,12 @@ class _OpticianProductsScreenState extends State<OpticianProductsScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.filter_list_off,
-                            size: 64, color: Colors.grey),
+                        Icon(Icons.filter_list_off, size: 64, color: Colors.grey),
                         SizedBox(height: 16),
                         Text(
                           "Aucun produit ne correspond à vos filtres",
                           style: GoogleFonts.montserrat(
-                            fontSize: 16,
-                            color: Colors.grey.shade700,
-                          ),
+                            fontSize: 16, color: Colors.grey.shade700),
                         ),
                       ],
                     ),
@@ -333,22 +379,22 @@ class _OpticianProductsScreenState extends State<OpticianProductsScreen> {
                 }
 
                 return GridView.builder(
+                  controller: _scrollController,
                   padding: EdgeInsets.all(16),
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
-                    childAspectRatio: 0.75,
+                    childAspectRatio: 0.65,
                     crossAxisSpacing: 16,
                     mainAxisSpacing: 16,
                   ),
-                  itemCount: filteredProducts.length,
+                  itemCount: filteredProducts.length + (widget.productController.isLoading ? 1 : 0),
                   itemBuilder: (context, index) {
+                    if (index >= filteredProducts.length) {
+                      return Center(child: CircularProgressIndicator());
+                    }
+                    
                     final product = filteredProducts[index];
-                    return ProductCard(
-                      product: product,
-                      isHorizontalList: true,
-                      wishlistController: wishlistController,
-                      authController: authController,
-                    );
+                    return _buildProductCard(context, product);
                   },
                 );
               }
@@ -398,6 +444,138 @@ class _OpticianProductsScreenState extends State<OpticianProductsScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildProductCard(BuildContext context, Product product) {
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          Get.to(() => ProductDetailsScreen(product: product));
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Image ou visionneuse 3D
+            ClipRRect(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+              child: Stack(
+                children: [
+                  AspectRatio(
+                    aspectRatio: 1,
+                    child: product.model3D.isNotEmpty
+                      ? Stack(
+                          children: [
+                            Fixed3DViewer(
+                              modelUrl: product.model3D,
+                              compactMode: true,
+                            ),
+                            Positioned(
+                              right: 8,
+                              top: 8,
+                              child: ElevatedButton(
+                                onPressed: () => _showFullScreen3DModel(context, product),
+                                style: ElevatedButton.styleFrom(
+                                  shape: CircleBorder(),
+                                  padding: EdgeInsets.all(8),
+                                  minimumSize: Size(24, 24),
+                                  backgroundColor: Colors.white.withOpacity(0.7),
+                                ),
+                                child: Icon(Icons.view_in_ar, color: Colors.blue.shade700, size: 18),
+                              ),
+                            ),
+                          ],
+                        )
+                      : product.image.isNotEmpty
+                        ? Image.network(
+                            product.image,
+                            fit: BoxFit.cover,
+                            height: double.infinity,
+                            width: double.infinity,
+                          )
+                        : Center(
+                            child: Icon(Icons.image, size: 50, color: Colors.grey),
+                          ),
+                  ),
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: IconButton(
+                      icon: Obx(() {
+                        final isInWishlist = wishlistController.isProductInWishlist(product.id!);
+                        return Icon(
+                          isInWishlist ? Icons.favorite : Icons.favorite_border,
+                          color: isInWishlist ? Colors.red : Colors.grey,
+                        );
+                      }),
+                      onPressed: () => _toggleWishlist(product),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Contenu de la carte
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          product.name,
+                          style: GoogleFonts.montserrat(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          product.marque,
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 12,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          '${product.prix.toStringAsFixed(2)} TND',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    
+                    // Bouton détails
+                  InkWell(
+  onTap: () {
+    Get.to(() => ProductDetailsScreen(product: product));
+  },
+  child: SizedBox(
+    width: double.infinity,
+    // Votre contenu existant ici - sans le bouton
+  ),
+),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

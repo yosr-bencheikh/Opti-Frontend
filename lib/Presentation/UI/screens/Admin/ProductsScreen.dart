@@ -7,9 +7,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:get/get.dart';
+import 'package:model_viewer_plus/model_viewer_plus.dart';
 import 'package:opti_app/Presentation/UI/screens/Admin/3D.dart';
 import 'package:opti_app/Presentation/UI/screens/Admin/FilePickerExample.dart';
 import 'package:opti_app/Presentation/UI/screens/Admin/Model3DPickerWidget.dart';
+import 'package:opti_app/Presentation/UI/screens/Admin/Model3DViewer.dart.dart';
+import 'package:opti_app/Presentation/UI/screens/Admin/Product3DViewer.dart';
 import 'package:opti_app/Presentation/UI/screens/Admin/ProductFilterWidget.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
 import 'package:opti_app/core/constants/champsProduits.dart';
@@ -773,7 +776,7 @@ if (productController.error != null) {
 }
   Widget _buildProductTableHeader() {
     final columns = [
-      TableColumn(flex: 10, label: 'Image', icon: Icons.image),
+      TableColumn(flex: 10, label: 'Modèle 3D', icon: Icons.view_in_ar),
       TableColumn(flex: 15, label: 'Nom', icon: Icons.label),
       TableColumn(flex: 15, label: 'Boutique', icon: Icons.store),
       TableColumn(flex: 12, label: 'Catégorie', icon: Icons.category),
@@ -822,34 +825,40 @@ if (productController.error != null) {
   Widget _buildProductTableRow(Product product) {
     return Row(
       children: [
-        // Image
-        Expanded(
-          flex: 10,
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 4),
-            child: Tooltip(
-              message: product.name,
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(6),
-                  image: product.image.isNotEmpty
-                      ? DecorationImage(
-                          image: NetworkImage(product.image),
-                          fit: BoxFit.cover,
-                        )
-                      : null,
-                  color: Colors.grey[200],
-                ),
-                child: product.image.isEmpty
-                    ? Icon(Icons.image_not_supported,
-                        size: 20, color: Colors.grey[400])
-                    : null,
+    Expanded(
+  flex: 10,
+  child: Padding(
+    padding: EdgeInsets.symmetric(horizontal: 4),
+    child: Container(
+      width: 60,  // Largeur fixe pour la cellule
+      height: 60, // Hauteur fixe pour la cellule
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(6),
+        color: Colors.grey[200],
+      ),
+      child: product.model3D.isNotEmpty
+          ? ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: Fixed3DViewer(
+                modelUrl: product.model3D,
+                compactMode: true, // Ajoutez ce paramètre à votre Fixed3DViewer
               ),
+            )
+          : Center(
+              child: Icon(Icons.do_not_disturb_on,
+                  size: 24,
+                  color: Colors.grey[400]),
             ),
-          ),
-        ),
+    ),
+  ),
+),
+// Dans la colonne Actions (flex: 10)
+if (product.model3D.isNotEmpty) IconButton(
+  icon: Icon(Icons.view_in_ar, size: 18, color: _primaryColor),
+  onPressed: () => _show3DModelDialog(context, product.model3D),
+  tooltip: 'Voir en 3D',
+),
+      
 
         // Nom
         Expanded(
@@ -1013,6 +1022,7 @@ if (productController.error != null) {
 
         // Actions
         Expanded(
+          
           flex: 10,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -1038,7 +1048,15 @@ if (productController.error != null) {
       ],
     );
   }
-
+void _show3DModelDialog(BuildContext context, String modelUrl) {
+  showDialog(
+    context: context,
+    builder: (context) => Dialog(
+      insetPadding: EdgeInsets.all(10),
+      child: Fixed3DViewer(modelUrl: modelUrl), // Utilisez l'URL du produit ici
+    ),
+  );
+}
   Widget _buildTableCell(
       {required IconData icon,
       required String text,
@@ -1413,19 +1431,7 @@ if (productController.error != null) {
                     // Sélection du type de fichier (image ou modèle 3D)
                     Row(
                       children: [
-                        Expanded(
-                          child: RadioListTile<bool>(
-                            title: const Text('Image'),
-                            value: false,
-                            groupValue: isModel3D,
-                            onChanged: (value) {
-                              setState(() {
-                                isModel3D = value!;
-                                _tempSelectedFile = null;
-                              });
-                            },
-                          ),
-                        ),
+                      
                         Expanded(
                           child: RadioListTile<bool>(
                             title: const Text('Modèle 3D'),
@@ -1442,43 +1448,34 @@ if (productController.error != null) {
                       ],
                     ),
 
-                    // Container pour le file picker
+                     // Container pour le file picker (uniquement modèle 3D)
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.all(8),
+                    child: Model3DPickerWidget(
+                      onFilePicked: (file) {
+                        setState(() {
+                          _tempSelectedFile = file;
+                        });
+                      },
+                    ),
+                  ),
+
+                  // Aperçu du modèle 3D
+                  if (_tempSelectedFile != null)
                     Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade300),
-                        borderRadius: BorderRadius.circular(8),
+                      height: 50,
+                      margin: const EdgeInsets.symmetric(vertical: 16),
+                      child: Text(
+                        'Modèle 3D sélectionné: ${_tempSelectedFile?.name}',
+                        style: TextStyle(color: Colors.blue[700]),
                       ),
-                      padding: const EdgeInsets.all(8),
-                      child: isModel3D
-                          ? Model3DPickerWidget(
-                              onFilePicked: (file) {
-                                setState(() {
-                                  _tempSelectedFile = file;
-                                });
-                              },
-                            )
-                          : FilePickerExample(
-                              // Utilisez votre composant FilePickerExample existant
-                              onImagePicked: (image) {
-                                setState(() {
-                                  _tempSelectedFile = image;
-                                });
-                              },
-                            ),
                     ),
 
-                    // Aperçu du modèle 3D ou de l'image
-                    if (_tempSelectedFile != null)
-                      Container(
-                        height: 50,
-                        margin: const EdgeInsets.symmetric(vertical: 16),
-                        child: Text(
-                          '${isModel3D ? 'Modèle 3D' : 'Image'} sélectionné: ${_tempSelectedFile?.name}',
-                          style: TextStyle(color: Colors.blue[700]),
-                        ),
-                      ),
-
-                    const SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
                     // Nom du produit
                     TextFormField(
@@ -1831,13 +1828,29 @@ if (productController.error != null) {
                           _tempSelectedFile!.bytes != null) {
                         if (isModel3D) {
                           // Upload model 3D using GlassesManagerService
-                          final modelUrl =
-                              await GlassesManagerService.uploadModel3D(
-                            _tempSelectedFile!.bytes!,
-                            _tempSelectedFile!.name,
-                            product.id ??
-                                '', // Utilisez l'ID s'il existe, sinon chaîne vide
-                          );
+                        String? modelUrl;
+try {
+  modelUrl = await GlassesManagerService.uploadModel3D(
+    _tempSelectedFile!.bytes!,
+    _tempSelectedFile!.name,
+    product.id ?? '',
+  );
+  
+  if (modelUrl == null || modelUrl.isEmpty) {
+    throw Exception('Le serveur n\'a pas renvoyé d\'URL valide');
+  }
+  
+  product.model3D = modelUrl;
+} catch (e) {
+  Navigator.of(context).pop(); // Fermer le loader
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text('Erreur lors de l\'upload du modèle 3D: ${e.toString()}'),
+      backgroundColor: Colors.red,
+    ),
+  );
+  return; // Arrêter le processus
+}
                           product.model3D = modelUrl;
                         } else {
                           // Upload de l'image
@@ -1911,19 +1924,20 @@ if (productController.error != null) {
     );
   }
 
-  void _showEditProductDialog(BuildContext context, Product product) {
-    final formKey = GlobalKey<FormState>();
-    final editedProduct = product.copyWith();
-    PlatformFile? _tempSelectedImage;
+void _showEditProductDialog(BuildContext context, Product product) {
+  final formKey = GlobalKey<FormState>();
+  PlatformFile? _tempSelectedFile;
+  bool isModel3D = false;
+  bool hasNewFile = false;
 
-    Color selectedColor = Colors.black;
+  // Variable pour stocker la couleur sélectionnée avec une valeur par défaut
+  Color selectedColor = getColorFromHex(product.couleur);
 
-    bool hasNewImage = false;
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => StatefulBuilder(builder: (context, setState) {
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) => StatefulBuilder(
+      builder: (context, setState) {
         return AlertDialog(
           title: const Text('Modifier le produit'),
           content: SingleChildScrollView(
@@ -1932,76 +1946,87 @@ if (productController.error != null) {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Affichage conditionnel: soit la nouvelle image, soit l'ancienne
-                  if (hasNewImage && _tempSelectedImage != null)
-                    // Afficher la nouvelle image sélectionnée
-                    Container(
-                      height: 120,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey),
-                      ),
-                      child: _tempSelectedImage!.bytes != null
-                          ? Image.memory(
-                              _tempSelectedImage!.bytes!,
-                              fit: BoxFit.contain,
-                            )
-                          : Center(child: Text('Aperçu non disponible')),
-                    )
-                  else if (product.image.isNotEmpty)
-                    // Afficher l'image actuelle du produit
-                    Container(
-                      height: 120,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        image: DecorationImage(
-                          image: NetworkImage(product.image),
-                          fit: BoxFit.contain,
+                  // Sélection du type de fichier (image ou modèle 3D)
+                  Row(
+                    children: [
+                    
+                      Expanded(
+                        child: RadioListTile<bool>(
+                          title: const Text('Modèle 3D'),
+                          value: true,
+                          groupValue: isModel3D,
+                          onChanged: (value) {
+                            setState(() {
+                              isModel3D = value!;
+                              _tempSelectedFile = null;
+                            });
+                          },
                         ),
-                        border: Border.all(color: Colors.grey),
                       ),
-                    )
-                  else
-                    // Aucune image disponible
-                    Container(
-                      height: 120,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey),
-                      ),
-                      child: Center(child: Text('Aucune image')),
-                    ),
-                  const SizedBox(height: 8),
-
-                  // Image picker pour choisir une nouvelle image
-                  FilePickerExample(
-                    onImagePicked: (image) {
-                      setState(() {
-                        _tempSelectedImage = image;
-                        hasNewImage = true;
-                      });
-                    },
+                    ],
                   ),
 
-                  // Bouton pour revenir à l'image précédente
-                  if (hasNewImage && product.image.isNotEmpty)
+                   // Container pour le file picker (uniquement modèle 3D)
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.all(8),
+                    child: Model3DPickerWidget(
+                      onFilePicked: (file) {
+                        setState(() {
+                          _tempSelectedFile = file;
+                          hasNewFile = true;
+                        });
+                      },
+                    ),
+                  ),
+
+                  // Aperçu du fichier actuel ou nouveau
+                  if (hasNewFile && _tempSelectedFile != null)
+                    Container(
+                      height: 50,
+                      margin: const EdgeInsets.symmetric(vertical: 16),
+                      child: Text(
+                        'Nouveau Modèle 3D sélectionné: ${_tempSelectedFile?.name}',
+                        style: TextStyle(color: Colors.blue[700]),
+                      ),
+                    )
+                  else if (product.model3D.isNotEmpty)
+                    Container(
+                      height: 50,
+                      margin: const EdgeInsets.symmetric(vertical: 16),
+                      child: Text(
+                        'Modèle 3D actuel',
+                        style: TextStyle(color: Colors.green[700]),
+                      ),
+                    ),
+
+                  // Bouton pour supprimer le modèle 3D actuel
+                  if (!hasNewFile && product.model3D.isNotEmpty)
                     TextButton.icon(
-                      icon: Icon(Icons.restore),
-                      label: Text('Revenir à l\'image précédente'),
+                      icon: Icon(Icons.delete, color: Colors.red),
+                      label: Text('Supprimer modèle 3D actuel'),
                       onPressed: () {
                         setState(() {
-                          _tempSelectedImage = null;
-                          hasNewImage = false;
+                          product.model3D = '';
+                          hasNewFile = true; // Pour forcer la mise à jour
                         });
                       },
                     ),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
 
-                  // Champs pour le formulaire (les mêmes que précédemment)
+                  // Nom du produit
                   TextFormField(
-                    decoration:
-                        const InputDecoration(labelText: 'Nom du produit'),
+                    decoration: InputDecoration(
+                      labelText: 'Nom du produit',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      prefixIcon: const Icon(Icons.shopping_bag),
+                    ),
                     initialValue: product.name,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -2011,10 +2036,19 @@ if (productController.error != null) {
                     },
                     onSaved: (value) => product.name = value ?? '',
                   ),
+                  const SizedBox(height: 16),
+
+                  // Description
                   TextFormField(
-                    decoration:
-                        const InputDecoration(labelText: 'Description '),
+                    decoration: InputDecoration(
+                      labelText: 'Description',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      prefixIcon: const Icon(Icons.description),
+                    ),
                     initialValue: product.description,
+                    maxLines: 3,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Veuillez entrer une description';
@@ -2024,6 +2058,8 @@ if (productController.error != null) {
                     onSaved: (value) => product.description = value ?? '',
                   ),
                   const SizedBox(height: 16),
+
+                  // Catégorie
                   DropdownButtonFormField<String>(
                     value: product.category,
                     decoration: InputDecoration(
@@ -2080,21 +2116,18 @@ if (productController.error != null) {
                     ),
                     child: ListTile(
                       leading: const Icon(Icons.color_lens),
-                      title: const Text('Couleur '),
+                      title: const Text('Couleur'),
                       subtitle: const Text('Sélectionnez une couleur'),
                       trailing: Container(
                         width: 50,
                         height: 30,
                         decoration: BoxDecoration(
-                          color: getColorFromHex(product.couleur),
-                          shape: BoxShape.circle,
+                          color: selectedColor,
+                          borderRadius: BorderRadius.circular(8),
                           border: Border.all(color: Colors.grey),
                         ),
                       ),
                       onTap: () async {
-                        // Initialiser le color picker avec la couleur actuelle
-                        Color initialColor = selectedColor;
-
                         final Color? pickedColor = await showDialog(
                           context: context,
                           builder: (BuildContext context) {
@@ -2102,9 +2135,9 @@ if (productController.error != null) {
                               title: const Text('Sélectionnez une couleur'),
                               content: SingleChildScrollView(
                                 child: ColorPicker(
-                                  pickerColor: initialColor,
+                                  pickerColor: selectedColor,
                                   onColorChanged: (color) {
-                                    initialColor = color;
+                                    selectedColor = color;
                                   },
                                   showLabel: true,
                                   pickerAreaHeightPercent: 0.8,
@@ -2119,7 +2152,7 @@ if (productController.error != null) {
                                 ),
                                 ElevatedButton(
                                   onPressed: () {
-                                    Navigator.pop(context, initialColor);
+                                    Navigator.pop(context, selectedColor);
                                   },
                                   child: const Text('Valider'),
                                 ),
@@ -2131,29 +2164,17 @@ if (productController.error != null) {
                         if (pickedColor != null) {
                           setState(() {
                             selectedColor = pickedColor;
-
-                            // Convertir la couleur en format hexadécimal RGB
-                            String colorHex = pickedColor.red
-                                    .toRadixString(16)
-                                    .padLeft(2, '0') +
-                                pickedColor.green
-                                    .toRadixString(16)
-                                    .padLeft(2, '0') +
-                                pickedColor.blue
-                                    .toRadixString(16)
-                                    .padLeft(2, '0');
-
-                            product.couleur = colorHex;
-
-                            // Afficher la couleur pour débogage
-                            print('Couleur sélectionnée: $colorHex');
-                            print('Couleur objet: ${pickedColor.toString()}');
+                            product.couleur = pickedColor.red.toRadixString(16).padLeft(2, '0') +
+                                pickedColor.green.toRadixString(16).padLeft(2, '0') +
+                                pickedColor.blue.toRadixString(16).padLeft(2, '0');
                           });
                         }
                       },
                     ),
                   ),
                   const SizedBox(height: 16),
+                  
+                  // Style
                   DropdownButtonFormField<String>(
                     value: product.style.isNotEmpty ? product.style : null,
                     decoration: InputDecoration(
@@ -2161,7 +2182,7 @@ if (productController.error != null) {
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      prefixIcon: const Icon(Icons.visibility),
+                      prefixIcon: const Icon(Icons.style),
                     ),
                     items: styles.map((String style) {
                       return DropdownMenuItem(
@@ -2176,11 +2197,12 @@ if (productController.error != null) {
                         value == null ? 'Ce champ est requis' : null,
                   ),
                   const SizedBox(height: 16),
+                  
                   // Type de verre
                   DropdownButtonFormField<String>(
                     value: product.typeVerre,
                     decoration: InputDecoration(
-                      labelText: 'Type de verre ',
+                      labelText: 'Type de verre',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -2200,15 +2222,15 @@ if (productController.error != null) {
                   ),
                   const SizedBox(height: 16),
 
-                  // Prix avec validation améliorée
+                  // Prix
                   TextFormField(
                     initialValue: product.prix.toString(),
                     decoration: InputDecoration(
-                      labelText: 'Prix (DT) ',
+                      labelText: 'Prix (DT)',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      prefixIcon: const Icon(Icons.price_change_rounded),
+                      prefixIcon: const Icon(Icons.price_change),
                       hintText: 'Ex: 125.50',
                     ),
                     keyboardType:
@@ -2235,7 +2257,7 @@ if (productController.error != null) {
                   ),
                   const SizedBox(height: 16),
 
-                  // Quantité en stock avec validation améliorée
+                  // Quantité en stock
                   TextFormField(
                     initialValue: product.quantiteStock.toString(),
                     decoration: InputDecoration(
@@ -2263,16 +2285,16 @@ if (productController.error != null) {
                       }
                       return null;
                     },
-                    onSaved: (value) =>
-                        product.quantiteStock = int.tryParse(value ?? '0') ?? 0,
+                    onSaved: (value) => product.quantiteStock =
+                        int.tryParse(value ?? '0') ?? 0,
                   ),
                   const SizedBox(height: 16),
 
-                  // Opticien dropdown
+                  // Boutique dropdown
                   DropdownButtonFormField<String>(
                     value: product.boutiqueId,
                     decoration: InputDecoration(
-                      labelText: 'Boutique ',
+                      labelText: 'Boutique',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -2285,12 +2307,9 @@ if (productController.error != null) {
                       );
                     }).toList(),
                     validator: (value) => value?.isEmpty ?? true
-                        ? 'Veuillez sélectionner un opticien'
+                        ? 'Veuillez sélectionner une boutique'
                         : null,
                     onChanged: (value) {
-                      product.boutiqueId = value ?? '';
-                    },
-                    onSaved: (value) {
                       product.boutiqueId = value ?? '';
                     },
                   ),
@@ -2299,18 +2318,21 @@ if (productController.error != null) {
             ),
           ),
           actions: [
-            TextButton(
+            TextButton.icon(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Annuler'),
+              icon: const Icon(Icons.cancel),
+              label: const Text('Annuler'),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.grey[700],
+              ),
             ),
-            ElevatedButton(
+            ElevatedButton.icon(
               onPressed: () async {
                 if (formKey.currentState?.validate() ?? false) {
                   formKey.currentState?.save();
 
                   // Afficher l'indicateur de chargement
                   BuildContext dialogContext = context;
-
                   showDialog(
                     context: context,
                     barrierDismissible: false,
@@ -2332,26 +2354,37 @@ if (productController.error != null) {
                   );
 
                   try {
-                    // Uploader la nouvelle image si sélectionnée
-                    if (hasNewImage &&
-                        _tempSelectedImage != null &&
-                        _tempSelectedImage!.bytes != null) {
-                      final imageUrl = await productController.uploadImageWeb(
-                        _tempSelectedImage!.bytes!,
-                        _tempSelectedImage!.name,
-                        product.id ?? '', // Utiliser l'ID existant du produit
-                      );
-                      product.image =
-                          imageUrl; // Mettre à jour l'URL de l'image
+                    // Upload du fichier si sélectionné
+                    if (hasNewFile && _tempSelectedFile != null && _tempSelectedFile!.bytes != null) {
+                      if (isModel3D) {
+                        // Upload du modèle 3D
+                        String? modelUrl = await GlassesManagerService.uploadModel3D(
+                          _tempSelectedFile!.bytes!,
+                          _tempSelectedFile!.name,
+                          product.id ?? '',
+                        );
+                        
+                        if (modelUrl == null || modelUrl.isEmpty) {
+                          throw Exception('Le serveur n\'a pas renvoyé d\'URL valide');
+                        }
+                        
+                        product.model3D = modelUrl;
+                      } else {
+                        // Upload de l'image
+                        final imageUrl = await productController.uploadImageWeb(
+                          _tempSelectedFile!.bytes!,
+                          _tempSelectedFile!.name,
+                          product.id ?? '',
+                        );
+                        product.image = imageUrl;
+                      }
                     }
 
-                    // Mettre à jour le produit avec tous les champs
+                    // Mettre à jour le produit
                     await productController.updateProduct(product.id!, product);
 
-                    // Fermer la boîte de dialogue de chargement
+                    // Fermer les dialogues
                     Navigator.of(context).pop();
-
-                    // Fermer la boîte de dialogue du formulaire
                     Navigator.of(dialogContext).pop();
 
                     ScaffoldMessenger.of(dialogContext).showSnackBar(
@@ -2361,9 +2394,7 @@ if (productController.error != null) {
                       ),
                     );
                   } catch (e) {
-                    // Fermer la boîte de dialogue de chargement
                     Navigator.of(context).pop();
-
                     ScaffoldMessenger.of(dialogContext).showSnackBar(
                       SnackBar(
                         content: Text('Erreur: $e'),
@@ -2373,13 +2404,15 @@ if (productController.error != null) {
                   }
                 }
               },
-              child: const Text('Mettre à jour'),
+              icon: const Icon(Icons.save),
+              label: const Text('Enregistrer'),
             ),
           ],
         );
-      }),
-    );
-  }
+      },
+    ),
+  );
+}
 
   void _showDeleteConfirmation(BuildContext context, Product product) {
     showDialog(

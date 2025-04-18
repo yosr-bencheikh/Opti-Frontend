@@ -277,44 +277,60 @@ Widget _buildStatsGrid(
               'color': const Color(0xFF7BACD4),
               'icon': Icons.people
             },
-           {
-              'title': 'Produits',
-              'widget': Obx(() {
-                // Charger les produits si nécessaire
-                if (productController.products.isEmpty) {
-                  productController.loadAllProductsForOptician();
-                }
-                
-                // Filtrer les produits par les IDs des boutiques de l'opticien
-                final opticianProducts = productController.products
-                    .where((p) => opticianBoutiqueIds.contains(p.boutiqueId))
-                    .toList();
-                    
-                return _buildStatValue(opticianProducts.length.toString());
-              }),
-              'color': Colors.purple,
-              'icon': Icons.shopping_bag
-            },
             {
-              'title': 'Boutiques',
+              'title': 'Produits',
               'widget': FutureBuilder<void>(
-                future: boutiqueController.getboutiqueByOpticianId(currentOpticianId),
+                future: productController.loadProductsForCurrentOptician(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return _buildStatValue("...");
+                  } else if (snapshot.hasError) {
+                    print("Error loading products: ${snapshot.error}");
+                    return _buildStatValue("Erreur");
                   } else {
                     return Obx(() {
-                      final boutiques = boutiqueController.opticiensList
-                          .where((b) => b.opticien_id == currentOpticianId)
+                      // Debug logs
+                      print("Total products loaded: ${productController.products.length}");
+                      print("Optician boutique IDs: $opticianBoutiqueIds");
+                      
+                      // Filter products by optician's boutiques
+                      final opticianProducts = productController.products
+                          .where((p) => opticianBoutiqueIds.contains(p.boutiqueId))
                           .toList();
-                      return _buildStatValue(boutiques.length.toString());
+                      
+                      print("Filtered products count: ${opticianProducts.length}");
+                      return _buildStatValue(opticianProducts.length.toString());
                     });
                   }
                 },
               ),
-              'color': Colors.orange,
-              'icon': Icons.store
+              'color': Colors.purple,
+              'icon': Icons.shopping_bag
             },
+          {
+  'title': 'Produits',
+  'widget': FutureBuilder<void>(
+    future: productController.loadAllProductsForOptician(),
+    builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return _buildStatValue("...");
+      } else if (snapshot.hasError) {
+        print("Error loading products: ${snapshot.error}");
+        return _buildStatValue("Error");
+      } else {
+        return Obx(() {
+          // No filtering needed - productController.products should already be filtered
+          // Add safeguard for null or empty list
+          final count = productController.products.length;
+          print("Products count: $count"); // Debug print
+          return _buildStatValue(count.toString());
+        });
+      }
+    },
+  ),
+  'color': Colors.purple,
+  'icon': Icons.shopping_bag
+},
             {
               'title': 'Commandes',
               'widget': FutureBuilder<void>(
@@ -322,6 +338,9 @@ Widget _buildStatsGrid(
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return _buildStatValue("...");
+                  } else if (snapshot.hasError) {
+                    print("Error loading orders: ${snapshot.error}");
+                    return _buildStatValue("Erreur");
                   } else {
                     return Obx(() {
                       // Filtrer par les boutiques de l'opticien pour les commandes
@@ -329,6 +348,7 @@ Widget _buildStatsGrid(
                           .where((order) => order.items.any(
                               (item) => opticianBoutiqueIds.contains(item.boutiqueId)))
                           .toList();
+                      print("Orders count: ${opticianOrders.length}");
                       return _buildStatValue(opticianOrders.length.toString());
                     });
                   }
@@ -373,15 +393,17 @@ Widget _buildStatsGrid(
     },
   );
 }
-  Widget _buildStatValue(String value) {
-    return Text(
-      value,
-      style: const TextStyle(
-        fontSize: 20,
-        fontWeight: FontWeight.bold,
-      ),
-    );
-  }
+
+Widget _buildStatValue(String value) {
+  return Text(
+    value,
+    style: const TextStyle(
+      fontSize: 20,
+      fontWeight: FontWeight.bold,
+    ),
+  );
+}
+
 
   Widget _buildMonthDropdown() {
     final orderController = Get.find<OrderController>();

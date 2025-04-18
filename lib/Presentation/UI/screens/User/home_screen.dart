@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
+import 'package:opti_app/Presentation/UI/screens/Admin/Product3DViewer.dart';
 import 'package:opti_app/Presentation/UI/screens/User/Face_detection.dart';
 import 'package:opti_app/Presentation/UI/screens/User/optician_product_screen.dart';
 // ignore: unused_import
@@ -23,6 +24,7 @@ import 'package:opti_app/Presentation/widgets/opticalstoreCard.dart';
 import 'package:opti_app/domain/entities/Boutique.dart';
 import 'package:opti_app/domain/entities/product_entity.dart';
 import 'package:opti_app/domain/entities/user.dart';
+import 'package:opti_app/domain/entities/wishlist_item.dart';
 
 class HomeScreen extends GetView<AuthController> {
   final PageController _pageController = PageController(viewportFraction: 0.9);
@@ -496,57 +498,204 @@ class HomeScreen extends GetView<AuthController> {
     );
   }
 
-  Widget buildPopularProducts() {
-    final productController = Get.find<ProductController>();
+Widget buildPopularProducts() {
+  final productController = Get.find<ProductController>();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.all(16),
-          child: Text(
-            'Produits Populaires',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const Padding(
+        padding: EdgeInsets.all(16),
+        child: Text(
+          'Produits Populaires',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
           ),
         ),
-        SizedBox(
-          height: 220,
-          child: Obx(() {
-            if (productController.isLoading) {
-              return const Center(child: CircularProgressIndicator());
-            }
+      ),
+      SizedBox(
+        height: 242, // Augmenté de 240 à 242 pour éviter l'overflow
+        child: Obx(() {
+          if (productController.isLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-            if (productController.error != null) {
-              return Center(child: Text('Erreur: ${productController.error}'));
-            }
+          if (productController.error != null) {
+            return Center(child: Text('Erreur: ${productController.error}'));
+          }
 
-            final productsToDisplay =
-                productController.popularProducts.isNotEmpty
-                    ? productController.popularProducts
-                    : productController.products.take(10).toList();
+          final productsToDisplay =
+              productController.popularProducts.isNotEmpty
+                  ? productController.popularProducts
+                  : productController.products.take(10).toList();
 
-            return ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: productsToDisplay.length,
-              itemBuilder: (context, index) {
-                final product = productsToDisplay[index];
-                return ProductCard(
-                  product: product,
-                  isHorizontalList: true,
-                  wishlistController: wishlistController,
-                  authController: controller,
-                );
-              },
-            );
-          }),
-        ),
-      ],
-    );
-  }
+          return ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: productsToDisplay.length,
+            itemBuilder: (context, index) {
+              final product = productsToDisplay[index];
+              final bool has3DModel = product.model3D.isNotEmpty;
+
+              return Container(
+                width: 160,
+                margin: const EdgeInsets.only(right: 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min, // Important pour éviter l'overflow
+                  children: [
+                    // Conteneur image/modèle 3D
+                    Container(
+                      height: 120,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(12)),
+                        color: Colors.grey[100],
+                      ),
+                      child: has3DModel
+                          ? Fixed3DViewer(
+                              modelUrl: product.model3D,
+                              compactMode: true,
+                              backgroundColor: Colors.grey[100]!,
+                              enableShadow: false,
+                              autoRotate: true,
+                              enableZoom: false,
+                              showProgress: false,
+                            )
+                          : (product.image.isNotEmpty
+                              ? Image.network(
+                                  product.image,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      color: Colors.grey[200],
+                                      child: const Icon(Icons.image_not_supported),
+                                    );
+                                  },
+                                )
+                              : const Center(child: Icon(Icons.shopping_bag, size: 40))),
+                    ),
+                    // Contenu texte et boutons
+                    Expanded( // Utilisation de Expanded pour le contenu textuel
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6), // Réduit le padding vertical
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: const BorderRadius.vertical(
+                              bottom: Radius.circular(12)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.1),
+                              spreadRadius: 1,
+                              blurRadius: 4,
+                              offset: const Offset(0, 1),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min, // Important
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              product.name,
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2), // Réduit de 4 à 2
+                            Row(
+                              children: [
+                                const Icon(Icons.star, color: Colors.amber, size: 16),
+                                const SizedBox(width: 4),
+                                Text(
+                                  product.averageRating.toStringAsFixed(1),
+                                  style: const TextStyle(fontSize: 12),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '(${product.totalReviews})',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 2), // Réduit de 4 à 2
+                            Text(
+                              '€${product.prix.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                color: Colors.blue,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const Spacer(), // Pousse les boutons vers le bas
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Obx(() {
+                                  final isInWishlist = wishlistController
+                                      .isProductInWishlist(product.id!);
+                                  return IconButton(
+                                    padding: EdgeInsets.zero, // Réduit le padding du bouton
+                                    constraints: const BoxConstraints(), // Supprime les contraintes par défaut
+                                    icon: Icon(
+                                      isInWishlist
+                                          ? Icons.favorite
+                                          : Icons.favorite_border,
+                                      color: isInWishlist ? Colors.red : Colors.grey,
+                                      size: 20,
+                                    ),
+                                    onPressed: () {
+                                      final userEmail = controller.currentUser?.email;
+                                      if (userEmail == null) {
+                                        Get.snackbar('Erreur',
+                                            'Veuillez vous connecter d\'abord');
+                                        return;
+                                      }
+                                      if (isInWishlist) {
+                                        wishlistController
+                                            .removeFromWishlist(product.id!);
+                                      } else {
+                                        wishlistController.addToWishlist(
+                                          WishlistItem(
+                                            userId: userEmail,
+                                            productId: product.id!,
+                                          ),
+                                        );
+                                      }
+                                    },
+                                  );
+                                }),
+                                IconButton(
+                                  padding: EdgeInsets.zero, // Réduit le padding du bouton
+                                  constraints: const BoxConstraints(), // Supprime les contraintes par défaut
+                                  icon: const Icon(
+                                    Icons.add_shopping_cart,
+                                    color: Colors.blue,
+                                    size: 20,
+                                  ),
+                                  onPressed: () {
+                                    showProductDialog(context, product);
+                                  },
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          );
+        }),
+      ),
+    ],
+  );
+}
 
   Widget _buildOpticalStores() {
     try {

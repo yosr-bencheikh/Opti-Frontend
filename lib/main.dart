@@ -59,6 +59,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:opti_app/Presentation/UI/screens/User/ordersList_screen.dart';
 
 void main() async {
+    if (kDebugMode) {
+    print('Démarrage de l\'application en mode debug');
+  }
+
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize SharedPreferences
@@ -165,7 +169,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      initialRoute: '/Admin_pannel',
+      initialRoute: '/OpticienDashboard',
       getPages: [
         GetPage(
           name: '/splash',

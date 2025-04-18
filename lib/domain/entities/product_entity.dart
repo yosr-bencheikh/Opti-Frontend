@@ -34,19 +34,26 @@ class Product {
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
-    final imageUrl = _constructImageUrl(json['image'] ?? json['imageUrl']);
-    
-    // Handle model3D which could be an ObjectId string, a URL string, or null
-    String model3DValue = '';
-    if (json['model3D'] != null) {
-      if (json['model3D'] is Map) {
-        // If it's a populated mongoose reference
-        model3DValue = json['model3D']['_id']?.toString() ?? '';
-      } else {
-        // If it's a string ID or path
-        model3DValue = json['model3D'].toString();
-      }
+  final imageUrl = _constructImageUrl(json['image'] ?? json['imageUrl']);
+  
+  // Gestion améliorée du modèle 3D
+  String model3DValue = '';
+  if (json['model3D'] != null) {
+    if (json['model3D'] is Map) {
+      // Si c'est un objet MongoDB peuplé
+      model3DValue = json['model3D']['filePath']?.toString() ?? 
+                    json['model3D']['_id']?.toString() ?? '';
+    } else if (json['model3D'].toString().startsWith('http')) {
+      // Si c'est déjà une URL complète
+      model3DValue = json['model3D'].toString();
+    } else if (json['model3D'].toString().startsWith('/models/')) {
+      // Si c'est un chemin relatif
+      model3DValue = 'http://localhost:3000${json['model3D']}';
+    } else {
+      // Autres cas (ID simple)
+      model3DValue = json['model3D'].toString();
     }
+  }
 
     return Product(
       id: json['_id']?.toString() ?? '',

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:opti_app/Presentation/UI/screens/Admin/Product3DViewer.dart';
 import 'package:opti_app/Presentation/UI/screens/User/home_screen.dart';
 
 import 'package:opti_app/Presentation/controllers/navigation_controller.dart';
@@ -68,124 +69,118 @@ class CartScreen extends StatelessWidget {
   }
 
   Widget _buildCartItem(
-    String id,
-    String productId,
-    int quantity,
-    double price,
-    BuildContext context,
-  ) {
-    final productController = Get.find<ProductController>();
-    final product = productController.products.firstWhereOrNull(
-      (p) => p.id == productId,
-    );
+  String id,
+  String productId,
+  int quantity,
+  double price,
+  BuildContext context,
+) {
+  final productController = Get.find<ProductController>();
+  final product = productController.products.firstWhereOrNull(
+    (p) => p.id == productId,
+  );
 
-    if (product == null) {
-      return Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(12),
-        child: const Center(child: Text('Produit introuvable')),
-      );
-    }
-
-    final String volumeText = 'Volume 80ml';
-
+  if (product == null) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          ClipRRect(
+      padding: const EdgeInsets.all(12),
+      child: const Center(child: Text('Produit introuvable')),
+    );
+  }
+
+  final String volumeText = 'Volume 80ml';
+  final bool has3DModel = product.model3D.isNotEmpty;
+
+  return Container(
+    margin: const EdgeInsets.only(bottom: 12),
+    padding: const EdgeInsets.all(8),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 4,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    ),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        // Remplacer l'image par le modèle 3D si disponible
+        Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
-            child: product.image.startsWith('assets/')
-                ? Image.asset(
-                    product.image,
-                    width: 60,
-                    height: 60,
-                    fit: BoxFit.cover,
-                  )
-                : Image.network(
-                    product.image,
-                    width: 60,
-                    height: 60,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        width: 60,
-                        height: 60,
-                        color: Colors.grey[200],
-                        child: const Icon(Icons.image_not_supported),
-                      );
-                    },
-                  ),
+            color: Colors.grey[200],
           ),
-          const SizedBox(width: 11),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  product.name,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: has3DModel
+                ? Fixed3DViewer(
+                    modelUrl: product.model3D,
+                    compactMode: true,
+                    backgroundColor: Colors.grey[200]!,
+                    enableShadow: true,
+                    autoRotate: true,
+                    enableZoom: false,
+                    showProgress: false,
+                  )
+                : product.image.isNotEmpty
+                    ? product.image.startsWith('assets/')
+                        ? Image.asset(
+                            product.image,
+                            fit: BoxFit.cover,
+                          )
+                        : Image.network(
+                            product.image,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Icon(Icons.image_not_supported, 
+                                color: Colors.grey[400]);
+                            },
+                          )
+                    : Icon(Icons.image, color: Colors.grey[400]),
+          ),
+        ),
+        const SizedBox(width: 11),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                product.name,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  volumeText,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                  ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                volumeText,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[600],
                 ),
-                const SizedBox(height: 8),
-                Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(color: const Color(0xFFFFA837)),
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        constraints: const BoxConstraints(),
-                        icon: const Icon(Icons.remove, size: 16),
-                        color: const Color(0xFFFFA837),
-                        onPressed: () {
-                          if (quantity > 1) {
-                            final newQuantity = quantity - 1;
-                            final unitPrice = price / quantity;
-                            final newTotalPrice = unitPrice * newQuantity;
-                            cartController.updateCartItem(
-                              id,
-                              newQuantity,
-                              newTotalPrice,
-                            );
-                          }
-                        },
-                      ),
-                      Text(
-                        '$quantity',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      IconButton(
-                        constraints: const BoxConstraints(),
-                        icon: const Icon(Icons.add, size: 16),
-                        color: const Color(0xFFFFA837),
-                        onPressed: () {
-                          final newQuantity = quantity + 1;
+              ),
+              const SizedBox(height: 8),
+              Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: const Color(0xFFFFA837)),
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      constraints: const BoxConstraints(),
+                      icon: const Icon(Icons.remove, size: 16),
+                      color: const Color(0xFFFFA837),
+                      onPressed: () {
+                        if (quantity > 1) {
+                          final newQuantity = quantity - 1;
                           final unitPrice = price / quantity;
                           final newTotalPrice = unitPrice * newQuantity;
                           cartController.updateCartItem(
@@ -193,39 +188,58 @@ class CartScreen extends StatelessWidget {
                             newQuantity,
                             newTotalPrice,
                           );
-                        },
-                      ),
-                    ],
-                  ),
+                        }
+                      },
+                    ),
+                    Text(
+                      '$quantity',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    IconButton(
+                      constraints: const BoxConstraints(),
+                      icon: const Icon(Icons.add, size: 16),
+                      color: const Color(0xFFFFA837),
+                      onPressed: () {
+                        final newQuantity = quantity + 1;
+                        final unitPrice = price / quantity;
+                        final newTotalPrice = unitPrice * newQuantity;
+                        cartController.updateCartItem(
+                          id,
+                          newQuantity,
+                          newTotalPrice,
+                        );
+                      },
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFEBD9),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              '${price.toStringAsFixed(2)} €',
-              style: const TextStyle(
-                color: Color(0xFFFFA837),
-                fontWeight: FontWeight.bold,
               ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 12),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFEBD9),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            '${price.toStringAsFixed(2)} €',
+            style: const TextStyle(
+              color: Color(0xFFFFA837),
+              fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(width: 8),
-          IconButton(
-            icon: const Icon(Icons.close, color: Colors.grey),
-            onPressed: () => cartController.deleteCartItem(id),
-          ),
-        ],
-      ),
-    );
-  }
-
+        ),
+        const SizedBox(width: 8),
+        IconButton(
+          icon: const Icon(Icons.close, color: Colors.grey),
+          onPressed: () => cartController.deleteCartItem(id),
+        ),
+      ],
+    ),
+  );
+}
   Widget _buildCheckoutSection() {
     final total = cartController.cartItems.fold<double>(
       0,
