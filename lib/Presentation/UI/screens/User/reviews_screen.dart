@@ -16,7 +16,13 @@ class ReviewsScreen extends StatelessWidget {
     final ReviewController reviewController = Get.put(ReviewController());
     final ProductController productController = Get.find();
 
+    // Set product ID and fetch reviews immediately
     reviewController.setProductId(product.id!);
+
+    // Force refresh product data to ensure we have latest ratings
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      productController.forceRefreshProduct(product.id!);
+    });
 
     return Scaffold(
       appBar: AppBar(
@@ -26,7 +32,8 @@ class ReviewsScreen extends StatelessWidget {
         elevation: 0,
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _showReviewDialog(context, reviewController, product),
+        onPressed: () => _showReviewDialog(
+            context, reviewController, productController, product),
         child: const Icon(Icons.edit),
         backgroundColor: Colors.black,
       ),
@@ -48,7 +55,8 @@ class ReviewsScreen extends StatelessWidget {
                   itemBuilder: (context, index) {
                     final review =
                         reviewController.reviews[index] as Map<String, dynamic>;
-                    return _buildReviewItem(context, review);
+                    return _buildReviewItem(
+                        context, review, reviewController, productController);
                   },
                 );
               }
@@ -59,8 +67,8 @@ class ReviewsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildReviewItem(BuildContext context, Map<String, dynamic> review) {
-    final ReviewController reviewController = Get.find<ReviewController>();
+  Widget _buildReviewItem(BuildContext context, Map<String, dynamic> review,
+      ReviewController reviewController, ProductController productController) {
     final AuthController authController = Get.find<AuthController>();
 
     dynamic userIdValue = review['userId'];
@@ -70,8 +78,6 @@ class ReviewsScreen extends StatelessWidget {
     } else if (userIdValue is Map<String, dynamic>) {
       userId = userIdValue['_id']?.toString() ?? '';
     }
-
-    print("Searching for user with ID: $userId");
 
     return FutureBuilder<UserModel?>(
       future: userId.isNotEmpty
@@ -98,11 +104,6 @@ class ReviewsScreen extends StatelessWidget {
               review['_id'];
           final String reviewId = reviewIdValue?.toString() ?? '';
 
-          if (reviewId.isEmpty) {
-            print("Review data keys: ${review.keys}");
-            print("Review ID is missing; cannot delete.");
-          }
-
           return GestureDetector(
             onLongPress: () {
               if (reviewId.isEmpty) {
@@ -110,7 +111,8 @@ class ReviewsScreen extends StatelessWidget {
                 return;
               }
               reviewController.setSelectedReviewId(reviewId);
-              _showDeleteConfirmation(context, reviewId);
+              _showDeleteConfirmation(context, reviewId, reviewController,
+                  productController, product.id!);
             },
             child: Card(
               margin: const EdgeInsets.only(bottom: 16),
@@ -156,53 +158,85 @@ class ReviewsScreen extends StatelessWidget {
     );
   }
 
- void _showDeleteConfirmation(BuildContext context, String reviewId) {
-  final AuthController authController = Get.find<AuthController>();
-  
-  // Make sure we're getting a String, not an RxString
-  final String userId = authController.currentUserId is RxString 
-      ? (authController.currentUserId as RxString).value 
-      : authController.currentUserId.toString();
+  void _showDeleteConfirmation(
+      BuildContext context,
+      String reviewId,
+      ReviewController reviewController,
+      ProductController productController,
+      String productId) {
+    final AuthController authController = Get.find<AuthController>();
 
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: const Text("Supprimer l'avis"),
-        content: const Text("Êtes-vous sûr de vouloir supprimer cet avis ?"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Annuler"),
-          ),
-          TextButton(
-            onPressed: () async {
-              if (userId.isEmpty) {
+    // Make sure we're getting a String, not an RxString
+    final String userId = authController.currentUserId is RxString
+        ? (authController.currentUserId as RxString).value
+        : authController.currentUserId.toString();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Supprimer l'avis"),
+          content: const Text("Êtes-vous sûr de vouloir supprimer cet avis ?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Annuler"),
+            ),
+            TextButton(
+              onPressed: () async {
+                if (userId.isEmpty) {
+                  Navigator.pop(context);
+                  return;
+                }
+
+                bool success =
+                    await reviewController.deleteReview(reviewId, userId);
+
+                if (success) {
+                  // First refresh reviews without parameter
+                  await reviewController.fetchReviews();
+
+                  // Then calculate new ratings
+                  double newAvgRating = 0.0;
+                  int newTotalReviews = reviewController.reviews.length;
+
+                  if (newTotalReviews > 0) {
+                    double totalRating = 0.0;
+                    for (var review in reviewController.reviews) {
+                      totalRating += (review['rating'] as int).toDouble();
+                    }
+                    newAvgRating = totalRating / newTotalReviews;
+                  }
+
+                  // Update database with new ratings
+                  await reviewController.updateProductRatings(
+                    productId,
+                    newAvgRating,
+                    newTotalReviews,
+                  );
+
+                  // Force refresh product data after deletion
+                  await productController.forceRefreshProduct(productId);
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Avis supprimé")),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text("Échec de la suppression de l'avis")),
+                  );
+                }
                 Navigator.pop(context);
-                return;
-              }
-              // Pass the String value, not the RxString
-              bool success = await Get.find<ReviewController>()
-                  .deleteReview(reviewId, userId);
-              if (success) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Avis supprimé")),
-                );
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text("Échec de la suppression de l'avis")),
-                );
-              }
-              Navigator.pop(context);
-            },
-            child: const Text("Supprimer"),
-          ),
-        ],
-      );
-    },
-  );
-}
+              },
+              child: const Text("Supprimer"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   String _getRelativeTime(String timestamp) {
     DateTime reviewTime;
     try {
@@ -245,14 +279,30 @@ class ReviewsScreen extends StatelessWidget {
         averageRating = totalRating / totalReviews;
       }
 
+      // Update all product instances with new ratings and save to database
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        // Update local state first
         productController.updateProductRating(
           product.id!,
           averageRating,
           totalReviews,
         );
+
+        // Then update the database
+        reviewController
+            .updateProductRatings(
+          product.id!,
+          averageRating,
+          totalReviews,
+        )
+            .then((success) {
+          if (!success) {
+            print('Failed to save ratings to database');
+          }
+        });
       });
 
+      // Rest of the method stays the same...
       Map<int, int> ratingCounts = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
       for (var review in reviews) {
         int rating = review['rating'] as int;
@@ -260,6 +310,7 @@ class ReviewsScreen extends StatelessWidget {
       }
 
       return Container(
+        // The existing UI code...
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.grey[50],
@@ -321,140 +372,170 @@ class ReviewsScreen extends StatelessWidget {
       );
     });
   }
-}
 
-void _showReviewDialog(
-  BuildContext context,
-  ReviewController reviewController,
-  Product product,
-) {
-  final TextEditingController _reviewTextController = TextEditingController();
-  final RxInt rating = 0.obs;
-  final RxString errorMessage = ''.obs;
-  final AuthController _authController = Get.find<AuthController>();
+  void _showReviewDialog(
+    BuildContext context,
+    ReviewController reviewController,
+    ProductController productController,
+    Product product,
+  ) {
+    final TextEditingController _reviewTextController = TextEditingController();
+    final RxInt rating = 0.obs;
+    final RxString errorMessage = ''.obs;
+    final AuthController _authController = Get.find<AuthController>();
 
-  showDialog(
-    context: context,
-    builder: (context) => StatefulBuilder(
-      builder: (context, setState) {
-        return AlertDialog(
-          title: const Text("Écrire un avis"),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: _reviewTextController,
-                  decoration: const InputDecoration(
-                    hintText: 'Partagez votre expérience...',
-                    border: OutlineInputBorder(),
-                    contentPadding: EdgeInsets.all(12),
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text("Écrire un avis"),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: _reviewTextController,
+                    decoration: const InputDecoration(
+                      hintText: 'Partagez votre expérience...',
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.all(12),
+                    ),
+                    maxLines: 5,
                   ),
-                  maxLines: 5,
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.8,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Évaluation :',
-                          style: TextStyle(fontSize: 16)),
-                      const SizedBox(height: 8),
-                      Obx(() => Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [1, 2, 3, 4, 5]
-                                .map((starValue) => InkWell(
-                                      onTap: () {
-                                        rating.value = starValue;
-                                      },
-                                      child: Icon(
-                                        starValue <= rating.value
-                                            ? Icons.star
-                                            : Icons.star_border,
-                                        color: Colors.amber,
-                                        size: 32,
-                                      ),
-                                    ))
-                                .toList(),
-                          )),
-                    ],
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: MediaQuery.of(context).size.width * 0.8,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Évaluation :',
+                            style: TextStyle(fontSize: 16)),
+                        const SizedBox(height: 8),
+                        Obx(() => Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [1, 2, 3, 4, 5]
+                                  .map((starValue) => InkWell(
+                                        onTap: () {
+                                          rating.value = starValue;
+                                        },
+                                        child: Icon(
+                                          starValue <= rating.value
+                                              ? Icons.star
+                                              : Icons.star_border,
+                                          color: Colors.amber,
+                                          size: 32,
+                                        ),
+                                      ))
+                                  .toList(),
+                            )),
+                      ],
+                    ),
                   ),
-                ),
-                Obx(() => errorMessage.value.isNotEmpty
-                    ? Padding(
-                        padding: const EdgeInsets.only(top: 16),
-                        child: Text(
-                          errorMessage.value,
-                          style: const TextStyle(color: Colors.red),
-                        ),
-                      )
-                    : const SizedBox.shrink()),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text(''),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                if (_reviewTextController.text.isNotEmpty && rating.value > 0) {
-                  final userId = _authController.currentUserId.value;
-                  errorMessage.value = '';
-
-                  try {
-                    bool success = await reviewController.submitReview(
-                      product.id!,
-                      userId,
-                      _reviewTextController.text,
-                      rating.value,
-                    );
-
-                    if (success) {
-                      Navigator.pop(context);
-                    } else {
-                      errorMessage.value =
-                          reviewController.errorMessage.value.toString();
-                    }
-                  } catch (e) {
-                    errorMessage.value = 'Failed to submit review: $e';
-                  }
-                } else {
-                  errorMessage.value =
-                      'Please enter a review and select a rating.';
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
+                  Obx(() => errorMessage.value.isNotEmpty
+                      ? Padding(
+                          padding: const EdgeInsets.only(top: 16),
+                          child: Text(
+                            errorMessage.value,
+                            style: const TextStyle(color: Colors.red),
+                          ),
+                        )
+                      : const SizedBox.shrink()),
+                ],
               ),
-              child: const Text('Soumettre'),
             ),
-          ],
-        );
-      },
-    ),
-  );
-}
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Annuler'),
+              ),
 
-Widget _buildRatingProgress(String stars, double percentage) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 4),
-    child: Row(
-      children: [
-        Text(stars),
-        const Icon(Icons.star, size: 16, color: Colors.amber),
-        const SizedBox(width: 8),
-        Expanded(
-          child: LinearProgressIndicator(
-            value: percentage,
-            backgroundColor: Colors.grey[200],
-            color: Colors.amber,
-            minHeight: 6,
+              ElevatedButton(
+                onPressed: () async {
+                  if (_reviewTextController.text.isNotEmpty &&
+                      rating.value > 0) {
+                    final userId = _authController.currentUserId.value;
+                    errorMessage.value = '';
+
+                    try {
+                      bool success = await reviewController.submitReview(
+                        product.id!,
+                        userId,
+                        _reviewTextController.text,
+                        rating.value,
+                      );
+
+                      if (success) {
+                        // First refresh reviews without parameter
+                        await reviewController.fetchReviews();
+
+                        // Then calculate new ratings
+                        double newAvgRating = 0.0;
+                        int newTotalReviews = reviewController.reviews.length;
+
+                        if (newTotalReviews > 0) {
+                          double totalRating = 0.0;
+                          for (var review in reviewController.reviews) {
+                            totalRating += (review['rating'] as int).toDouble();
+                          }
+                          newAvgRating = totalRating / newTotalReviews;
+                        }
+
+                        // Update database
+                        await reviewController.updateProductRatings(
+                          product.id!,
+                          newAvgRating,
+                          newTotalReviews,
+                        );
+
+                        // Force refresh product data after submission
+                        await productController
+                            .forceRefreshProduct(product.id!);
+                        Navigator.pop(context);
+                      } else {
+                        errorMessage.value =
+                            reviewController.errorMessage.value.toString();
+                      }
+                    } catch (e) {
+                      errorMessage.value = 'Failed to submit review: $e';
+                    }
+                  } else {
+                    errorMessage.value =
+                        'Please enter a review and select a rating.';
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.black,
+                ),
+                child: const Text('Soumettre'),
+              ),
+
+// And update the delete confirmation handler:
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildRatingProgress(String stars, double percentage) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Text(stars),
+          const Icon(Icons.star, size: 16, color: Colors.amber),
+          const SizedBox(width: 8),
+          Expanded(
+            child: LinearProgressIndicator(
+              value: percentage,
+              backgroundColor: Colors.grey[200],
+              color: Colors.amber,
+              minHeight: 6,
+            ),
           ),
-        ),
-      ],
-    ),
-  );
+        ],
+      ),
+    );
+  }
 }

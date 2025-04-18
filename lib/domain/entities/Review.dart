@@ -1,38 +1,38 @@
-class Review {
+class BoutiqueReview {
   final String id;
-  final String productId;
-  final String userId;
+  final String boutiqueId;
+  final String customerId;
   final String reviewText;
   final int rating;
   final DateTime timestamp;
 
-  Review({
+  BoutiqueReview({
     required this.id,
-    required this.productId,
-    required this.userId,
+    required this.boutiqueId,
+    required this.customerId,
     required this.reviewText,
     required this.rating,
     required this.timestamp,
   });
 
-  // Factory method to create a Review object from JSON
-  factory Review.fromJson(Map<String, dynamic> json) {
-    return Review(
+  // Factory method to create a BoutiqueReview object from JSON
+  factory BoutiqueReview.fromJson(Map json) {
+    return BoutiqueReview(
       id: json['_id'] ?? json['id'], // Handle both '_id' and 'id' fields
-      productId: json['productId'],
-      userId: json['userId'],
+      boutiqueId: json['boutiqueId'],
+      customerId: json['customerId'],
       reviewText: json['reviewText'],
       rating: json['rating'],
       timestamp: DateTime.parse(json['timestamp']),
     );
   }
 
-  // Method to convert a Review object to JSON
-  Map<String, dynamic> toJson() {
+  // Method to convert a BoutiqueReview object to JSON
+  Map toJson() {
     return {
       'id': id,
-      'productId': productId,
-      'userId': userId,
+      'boutiqueId': boutiqueId,
+      'customerId': customerId,
       'reviewText': reviewText,
       'rating': rating,
       'timestamp': timestamp.toIso8601String(),

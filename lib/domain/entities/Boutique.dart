@@ -11,6 +11,8 @@ class Boutique extends Equatable {
   final String opening_hours;
   final String? opticien_id;
   final String? opticien_nom;
+  final double averageRating; // Nouveau champ
+  final int totalReviews; // Nouveau champ
 
   Boutique({
     required this.id,
@@ -23,36 +25,41 @@ class Boutique extends Equatable {
     required this.opening_hours,
     this.opticien_id,
     this.opticien_nom,
+    this.averageRating = 0.0, // Valeur par défaut
+    this.totalReviews = 0, // Valeur par défaut
   });
 
-  // Méthode helper pour convertir les IDs
   static String? _convertId(dynamic id) {
-    if (id == null) return null;
-    if (id is Map) return id['\$oid']?.toString(); // Pour les ObjectId MongoDB
-    return id.toString();
-  }
-
-factory Boutique.fromJson(Map<String, dynamic> json) {
-  // Conversion robuste des IDs
-  String? parseId(dynamic id) {
     if (id == null) return null;
     if (id is Map) return id['\$oid']?.toString();
     return id.toString();
   }
 
-  return Boutique(
-    id: parseId(json['_id']) ?? '',
-    nom: json['nom'] ?? '',
-    adresse: json['adresse'] ?? '',
-    ville: json['ville'] ?? '',
-    phone: json['phone']?.toString() ?? '',
-    email: json['email'] ?? '',
-    description: json['description'] ?? '',
-    opening_hours: json['opening_hours'] ?? '',
-    opticien_id: parseId(json['opticien_id']), // Conversion garantie
-    opticien_nom: json['opticien_nom']?.toString(),
-  );
-}
+  factory Boutique.fromJson(Map<String, dynamic> json) {
+    String? parseId(dynamic id) {
+      if (id == null) return null;
+      if (id is Map) return id['\$oid']?.toString();
+      return id.toString();
+    }
+
+    return Boutique(
+      id: parseId(json['_id']) ?? '',
+      nom: json['nom'] ?? '',
+      adresse: json['adresse'] ?? '',
+      ville: json['ville'] ?? '',
+      phone: json['phone']?.toString() ?? '',
+      email: json['email'] ?? '',
+      description: json['description'] ?? '',
+      opening_hours: json['opening_hours'] ?? '',
+      opticien_id: parseId(json['opticien_id']),
+      opticien_nom: json['opticien_nom']?.toString(),
+      averageRating:
+          (json['averageRating'] as num?)?.toDouble() ?? 0.0, // Conversion safe
+      totalReviews:
+          (json['totalReviews'] as num?)?.toInt() ?? 0, // Conversion safe
+    );
+  }
+
   @override
   List<Object?> get props => [
         id,
@@ -65,6 +72,8 @@ factory Boutique.fromJson(Map<String, dynamic> json) {
         opening_hours,
         opticien_id,
         opticien_nom,
+        averageRating, // Ajouté aux props
+        totalReviews, // Ajouté aux props
       ];
 
   Map<String, dynamic> toJson() {
@@ -79,6 +88,8 @@ factory Boutique.fromJson(Map<String, dynamic> json) {
       'opening_hours': opening_hours,
       'opticien_id': opticien_id,
       'opticien_nom': opticien_nom,
+      'averageRating': averageRating, // Ajouté au JSON
+      'totalReviews': totalReviews, // Ajouté au JSON
     };
   }
 }

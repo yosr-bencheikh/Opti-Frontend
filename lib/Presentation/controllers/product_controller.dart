@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:opti_app/Presentation/controllers/OpticianController.dart';
 import 'package:opti_app/Presentation/controllers/boutique_controller.dart';
 import 'package:opti_app/Presentation/controllers/OrderController.dart';
+import 'package:opti_app/Presentation/controllers/review_controller.dart';
 import 'package:opti_app/data/data_sources/product_datasource.dart';
 import 'package:opti_app/data/repositories/product_repository_impl.dart';
 import 'package:opti_app/domain/entities/Boutique.dart';
@@ -21,6 +22,9 @@ class ProductController extends GetxController {
   final RxList<Product> _popularProducts = <Product>[].obs;
   List<Product> get popularProducts => _popularProducts;
 
+  // Store for keeping track of product ratings and data
+  final RxMap<String, dynamic> _productsMap = <String, dynamic>{}.obs;
+
   ProductController(this._repository, this._dataSource);
 
   // Getters for the observable variables
@@ -31,6 +35,74 @@ class ProductController extends GetxController {
   final RxMap<String, List<Product>> _productsByOptician =
       <String, List<Product>>{}.obs;
   final RxList<Product> _allProducts = <Product>[].obs;
+
+  // Get a product by ID from local storage with logging
+  dynamic getProductById(String productId) {
+    // Log the attempt to find a product
+    print('[ProductController] Attempting to get product by ID: $productId');
+
+    // Check if product exists in the map
+    if (!_productsMap.containsKey(productId)) {
+      print(
+          '[ProductController] Product not found in local storage: $productId');
+      return null;
+    }
+
+    // Get the product from the map
+    final product = _productsMap[productId];
+
+    // Log the found product details (sensitive data can be masked)
+    print('[ProductController] Found product: ${product?.id} | '
+        'Name: ${product?.name}... | '
+        'Rating: ${product?.averageRating} | '
+        'Reviews: ${product?.totalReviews}');
+
+    return product;
+  }
+
+  // Fetch product rating data and update local storage
+  Future<void> fetchProductRating(String productId) async {
+    try {
+      // Check if we already have the product in our productsMap
+      final existingProduct = _productsMap[productId];
+
+      if (existingProduct != null) {
+        // If the product exists but doesn't have rating data, fetch it
+        if (existingProduct.averageRating == null ||
+            existingProduct.averageRating == 0.0) {
+          await fetchProductRatingAndReviews(productId);
+        }
+        return;
+      }
+
+      // If not in the map, try to find it in our products list
+      final product = _products.firstWhereOrNull((p) => p.id == productId);
+
+      if (product != null) {
+        // Store it in the map
+        _productsMap[productId] = product;
+
+        // If it doesn't have rating data, fetch it
+        if (product.averageRating == null || product.averageRating == 0.0) {
+          await fetchProductRatingAndReviews(productId);
+        }
+      } else {
+        // If not in our products list, try to fetch it directly
+        try {
+          final fetchedProduct = await _repository.getProductById(productId);
+          _productsMap[productId] = fetchedProduct;
+
+          // Fetch its rating data
+          await fetchProductRatingAndReviews(productId);
+        } catch (e) {
+          print('Error fetching product: $e');
+        }
+      }
+    } catch (e) {
+      print('Error fetching product rating: $e');
+    }
+  }
+
   Future<void> loadOpticiens() async {
     try {
       // This will need to be implemented in your repository
@@ -48,8 +120,16 @@ class ProductController extends GetxController {
 
     try {
       final products = await _repository.getProducts();
-      _allProducts.assignAll(products); // Store all products in _allProducts
-      _products.assignAll(products); // Also update current display list
+      _allProducts.assignAll(products);
+      _products.assignAll(products);
+
+      // Fetch ratings for each product
+      for (var product in products) {
+        if (product.id != null && product.id!.isNotEmpty) {
+          _productsMap[product.id!] = product;
+          await fetchProductRating(product.id!); // Add this line
+        }
+      }
     } catch (e) {
       _error.value = e.toString();
     } finally {
@@ -92,6 +172,13 @@ class ProductController extends GetxController {
         }
         _products.assignAll(allProducts);
         _allProducts.assignAll(allProducts);
+
+        // Update the products map
+        for (var product in allProducts) {
+          if (product.id != null && product.id!.isNotEmpty) {
+            _productsMap[product.id!] = product;
+          }
+        }
       } else {
         _products.clear();
         _allProducts.clear();
@@ -124,6 +211,13 @@ class ProductController extends GetxController {
       if (boutiqueIds.isNotEmpty) {
         final products = await _repository.getProductsByBoutiques(boutiqueIds);
         _products.assignAll(products);
+
+        // Update the products map
+        for (var product in products) {
+          if (product.id != null && product.id!.isNotEmpty) {
+            _productsMap[product.id!] = product;
+          }
+        }
       } else {
         _products.clear();
       }
@@ -180,9 +274,10 @@ class ProductController extends GetxController {
     }
   }
 
-  // In the existing ProductController class, update the method:
+  // Updated to also update the productsMap
   void updateProductRating(
       String productId, double newRating, int newTotalReviews) {
+    // Update in main products list
     final index = _products.indexWhere((p) => p.id == productId);
     if (index != -1) {
       final updatedProduct = _products[index].copyWith(
@@ -192,35 +287,77 @@ class ProductController extends GetxController {
       _products[index] = updatedProduct;
       update();
     }
+
+    // Update in all products list
+    final allIndex = _allProducts.indexWhere((p) => p.id == productId);
+    if (allIndex != -1) {
+      final updatedProduct = _allProducts[allIndex].copyWith(
+        averageRating: newRating,
+        totalReviews: newTotalReviews,
+      );
+      _allProducts[allIndex] = updatedProduct;
+    }
+
+    // Update in productsMap
+    final mapProduct = _productsMap[productId];
+    if (mapProduct != null) {
+      final updatedProduct = mapProduct.copyWith(
+        averageRating: newRating,
+        totalReviews: newTotalReviews,
+      );
+      _productsMap[productId] = updatedProduct;
+    }
+
+    // Notify UI to update
+    update();
   }
 
   Future<void> fetchProductRatingAndReviews(String productId) async {
     try {
-      final response = await _repository.getProductRatings(productId);
+      print('[ProductController] Fetching ratings for product: $productId');
 
+      final ratings = await _dataSource.getProductRatings(productId);
+      print('[ProductController] Raw ratings response: $ratings');
+
+      final double averageRating = ratings['averageRating'] ?? 0.0;
+      final int totalReviews = ratings['totalReviews'] ?? 0;
+      print(
+          '[ProductController] Parsed ratings - average: $averageRating, total: $totalReviews');
       // Update in main products list
-      final productIndex = _products.indexWhere((p) => p.id == productId);
-      if (productIndex != -1) {
-        final updatedProduct = _products[productIndex].copyWith(
-          averageRating: response['averageRating'] ?? 0.0,
-          totalReviews: response['totalReviews'] ?? 0,
+      final productsIndex = _products.indexWhere((p) => p.id == productId);
+      if (productsIndex != -1) {
+        final updatedProduct = _products[productsIndex].copyWith(
+          averageRating: averageRating,
+          totalReviews: totalReviews,
         );
-        _products[productIndex] = updatedProduct;
-        _products.refresh(); // Trigger UI update
+        _products[productsIndex] = updatedProduct;
       }
 
       // Update in all products list
-      final allProductIndex = _allProducts.indexWhere((p) => p.id == productId);
-      if (allProductIndex != -1) {
-        final updatedProduct = _allProducts[allProductIndex].copyWith(
-          averageRating: response['averageRating'] ?? 0.0,
-          totalReviews: response['totalReviews'] ?? 0,
+      final allProductsIndex =
+          _allProducts.indexWhere((p) => p.id == productId);
+      if (allProductsIndex != -1) {
+        final updatedProduct = _allProducts[allProductsIndex].copyWith(
+          averageRating: averageRating,
+          totalReviews: totalReviews,
         );
-        _allProducts[allProductIndex] = updatedProduct;
-        _allProducts.refresh();
+        _allProducts[allProductsIndex] = updatedProduct;
       }
+
+      // Update in products map
+      if (_productsMap.containsKey(productId)) {
+        final existingProduct = _productsMap[productId] as Product;
+        final updatedProduct = existingProduct.copyWith(
+          averageRating: averageRating,
+          totalReviews: totalReviews,
+        );
+        _productsMap[productId] = updatedProduct;
+      }
+
+      // Notify listeners to update UI
+      update([productId]);
     } catch (e) {
-      print('Error updating ratings: $e');
+      print('Error fetching product ratings: $e');
     }
   }
 
@@ -238,6 +375,13 @@ class ProductController extends GetxController {
       if (_allProducts.isEmpty) {
         final products = await _repository.getProducts();
         _allProducts.assignAll(products);
+
+        // Update the products map
+        for (var product in products) {
+          if (product.id != null && product.id!.isNotEmpty) {
+            _productsMap[product.id!] = product;
+          }
+        }
       }
 
       // Filter the products by optician ID
@@ -280,6 +424,11 @@ class ProductController extends GetxController {
       // Ajouter le nouveau produit à la liste en début de liste pour qu'il soit visible immédiatement
       _products.insert(0, newProduct);
 
+      // Add to products map
+      if (newProduct.id != null && newProduct.id!.isNotEmpty) {
+        _productsMap[newProduct.id!] = newProduct;
+      }
+
       // Forcer la mise à jour de l'interface
       _products.refresh();
 
@@ -301,16 +450,21 @@ class ProductController extends GetxController {
       final index = _products.indexWhere((p) => p.id == id);
       if (index != -1) {
         _products[index] = updatedProduct;
-        // Forcer la mise à jour de l'interface
-        _products.refresh();
       }
 
       // Mettre à jour également dans la liste complète des produits
       final allIndex = _allProducts.indexWhere((p) => p.id == id);
       if (allIndex != -1) {
         _allProducts[allIndex] = updatedProduct;
-        _allProducts.refresh();
       }
+
+      // Update in products map
+      _productsMap[id] = updatedProduct;
+
+      // Forcer la mise à jour de l'interface
+      _products.refresh();
+      _allProducts.refresh();
+      update();
 
       return true;
     } catch (e) {
@@ -325,6 +479,8 @@ class ProductController extends GetxController {
     try {
       await _repository.deleteProduct(id);
       _products.removeWhere((p) => p.id == id);
+      _allProducts.removeWhere((p) => p.id == id);
+      _productsMap.remove(id);
     } catch (e) {
       _error.value = e.toString();
     }
@@ -373,15 +529,6 @@ class ProductController extends GetxController {
     }
   }
 
-  Future<Product> getProductById(String productId) async {
-    try {
-      return await _repository.getProductById(productId);
-    } catch (e) {
-      _error.value = e.toString();
-      throw e;
-    }
-  }
-
   Future<Map<String, dynamic>> getRecommendations(String faceShape) async {
     try {
       final data = await _dataSource.fetchRecommendations(faceShape);
@@ -400,6 +547,28 @@ class ProductController extends GetxController {
         'products': [],
         'error': e.toString()
       };
+    }
+  }
+
+  Future<void> forceRefreshProduct(String productId) async {
+    try {
+      // Clear existing data
+      _productsMap.remove(productId);
+
+      // Fetch fresh data from server
+      final freshProduct = await _repository.getProductById(productId);
+      await fetchProductRatingAndReviews(productId);
+
+      // Update lists
+      final index = _products.indexWhere((p) => p.id == productId);
+      if (index != -1) _products[index] = freshProduct;
+
+      // Update map
+      _productsMap[productId] = freshProduct;
+
+      update();
+    } catch (e) {
+      print('Error force refreshing product: $e');
     }
   }
 }

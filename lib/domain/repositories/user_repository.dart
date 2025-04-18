@@ -5,6 +5,6 @@ abstract class UserRepository {
   Future<User> getUserByEmail(String email);
   Future<void> updateUser(User user);
   Future<void> deleteUser(String email);
-    Future<String> uploadImage(String filePath, String userId);
-
+  Future<String> uploadImage(String filePath, String userId);
+  Future<User> getUserById(String userId);
 }

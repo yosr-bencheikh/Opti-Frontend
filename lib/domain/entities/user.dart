@@ -62,6 +62,8 @@ class User extends Equatable {
     status,
   ];
 
+  get value => null;
+
   Map<String, dynamic> toJson() {
     return {
       'id': id, // Include id in the JSON output, can be null

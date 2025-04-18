@@ -676,6 +676,34 @@ class AuthController extends GetxController {
     }
   }
 
+  Future<void> updateProfile(
+    String name,
+    String prenom,
+    String date,
+    String region,
+    String phone,
+    String email,
+  ) async {
+    // Build the updated user object.
+    // Use currentUser’s genre, password, imageUrl, and refreshTokens if available,
+    // or provide default values.
+    final updatedUser = User(
+      nom: name,
+      prenom: prenom,
+      email: email,
+      date: date,
+      region: region,
+      genre: currentUser?.genre ?? '',
+      phone: phone,
+      password: currentUser?.password ?? '',
+      imageUrl: currentUser?.imageUrl ?? '',
+      refreshTokens: currentUser!.refreshTokens,
+    );
+
+    // Call the existing updateUserProfile method which handles the update
+    await updateUserProfile(email, updatedUser);
+  }
+
   Future<void> clearImage(String email) async {
     try {
       isLoading.value = true;

@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import 'package:opti_app/Presentation/controllers/OpticianController.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
+import 'package:opti_app/Presentation/controllers/store_wishlist_controller.dart';
 import 'package:opti_app/data/data_sources/OpticianDataSource.dart';
 import 'package:opti_app/data/data_sources/product_datasource.dart';
 import 'package:opti_app/data/repositories/OpticianRepositoryImpl.dart';
@@ -77,5 +78,6 @@ class AuthBinding extends Bindings {
       () => OpticianController(),
       fenix: true,
     );
+     Get.lazyPut(() => StoreWishlistController());
   }
 }

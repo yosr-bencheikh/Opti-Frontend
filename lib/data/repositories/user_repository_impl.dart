@@ -34,4 +34,12 @@ class UserRepositoryImpl implements UserRepository {
       throw Exception('Failed to upload image: $e');
     }
   }
+   Future<User> getUserById(String userId) async{
+     try {
+      return await dataSource.getUserById(userId);
+    } catch (e) {
+      throw Exception('Failed to upload image: $e');
+    }
+   }
+  
 }

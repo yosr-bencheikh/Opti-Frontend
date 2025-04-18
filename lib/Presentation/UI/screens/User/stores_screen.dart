@@ -5,12 +5,15 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:opti_app/Presentation/UI/screens/User/optician_product_screen.dart';
 import 'package:opti_app/Presentation/controllers/boutique_controller.dart';
 import 'package:opti_app/Presentation/controllers/navigation_controller.dart';
+import 'package:opti_app/Presentation/controllers/store_wishlist_controller.dart';
 import 'package:opti_app/Presentation/widgets/opticalstoreCard.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class StoresScreen extends StatelessWidget {
   final NavigationController navigationController = Get.find();
   final BoutiqueController opticianController = Get.find();
+  final StoreWishlistController wishlistController =
+      Get.find<StoreWishlistController>();
   final TextEditingController searchController = TextEditingController();
   final RxString searchQuery = ''.obs;
   final RxString selectedAddress = ''.obs;
@@ -328,10 +331,11 @@ class StoresScreen extends StatelessWidget {
                 optician.ville.toLowerCase() ==
                     selectedCity.value.toLowerCase());
 
-        // Favorites filter (assume there's a favorites property or method)
-        //final matchesFavorite = !showFavoritesOnly.value || optician.isFavorite;
+        // Favorites filter
+        final matchesFavorite = !showFavoritesOnly.value ||
+            wishlistController.isFavorite(optician.id);
 
-        return matchesName && matchesAddress && matchesCity;
+        return matchesName && matchesAddress && matchesCity && matchesFavorite;
       }).toList();
 
       if (filteredOpticians.isEmpty) {

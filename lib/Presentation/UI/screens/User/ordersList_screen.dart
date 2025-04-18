@@ -157,7 +157,7 @@ class OrdersListPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Commande #${order.id}',
+                    'Commande #${order.id?.substring(0, 8) ?? ""}',
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                   SizedBox(height: 4), // Add some space between ID and status

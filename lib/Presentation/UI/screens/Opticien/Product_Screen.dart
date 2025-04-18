@@ -692,12 +692,12 @@ class _ProductsScreenState extends State<ProductsScreen> {
                             height: 12,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: _getColorFromString(product.couleur),
+                              color: _getColorFromString(product.couleur[0]),
                               border: Border.all(color: Colors.grey.shade300),
                             ),
                           ),
                           const SizedBox(width: 8),
-                          Text(product.couleur),
+                          Text(product.couleur[0]),
                         ],
                       ),
                     ),
@@ -1207,10 +1207,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     ),
                     TextFormField(
                       decoration: const InputDecoration(labelText: 'Couleur *'),
-                      initialValue: product.couleur,
+                      initialValue: product.couleur[0],
                       validator: (value) =>
                           value?.isEmpty ?? true ? 'Ce champ est requis' : null,
-                      onSaved: (value) => product.couleur = value ?? '',
+                      onSaved: (value) => product.couleur[0] = value ?? '',
                     ),
                     TextFormField(
                       decoration:
@@ -1452,11 +1452,11 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
             // Champ pour la couleur du produit
             TextFormField(
-              initialValue: product.couleur,
+              initialValue: product.couleur[0],
               decoration: const InputDecoration(labelText: 'Couleur'),
               validator: (value) =>
                   value?.isEmpty ?? true ? 'Champ requis' : null,
-              onSaved: (value) => product.couleur = value ?? '',
+              onSaved: (value) => product.couleur[0] = value ?? '',
             ),
             const SizedBox(height: 16),
 

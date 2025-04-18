@@ -102,7 +102,7 @@ class ProductDatasource {
 
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('http://192.168.1.19:3000/upload'),
+        Uri.parse('http://192.168.0.104:3000/upload'),
       );
 
       var multipartFile = await http.MultipartFile.fromPath(
@@ -246,28 +246,31 @@ class ProductDatasource {
       throw Exception('Erreur lors de la récupération des opticiens: $e');
     }
   }
+Future<Map<String, dynamic>> getProductRatings(String productId) async {
+  try {
+    print('[ProductDatasource] Fetching ratings for $productId');
+    final response = await http.get(
+      Uri.parse('$baseUrl/ratings/$productId'),
+      headers: {'Content-Type': 'application/json'},
+    );
 
-  Future<Map<String, dynamic>> getProductRatings(String productId) async {
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/ratings/$productId'),
-        headers: {'Content-Type': 'application/json'},
-      );
+    print('[ProductDatasource] Response status: ${response.statusCode}');
+    print('[ProductDatasource] Response body: ${response.body}');
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return {
-          'averageRating': data['averageRating'] ?? 0.0,
-          'totalReviews': data['totalReviews'] ?? 0
-        };
-      } else {
-        throw Exception('Failed to load product ratings');
-      }
-    } catch (e) {
-      print('Error fetching product ratings: $e');
-      return {'averageRating': 0.0, 'totalReviews': 0};
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return {
+        'averageRating': data['averageRating']?.toDouble() ?? 0.0,
+        'totalReviews': data['totalReviews'] ?? 0
+      };
+    } else {
+      throw Exception('Failed to load product ratings');
     }
+  } catch (e) {
+    print('[ProductDatasource] Error: $e');
+    return {'averageRating': 0.0, 'totalReviews': 0};
   }
+}
 
 // Method to add a review
   Future<void> addProductReview(
@@ -312,6 +315,24 @@ class ProductDatasource {
       }
     } catch (e) {
       throw Exception('Error fetching recommendations: $e');
+    }
+  }
+    Future<Object> fetchProductRatings(String productId) async {
+    try {
+      final response = await http.get(Uri.parse('/products/ratings/$productId'));
+      
+      if (response.statusCode == 200) {
+        return response;
+      } else {
+        throw Exception('Failed to fetch product ratings: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching product ratings: $e');
+      // Return default values in case of error
+      return {
+        'averageRating': 0.0,
+        'totalReviews': 0
+      };
     }
   }
 

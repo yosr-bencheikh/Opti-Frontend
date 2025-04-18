@@ -1,6 +1,6 @@
 import 'package:get/get.dart';
 import 'package:opti_app/Presentation/controllers/OpticianController.dart';
-import 'package:opti_app/data/repositories/boutique_repository_impl.dart';
+import 'package:opti_app/data/data_sources/storeReview_data_source.dart';
 import 'package:opti_app/domain/entities/Boutique.dart';
 import 'package:opti_app/domain/entities/Optician.dart';
 import 'package:opti_app/domain/repositories/boutique_repository.dart';
@@ -8,12 +8,16 @@ import 'package:opti_app/domain/repositories/boutique_repository.dart';
 class BoutiqueController extends GetxController {
   final BoutiqueRepository boutiqueRepository;
   final OpticianController opticianController;
+  final StoreReviewDataSource _dataSource = StoreReviewDataSource();
   final isLoading = false.obs;
   final opticiensList = <Boutique>[].obs;
   final error = RxString('');
+  final _statsCache = <String, Map<String, dynamic>>{}.obs;
+  final _loadingStats = <String, bool>{}.obs;
   final selectedBoutique = Rx<Boutique?>(null);
   final RxList<Optician> _opticiens = <Optician>[].obs;
   final RxBool _showOnlyUserBoutiques = false.obs;
+  final RxMap<String, dynamic> boutiquesStats = <String, dynamic>{}.obs;
 
   BoutiqueController(this.opticianController,
       {required this.boutiqueRepository});
@@ -21,41 +25,56 @@ class BoutiqueController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-
-    // Force initial load if user is logged in
-    ever(opticianController.isLoggedIn, (isLoggedIn) {
-      print('🔍 Login status changed: $isLoggedIn');
-      if (isLoggedIn) {
-        _loadBoutiquesForCurrentUser();
-      }
-    });
-
-    if (opticianController.isLoggedIn.value) {
-      _loadBoutiquesForCurrentUser();
-    }
-    print("Initialisation du BoutiqueController");
-
-    // Chargez les données immédiatement
+    ever(opticianController.isLoggedIn, _handleAuthChange);
+    if (opticianController.isLoggedIn.value) _loadBoutiquesForCurrentUser();
     loadInitialData();
+  }
+
+  void _handleAuthChange(bool isLoggedIn) {
+    if (isLoggedIn) _loadBoutiquesForCurrentUser();
+  }
+
+  void _loadBoutiquesForCurrentUser() {
+    final userId = opticianController.currentUserId.value;
+    if (userId.isNotEmpty) getboutiqueByOpticianId(userId);
   }
 
   Future<void> loadInitialData() async {
     try {
-      print("Tentative de chargement des boutiques...");
-      await getboutique(); // Ou getboutiqueByOpticianId() si nécessaire
-      print("Boutiques chargées avec succès");
+      await (opticianController.isLoggedIn.value
+          ? getboutiqueByOpticianId(opticianController.currentUserId.value)
+          : getboutique());
     } catch (e) {
-      print("Erreur lors du chargement: $e");
+      error.value = e.toString();
     }
   }
 
-  void _loadBoutiquesForCurrentUser() {
-    final currentUserId = opticianController.currentUserId.value;
-    print('🔍 Loading boutiques for user: $currentUserId');
-    if (currentUserId.isNotEmpty) {
-      getboutiqueByOpticianId(currentUserId);
-    } else {
-      print('❌ Current User ID is empty');
+  double getAverageRating(String boutiqueId) =>
+      (_statsCache[boutiqueId]?['averageRating'] ?? 0.0).toDouble();
+
+  int getTotalReviews(String boutiqueId) =>
+      (_statsCache[boutiqueId]?['totalReviews'] ?? 0).toInt();
+
+  Future<void> loadBoutiqueStats(String boutiqueId) async {
+    if (boutiqueId.isEmpty || _loadingStats[boutiqueId] == true) return;
+
+    _loadingStats[boutiqueId] = true;
+    try {
+      final stats = await _dataSource.fetchBoutiqueStats(boutiqueId);
+      _statsCache[boutiqueId] = stats;
+      update(); // Add this to notify GetBuilder widgets
+    } catch (e) {
+      error.value = 'Stats error: $e';
+    } finally {
+      _loadingStats.remove(boutiqueId);
+      update(); // Ensure update happens even if there's an error
+    }
+  }
+
+  void updateStats(String boutiqueId, Map<String, dynamic> stats) {
+    if (boutiqueId.isNotEmpty) {
+      _statsCache[boutiqueId] = stats;
+      update(); // Make sure to call update() to notify listeners
     }
   }
 

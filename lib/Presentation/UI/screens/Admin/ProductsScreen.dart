@@ -11,6 +11,7 @@ import 'package:model_viewer_plus/model_viewer_plus.dart';
 import 'package:opti_app/Presentation/UI/screens/Admin/3D.dart';
 import 'package:opti_app/Presentation/UI/screens/Admin/FilePickerExample.dart';
 import 'package:opti_app/Presentation/UI/screens/Admin/Model3DPickerWidget.dart';
+import 'package:opti_app/Presentation/UI/screens/Admin/Multipickercolor.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
 import 'package:opti_app/core/constants/champsProduits.dart';
 import 'package:opti_app/domain/entities/product_entity.dart';
@@ -774,6 +775,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
             DataColumn(label: _buildColumnHeader('Couleur')),
             DataColumn(label: _buildColumnHeader('Style')),
             DataColumn(label: _buildColumnHeader('Type de verre')),
+            DataColumn(label: _buildColumnHeader('Materiel')),
+            DataColumn(label: _buildColumnHeader('Genre')),
             DataColumn(label: _buildColumnHeader('Prix')),
             DataColumn(label: _buildColumnHeader('Stock')),
             DataColumn(label: _buildColumnHeader('Actions')),
@@ -1005,19 +1008,19 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 DataCell(
                   Row(
                     children: [
-                      Container(
-                        width: 12,
-                        height: 12,
-                        decoration: BoxDecoration(
-                          color: getColorFromHex(product.couleur),
-                          borderRadius: BorderRadius.circular(
-                              8), // Rectangle avec coins arrondis
-                          border: Border.all(color: Colors.grey),
+                      for (var color in product.couleur) ...[
+                        Container(
+                          width: 12,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: getColorFromHex(color),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(product.couleur),
-                    ],
+                        const SizedBox(width: 8),
+                      ],
+                    ]..removeLast(), // Remove the last SizedBox to avoid extra spacing
                   ),
                 ),
 
@@ -1050,6 +1053,32 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     ),
                   ),
                 ),
+                DataCell(
+                  Text(
+                    product.materiel ?? 'N/A',
+                    style: TextStyle(
+                      color: product.materiel?.isNotEmpty == true
+                          ? textPrimaryColor
+                          : Colors.grey.shade400,
+                      fontStyle: product.materiel?.isNotEmpty == true
+                          ? FontStyle.normal
+                          : FontStyle.italic,
+                    ),
+                  ),
+                ),
+                DataCell(
+                  Text(
+                    product.sexe ?? 'N/A',
+                    style: TextStyle(
+                      color: product.sexe?.isNotEmpty == true
+                          ? textPrimaryColor
+                          : Colors.grey.shade400,
+                      fontStyle: product.sexe?.isNotEmpty == true
+                          ? FontStyle.normal
+                          : FontStyle.italic,
+                    ),
+                  ),
+                ),
 
                 // Cellule pour le prix
                 DataCell(
@@ -1076,7 +1105,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      product.quantiteStock.toString(),
+                      product.quantiteStock > 0
+                          ? product.quantiteStock.toString()
+                          : 'Rupture de stock',
                       style: TextStyle(
                         color: product.quantiteStock > 10
                             ? Colors.green.shade700
@@ -1399,22 +1430,11 @@ class _ProductsScreenState extends State<ProductsScreen> {
   }
 
   Color getColorFromHex(String hexColor) {
-    // Assurez-vous que le code est au bon format
-    hexColor = hexColor.replaceAll("#", "");
+    hexColor = hexColor.replaceAll('#', '');
     if (hexColor.length == 6) {
-      hexColor = "FF" + hexColor;
+      hexColor = 'FF' + hexColor; // Add alpha if not present
     }
-
-    // Pour le débogage
-    print('Conversion de $hexColor en couleur');
-
-    // Convertir en integer puis en Color
-    try {
-      return Color(int.parse(hexColor, radix: 16));
-    } catch (e) {
-      print('Erreur de conversion: $e');
-      return Colors.black; // Couleur par défaut en cas d'erreur
-    }
+    return Color(int.parse(hexColor, radix: 16));
   }
 
   void _showAddProductDialog(BuildContext context) {
@@ -1422,24 +1442,21 @@ class _ProductsScreenState extends State<ProductsScreen> {
     PlatformFile? _tempSelectedFile;
     bool isModel3D = false;
 
-    // Variable pour stocker la couleur sélectionnée avec une valeur par défaut
-    Color selectedColor = Colors.black;
-
-    // Créer un objet produit avec des champs vides
+    // Create a product object with empty fields, now with a List for colors
     Product product = Product(
       name: '',
       description: '',
       category: '',
       marque: '',
-      couleur: '000000', // Noir par défaut en format hexadécimal
+      couleur: ['000000'], // Start with black as default in a list
       prix: 0,
       quantiteStock: 0,
       image: '',
       model3D: '',
       typeVerre: '',
-
       averageRating: 0.0,
-      totalReviews: 0, style: '',
+      totalReviews: 0,
+      style: '', materiel: '', sexe: '',
     );
 
     showDialog(
@@ -1455,7 +1472,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Sélection du type de fichier (image ou modèle 3D)
+                    // File type selection (image or 3D model)
                     Row(
                       children: [
                         Expanded(
@@ -1487,7 +1504,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       ],
                     ),
 
-                    // Container pour le file picker
+                    // Container for file picker
                     Container(
                       decoration: BoxDecoration(
                         border: Border.all(color: Colors.grey.shade300),
@@ -1503,7 +1520,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
                               },
                             )
                           : FilePickerExample(
-                              // Utilisez votre composant FilePickerExample existant
                               onImagePicked: (image) {
                                 setState(() {
                                   _tempSelectedFile = image;
@@ -1512,7 +1528,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                             ),
                     ),
 
-                    // Aperçu du modèle 3D ou de l'image
+                    // Preview of selected file
                     if (_tempSelectedFile != null)
                       Container(
                         height: 50,
@@ -1525,7 +1541,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
                     const SizedBox(height: 20),
 
-                    // Nom du produit
+                    // Product name
                     TextFormField(
                       decoration: InputDecoration(
                         labelText: 'Nom du produit',
@@ -1564,7 +1580,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Catégorie
+                    // Category
                     DropdownButtonFormField<String>(
                       decoration: InputDecoration(
                         labelText: 'Catégorie',
@@ -1587,7 +1603,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Marque
+                    // Brand
                     DropdownButtonFormField<String>(
                       decoration: InputDecoration(
                         labelText: 'Marque',
@@ -1610,90 +1626,143 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Couleur avec un sélecteur amélioré
+                    // UPDATED: Multiple color selection
                     Card(
                       elevation: 1,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                         side: BorderSide(color: Colors.grey.shade300),
                       ),
-                      child: ListTile(
-                        leading: const Icon(Icons.color_lens),
-                        title: const Text('Couleur '),
-                        subtitle: const Text('Sélectionnez une couleur'),
-                        trailing: Container(
-                          width: 50,
-                          height: 30,
-                          decoration: BoxDecoration(
-                            color: getColorFromHex(product.couleur),
-                            borderRadius: BorderRadius.circular(
-                                8), // Rectangle avec coins arrondis
-                            border: Border.all(color: Colors.grey),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ListTile(
+                            leading: const Icon(Icons.color_lens),
+                            title: const Text('Couleurs'),
+                            subtitle: const Text(
+                                'Sélectionnez une ou plusieurs couleurs'),
+                            trailing: ElevatedButton(
+                              child: const Text('Ajouter'),
+                              onPressed: () async {
+                                // Initialize with black or last selected color
+                                Color initialColor = Colors.black;
+                                if (product.couleur.isNotEmpty) {
+                                  initialColor =
+                                      getColorFromHex(product.couleur.last);
+                                }
+
+                                final Color? pickedColor = await showDialog(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return AlertDialog(
+                                      title: const Text(
+                                          'Sélectionnez une couleur'),
+                                      content: SingleChildScrollView(
+                                        child: ColorPicker(
+                                          pickerColor: initialColor,
+                                          onColorChanged: (color) {
+                                            initialColor = color;
+                                          },
+                                          showLabel: true,
+                                          pickerAreaHeightPercent: 0.8,
+                                        ),
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () {
+                                            Navigator.pop(context, null);
+                                          },
+                                          child: const Text('Annuler'),
+                                        ),
+                                        ElevatedButton(
+                                          onPressed: () {
+                                            Navigator.pop(
+                                                context, initialColor);
+                                          },
+                                          child: const Text('Ajouter'),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+
+                                if (pickedColor != null) {
+                                  setState(() {
+                                    // Convert color to hex and add to list
+                                    String colorHex = pickedColor.red
+                                            .toRadixString(16)
+                                            .padLeft(2, '0') +
+                                        pickedColor.green
+                                            .toRadixString(16)
+                                            .padLeft(2, '0') +
+                                        pickedColor.blue
+                                            .toRadixString(16)
+                                            .padLeft(2, '0');
+
+                                    // Check if this color is already in the list
+                                    if (!product.couleur.contains(colorHex)) {
+                                      product.couleur.add(colorHex);
+                                    }
+                                  });
+                                }
+                              },
+                            ),
                           ),
-                        ),
-                        onTap: () async {
-                          // Initialiser le color picker avec la couleur actuelle
-                          Color initialColor = selectedColor;
 
-                          final Color? pickedColor = await showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return AlertDialog(
-                                title: const Text('Sélectionnez une couleur'),
-                                content: SingleChildScrollView(
-                                  child: ColorPicker(
-                                    pickerColor: initialColor,
-                                    onColorChanged: (color) {
-                                      initialColor = color;
-                                    },
-                                    showLabel: true,
-                                    pickerAreaHeightPercent: 0.8,
-                                  ),
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.pop(context, null);
-                                    },
-                                    child: const Text('Annuler'),
-                                  ),
-                                  ElevatedButton(
-                                    onPressed: () {
-                                      Navigator.pop(context, initialColor);
-                                    },
-                                    child: const Text('Valider'),
-                                  ),
-                                ],
-                              );
-                            },
-                          );
-
-                          if (pickedColor != null) {
-                            setState(() {
-                              selectedColor = pickedColor;
-
-                              // Convertir la couleur en format hexadécimal RGB
-                              String colorHex = pickedColor.red
-                                      .toRadixString(16)
-                                      .padLeft(2, '0') +
-                                  pickedColor.green
-                                      .toRadixString(16)
-                                      .padLeft(2, '0') +
-                                  pickedColor.blue
-                                      .toRadixString(16)
-                                      .padLeft(2, '0');
-
-                              product.couleur = colorHex;
-
-                              // Afficher la couleur pour débogage
-                              print('Couleur sélectionnée: $colorHex');
-                              print('Couleur objet: ${pickedColor.toString()}');
-                            });
-                          }
-                        },
+                          // Display selected colors
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            child: Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: product.couleur.map((colorHex) {
+                                return Stack(
+                                  children: [
+                                    Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        color: getColorFromHex(colorHex),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(color: Colors.grey),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      right: 0,
+                                      top: 0,
+                                      child: InkWell(
+                                        onTap: () {
+                                          // Don't remove if it's the last color
+                                          if (product.couleur.length > 1) {
+                                            setState(() {
+                                              product.couleur.remove(colorHex);
+                                            });
+                                          }
+                                        },
+                                        child: Container(
+                                          padding: const EdgeInsets.all(2),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius:
+                                                BorderRadius.circular(10),
+                                          ),
+                                          child:
+                                              const Icon(Icons.close, size: 14),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 16),
+
+                    // Style
                     DropdownButtonFormField<String>(
                       decoration: InputDecoration(
                         labelText: 'Style',
@@ -1715,7 +1784,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
                           value == null ? 'Ce champ est requis' : null,
                     ),
                     const SizedBox(height: 16),
-                    // Type de verre
+
+                    // Glass type
                     DropdownButtonFormField<String>(
                       decoration: InputDecoration(
                         labelText: 'Type de verre ',
@@ -1737,8 +1807,53 @@ class _ProductsScreenState extends State<ProductsScreen> {
                           value == null ? 'Ce champ est requis' : null,
                     ),
                     const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      decoration: InputDecoration(
+                        labelText: 'Matériau',
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8)),
+                        prefixIcon: const Icon(Icons.construction),
+                      ),
+                      value:
+                          product.materiel.isNotEmpty ? product.materiel : null,
+                      items: const [
+                        DropdownMenuItem(
+                            value: 'Acétate', child: Text('Acétate')),
+                        DropdownMenuItem(value: 'Métal', child: Text('Métal')),
+                        DropdownMenuItem(value: 'Mixte', child: Text('Mixte')),
+                      ],
+                      onChanged: (value) {
+                        product.materiel = value ?? '';
+                      },
+                      validator: (value) =>
+                          value == null ? 'Ce champ est requis' : null,
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      decoration: InputDecoration(
+                        labelText: 'Genre',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        prefixIcon: const Icon(Icons.person),
+                      ),
+                      value: product.sexe.isNotEmpty ? product.sexe : null,
+                      items: const [
+                        DropdownMenuItem(
+                            value: 'feminin', child: Text('Féminin')),
+                        DropdownMenuItem(
+                            value: 'masculin', child: Text('Masculin')),
+                        DropdownMenuItem(
+                            value: 'unisexe', child: Text('Unisexe')),
+                      ],
+                      onChanged: (value) {
+                        product.sexe = value ?? 'unisexe';
+                      },
+                      validator: (value) =>
+                          value == null ? 'Ce champ est requis' : null,
+                    ),
 
-                    // Prix avec validation améliorée
+                    // Price with validation
                     TextFormField(
                       decoration: InputDecoration(
                         labelText: 'Prix (DT) ',
@@ -1772,7 +1887,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Quantité en stock avec validation améliorée
+                    // Stock quantity with validation
                     TextFormField(
                       decoration: InputDecoration(
                         labelText: 'Quantité en stock',
@@ -1804,7 +1919,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Opticien dropdown
+                    // Store selection dropdown
                     DropdownButtonFormField<String>(
                       decoration: InputDecoration(
                         labelText: 'Boutique ',
@@ -1847,7 +1962,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   if (formKey.currentState?.validate() ?? false) {
                     formKey.currentState?.save();
 
-                    // Afficher l'indicateur de chargement dans le bouton
+                    // Display loading indicator
                     BuildContext dialogContext = context;
 
                     showDialog(
@@ -1875,17 +1990,16 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       if (_tempSelectedFile != null &&
                           _tempSelectedFile!.bytes != null) {
                         if (isModel3D) {
-                          // Upload model 3D using GlassesManagerService
+                          // Upload 3D model
                           final modelUrl =
                               await GlassesManagerService.uploadModel3D(
                             _tempSelectedFile!.bytes!,
                             _tempSelectedFile!.name,
-                            product.id ??
-                                '', // Utilisez l'ID s'il existe, sinon chaîne vide
+                            product.id ?? '',
                           );
                           product.model3D = modelUrl;
                         } else {
-                          // Upload de l'image
+                          // Upload image
                           final imageUrl =
                               await productController.uploadImageWeb(
                             _tempSelectedFile!.bytes!,
@@ -1895,9 +2009,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
                           product.image = imageUrl;
                         }
                       } else if (_tempSelectedFile == null) {
-                        // Si aucun fichier n'est sélectionné, afficher un message d'erreur
-                        Navigator.of(context)
-                            .pop(); // Fermer le dialogue de chargement
+                        // Show error if no file is selected
+                        Navigator.of(context).pop();
                         ScaffoldMessenger.of(dialogContext).showSnackBar(
                           const SnackBar(
                             content: Text(
@@ -1905,18 +2018,18 @@ class _ProductsScreenState extends State<ProductsScreen> {
                             backgroundColor: Colors.red,
                           ),
                         );
-                        return; // Ne pas continuer
+                        return;
                       }
 
-                      // Création du produit
+                      // Create the product
                       final success =
                           await productController.addProduct(product);
 
-                      // Fermer la boîte de dialogue de chargement
+                      // Close loading dialog
                       Navigator.of(context).pop();
 
                       if (success) {
-                        // Fermer la boîte de dialogue du formulaire
+                        // Close form dialog
                         Navigator.of(dialogContext).pop();
 
                         ScaffoldMessenger.of(dialogContext).showSnackBar(
@@ -1934,7 +2047,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         );
                       }
                     } catch (e) {
-                      // Fermer la boîte de dialogue de chargement
+                      // Close loading dialog
                       Navigator.of(context).pop();
 
                       ScaffoldMessenger.of(dialogContext).showSnackBar(
@@ -2117,85 +2230,138 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   const SizedBox(height: 16),
 
                   // Couleur avec un sélecteur amélioré
+
+                  // UPDATED: Multiple color selection
                   Card(
                     elevation: 1,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                       side: BorderSide(color: Colors.grey.shade300),
                     ),
-                    child: ListTile(
-                      leading: const Icon(Icons.color_lens),
-                      title: const Text('Couleur '),
-                      subtitle: const Text('Sélectionnez une couleur'),
-                      trailing: Container(
-                        width: 50,
-                        height: 30,
-                        decoration: BoxDecoration(
-                          color: getColorFromHex(product.couleur),
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.grey),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ListTile(
+                          leading: const Icon(Icons.color_lens),
+                          title: const Text('Couleurs'),
+                          subtitle: const Text(
+                              'Sélectionnez une ou plusieurs couleurs'),
+                          trailing: ElevatedButton(
+                            child: const Text('Ajouter'),
+                            onPressed: () async {
+                              // Initialize with black or last selected color
+                              Color initialColor = Colors.black;
+                              if (product.couleur.isNotEmpty) {
+                                initialColor =
+                                    getColorFromHex(product.couleur.last);
+                              }
+
+                              final Color? pickedColor = await showDialog(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return AlertDialog(
+                                    title:
+                                        const Text('Sélectionnez une couleur'),
+                                    content: SingleChildScrollView(
+                                      child: ColorPicker(
+                                        pickerColor: initialColor,
+                                        onColorChanged: (color) {
+                                          initialColor = color;
+                                        },
+                                        showLabel: true,
+                                        pickerAreaHeightPercent: 0.8,
+                                      ),
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () {
+                                          Navigator.pop(context, null);
+                                        },
+                                        child: const Text('Annuler'),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          Navigator.pop(context, initialColor);
+                                        },
+                                        child: const Text('Ajouter'),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              );
+
+                              if (pickedColor != null) {
+                                setState(() {
+                                  // Convert color to hex and add to list
+                                  String colorHex = pickedColor.red
+                                          .toRadixString(16)
+                                          .padLeft(2, '0') +
+                                      pickedColor.green
+                                          .toRadixString(16)
+                                          .padLeft(2, '0') +
+                                      pickedColor.blue
+                                          .toRadixString(16)
+                                          .padLeft(2, '0');
+
+                                  // Check if this color is already in the list
+                                  if (!product.couleur.contains(colorHex)) {
+                                    product.couleur.add(colorHex);
+                                  }
+                                });
+                              }
+                            },
+                          ),
                         ),
-                      ),
-                      onTap: () async {
-                        // Initialiser le color picker avec la couleur actuelle
-                        Color initialColor = selectedColor;
 
-                        final Color? pickedColor = await showDialog(
-                          context: context,
-                          builder: (BuildContext context) {
-                            return AlertDialog(
-                              title: const Text('Sélectionnez une couleur'),
-                              content: SingleChildScrollView(
-                                child: ColorPicker(
-                                  pickerColor: initialColor,
-                                  onColorChanged: (color) {
-                                    initialColor = color;
-                                  },
-                                  showLabel: true,
-                                  pickerAreaHeightPercent: 0.8,
-                                ),
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.pop(context, null);
-                                  },
-                                  child: const Text('Annuler'),
-                                ),
-                                ElevatedButton(
-                                  onPressed: () {
-                                    Navigator.pop(context, initialColor);
-                                  },
-                                  child: const Text('Valider'),
-                                ),
-                              ],
-                            );
-                          },
-                        );
-
-                        if (pickedColor != null) {
-                          setState(() {
-                            selectedColor = pickedColor;
-
-                            // Convertir la couleur en format hexadécimal RGB
-                            String colorHex = pickedColor.red
-                                    .toRadixString(16)
-                                    .padLeft(2, '0') +
-                                pickedColor.green
-                                    .toRadixString(16)
-                                    .padLeft(2, '0') +
-                                pickedColor.blue
-                                    .toRadixString(16)
-                                    .padLeft(2, '0');
-
-                            product.couleur = colorHex;
-
-                            // Afficher la couleur pour débogage
-                            print('Couleur sélectionnée: $colorHex');
-                            print('Couleur objet: ${pickedColor.toString()}');
-                          });
-                        }
-                      },
+                        // Display selected colors
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
+                          child: Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: product.couleur.map((colorHex) {
+                              return Stack(
+                                children: [
+                                  Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: getColorFromHex(colorHex),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: Colors.grey),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    right: 0,
+                                    top: 0,
+                                    child: InkWell(
+                                      onTap: () {
+                                        // Don't remove if it's the last color
+                                        if (product.couleur.length > 1) {
+                                          setState(() {
+                                            product.couleur.remove(colorHex);
+                                          });
+                                        }
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.all(2),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius:
+                                              BorderRadius.circular(10),
+                                        ),
+                                        child:
+                                            const Icon(Icons.close, size: 14),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -2244,6 +2410,51 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         value == null ? 'Ce champ est requis' : null,
                   ),
                   const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    decoration: InputDecoration(
+                      labelText: 'Matériau',
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                      prefixIcon: const Icon(Icons.construction),
+                    ),
+                    value:
+                        product.materiel.isNotEmpty ? product.materiel : null,
+                    items: const [
+                      DropdownMenuItem(
+                          value: 'Acétate', child: Text('Acétate')),
+                      DropdownMenuItem(value: 'Métal', child: Text('Métal')),
+                      DropdownMenuItem(value: 'Mixte', child: Text('Mixte')),
+                    ],
+                    onChanged: (value) {
+                      product.materiel = value ?? '';
+                    },
+                    validator: (value) =>
+                        value == null ? 'Ce champ est requis' : null,
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    decoration: InputDecoration(
+                      labelText: 'Genre',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      prefixIcon: const Icon(Icons.person),
+                    ),
+                    value: product.sexe.isNotEmpty ? product.sexe : null,
+                    items: const [
+                      DropdownMenuItem(
+                          value: 'feminin', child: Text('Féminin')),
+                      DropdownMenuItem(
+                          value: 'masculin', child: Text('Masculin')),
+                      DropdownMenuItem(
+                          value: 'unisexe', child: Text('Unisexe')),
+                    ],
+                    onChanged: (value) {
+                      product.sexe = value ?? 'unisexe';
+                    },
+                    validator: (value) =>
+                        value == null ? 'Ce champ est requis' : null,
+                  ),
 
                   // Prix avec validation améliorée
                   TextFormField(

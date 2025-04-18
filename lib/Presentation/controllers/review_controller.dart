@@ -1,4 +1,7 @@
 import 'package:get/get.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
 import 'package:opti_app/data/data_sources/review_data_source.dart';
 
@@ -49,11 +52,15 @@ class ReviewController extends GetxController {
     try {
       final result =
           await _dataSource.submitReview(productId, userId, reviewText, rating);
-      await _productController.fetchProductRatingAndReviews(productId);
-      await _productController.loadProducts(); // Refresh all products
-
+      
       if (result['success']) {
-        await fetchReviews(); // Refresh reviews list
+        // After successful submission, recalculate and update the ratings
+        await fetchReviews(); // Refresh the reviews list first
+        await _updateProductRatingsFromReviews(productId);
+        
+        // Update the product state
+        await _productController.fetchProductRatingAndReviews(productId);
+        await _productController.loadProducts(); // Refresh all products
         return true;
       } else {
         errorMessage.value = result['error'].toString();
@@ -73,7 +80,6 @@ class ReviewController extends GetxController {
 
   Future<bool> deleteReview(dynamic reviewId, String userId) async {
     // Convert reviewId to a non-null string
-
     final String id =
         reviewId is RxString ? reviewId.value : reviewId.toString();
 
@@ -90,12 +96,15 @@ class ReviewController extends GetxController {
 
     try {
       final result = await _dataSource.deleteReview(id, userId);
-      await _productController.fetchProductRatingAndReviews(productId.value);
-      await _productController.loadProducts();
-
+      
       if (result['success']) {
-        // Refresh reviews list
-        await fetchReviews();
+        // After successful deletion, recalculate and update the ratings
+        await fetchReviews(); // Refresh the reviews list first
+        await _updateProductRatingsFromReviews(productId.value);
+        
+        // Update the product state
+        await _productController.fetchProductRatingAndReviews(productId.value);
+        await _productController.loadProducts();
         return true;
       } else {
         errorMessage.value = result['error'];
@@ -108,5 +117,34 @@ class ReviewController extends GetxController {
     } finally {
       isLoading.value = false;
     }
+  }
+
+  // Method to update product ratings in the database
+  Future<bool> updateProductRatings(String productId, double averageRating, int totalReviews) async {
+    try {
+      final result = await _dataSource.updateProductRatings(productId, averageRating, totalReviews);
+      return result['success'] == true;
+    } catch (e) {
+      print('Error in updateProductRatings: $e');
+      return false;
+    }
+  }
+  
+  // Helper method to calculate and update ratings from current reviews
+  Future<bool> _updateProductRatingsFromReviews(String productId) async {
+    if (reviews.isEmpty) {
+      // If no reviews, set ratings to 0
+      return await updateProductRatings(productId, 0.0, 0);
+    }
+    
+    int totalReviews = reviews.length;
+    double totalRating = 0.0;
+    
+    for (var review in reviews) {
+      totalRating += (review['rating'] as int).toDouble();
+    }
+    
+    double averageRating = totalRating / totalReviews;
+    return await updateProductRatings(productId, averageRating, totalReviews);
   }
 }

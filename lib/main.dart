@@ -33,6 +33,8 @@ import 'package:opti_app/Presentation/controllers/boutique_controller.dart';
 import 'package:opti_app/Presentation/controllers/cart_item_controller.dart';
 import 'package:opti_app/Presentation/controllers/navigation_controller.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
+import 'package:opti_app/Presentation/controllers/storeReview_controller.dart';
+import 'package:opti_app/Presentation/controllers/store_wishlist_controller.dart';
 import 'package:opti_app/Presentation/controllers/user_controller.dart';
 import 'package:opti_app/Presentation/controllers/wishlist_controller.dart';
 import 'package:opti_app/data/data_sources/OpticianDataSource.dart';
@@ -49,11 +51,14 @@ import 'package:opti_app/data/repositories/auth_repository_impl.dart';
 import 'package:opti_app/data/repositories/boutique_repository_impl.dart';
 import 'package:opti_app/data/repositories/cart_item_repository_impl.dart';
 import 'package:opti_app/data/repositories/product_repository_impl.dart';
+import 'package:opti_app/data/repositories/storeReview_repository_impl.dart';
+import 'package:opti_app/data/repositories/user_repository_impl.dart';
 import 'package:opti_app/domain/repositories/OpticianRepository.dart';
 import 'package:opti_app/domain/repositories/OrderRepository.dart';
 import 'package:opti_app/domain/repositories/auth_repository.dart';
 import 'package:opti_app/domain/repositories/boutique_repository.dart';
 import 'package:opti_app/domain/repositories/product_repository.dart';
+import 'package:opti_app/domain/repositories/user_repository.dart';
 import 'package:opti_app/domain/usecases/send_code_to_email.dart';
 import 'package:opti_app/notification_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -147,6 +152,16 @@ void main() async {
   Get.put(sendCodeToEmail);
   Get.put(NavigationController(), permanent: true);
   NotificationService().initialize();
+  Get.put<StoreReviewRepository>(StoreReviewRepository());
+  Get.put<UserRepository>(
+      UserRepositoryImpl(userDataSource)); // Ajoutez cette ligne
+
+  // Puis initialisez le contrôleur avec les 2 dépendances
+  Get.put(StoreReviewController(
+    Get.find<StoreReviewRepository>(),
+    Get.find<UserRepository>(), // Deuxième paramètre requis
+  ));
+ Get.lazyPut<StoreWishlistController>(() => StoreWishlistController());
 
   runApp(const MyApp());
 }
@@ -263,6 +278,7 @@ class MyApp extends StatelessWidget {
         ),
         GetPage(
           name: '/Commande',
+          
           page: () => OpticienOrdersPage(),
           binding: AuthBinding(),
         ),

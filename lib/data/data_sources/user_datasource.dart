@@ -25,7 +25,7 @@ abstract class UserDataSource {
 
 class UserDataSourceImpl implements UserDataSource {
   final http.Client client;
-  final String baseUrl = 'http://192.168.1.19:3000/api';
+  final String baseUrl = 'http://192.168.0.104:3000/api';
   final dio_pkg.Dio _dio;
   UserDataSourceImpl({required this.client}) : _dio = dio_pkg.Dio();
   @override
@@ -111,6 +111,7 @@ class UserDataSourceImpl implements UserDataSource {
     final List<dynamic> jsonList = json.decode(responseBody);
     return jsonList.map((json) => User.fromJson(json)).toList();
   }
+  
 
   Future<User> getUserById(String userId) async {
     final response = await http.get(Uri.parse('$baseUrl/users/$userId'));

@@ -27,7 +27,6 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-
   Future<void> loginUser() async {
     String email = emailController.text.trim();
     String password = passwordController.text.trim();
@@ -297,7 +296,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     Get.find<AuthController>()
                                         .loginWithGoogle();
                                     print("Connexion Google réussie!");
-                                                                    },
+                                  },
                                   icon: Icon(Icons.g_mobiledata,
                                       size: 24, color: AppColors.primaryColor),
                                   label: Text('Google',
@@ -323,7 +322,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     Get.find<AuthController>()
                                         .loginWithFacebook();
                                     print("Connexion Facebook réussie!");
-                                                                    },
+                                  },
                                   icon: Icon(Icons.facebook,
                                       size: 24, color: AppColors.primaryColor),
                                   label: Text('Facebook',

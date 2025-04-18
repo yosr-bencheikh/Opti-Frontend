@@ -304,9 +304,15 @@ class _FaceDetectionScreenState extends State<FaceDetectionScreen>
       ),
       body: Stack(
         children: [
-          CameraPreview(_cameraController!),
+          // Use Transform to flip the camera preview horizontally
+          Transform(
+            alignment: Alignment.center,
+            transform: Matrix4.rotationY(pi),
+            child: CameraPreview(_cameraController!),
+          ),
           CustomPaint(
-            painter: FacePainter(_faces, _cameraController!),
+            painter: FacePainter(_faces, _cameraController!,
+                size: MediaQuery.of(context).size),
           ),
           Align(
             alignment: Alignment.bottomCenter,
@@ -323,7 +329,7 @@ class _FaceDetectionScreenState extends State<FaceDetectionScreen>
               ),
             ),
           ),
-          // Affichage de la bulle de recommandation
+          // Bubble code remains the same
           if (_showRecommendationBubble && _faceShape != 'Aucun visage détecté')
             Positioned(
               top: 100,
@@ -376,34 +382,53 @@ class _FaceDetectionScreenState extends State<FaceDetectionScreen>
 class FacePainter extends CustomPainter {
   final List<Face> faces;
   final CameraController cameraController;
+  final Size size;
 
-  FacePainter(this.faces, this.cameraController);
+  FacePainter(this.faces, this.cameraController, {required this.size});
 
   @override
-  void paint(Canvas canvas, Size size) {
+  void paint(Canvas canvas, Size canvasSize) {
     final paint = Paint()
       ..color = Colors.green
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
 
     for (final face in faces) {
-      final box = _scaleRect(face.boundingBox, size);
-      canvas.drawRect(box, paint);
+      final box = _scaleRect(face.boundingBox, canvasSize);
+
+      // Mirror the rectangle horizontally
+      final mirroredBox = Rect.fromLTRB(
+        canvasSize.width - box.right,
+        box.top,
+        canvasSize.width - box.left,
+        box.bottom,
+      );
+
+      canvas.drawRect(mirroredBox, paint);
 
       face.contours.forEach((type, contour) {
         if (contour != null) {
           contour.points.forEach((point) {
-            final adjustedPoint = _scalePoint(point, size);
-            canvas.drawCircle(adjustedPoint, 2, paint);
+            final adjustedPoint = _scalePoint(point, canvasSize);
+
+            // Mirror the point horizontally
+            final mirroredPoint = Offset(
+              canvasSize.width - adjustedPoint.dx,
+              adjustedPoint.dy,
+            );
+
+            canvas.drawCircle(mirroredPoint, 2, paint);
           });
         }
       });
     }
   }
 
-  Rect _scaleRect(Rect rect, Size size) {
-    final scaleX = size.width / cameraController.value.previewSize!.height;
-    final scaleY = size.height / cameraController.value.previewSize!.width;
+  Rect _scaleRect(Rect rect, Size canvasSize) {
+    final scaleX =
+        canvasSize.width / cameraController.value.previewSize!.height;
+    final scaleY =
+        canvasSize.height / cameraController.value.previewSize!.width;
     return Rect.fromLTRB(
       rect.left * scaleX,
       rect.top * scaleY,
@@ -412,9 +437,11 @@ class FacePainter extends CustomPainter {
     );
   }
 
-  Offset _scalePoint(Point point, Size size) {
-    final scaleX = size.width / cameraController.value.previewSize!.height;
-    final scaleY = size.height / cameraController.value.previewSize!.width;
+  Offset _scalePoint(Point point, Size canvasSize) {
+    final scaleX =
+        canvasSize.width / cameraController.value.previewSize!.height;
+    final scaleY =
+        canvasSize.height / cameraController.value.previewSize!.width;
     return Offset(point.x * scaleX, point.y * scaleY);
   }
 

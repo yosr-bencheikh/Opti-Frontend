@@ -499,13 +499,17 @@ class HomeScreen extends GetView<AuthController> {
   Widget buildPopularProducts() {
     final productController = Get.find<ProductController>();
 
+    // Make sure popular products are calculated when this widget is built
+
+    productController.calculatePopularProducts();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Padding(
           padding: EdgeInsets.all(16),
           child: Text(
-            'Produits Populaires',
+            'Top 5 Produits Populaires',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -523,10 +527,19 @@ class HomeScreen extends GetView<AuthController> {
               return Center(child: Text('Erreur: ${productController.error}'));
             }
 
-            final productsToDisplay =
-                productController.popularProducts.isNotEmpty
-                    ? productController.popularProducts
-                    : productController.products.take(10).toList();
+            // Get the 5 most popular products
+            final topProducts =
+                productController.popularProducts.take(5).toList();
+
+            // Fallback to regular products if popular products aren't available
+            final productsToDisplay = topProducts.isNotEmpty
+                ? topProducts
+                : productController.products.take(5).toList();
+
+            if (productsToDisplay.isEmpty) {
+              return const Center(
+                  child: Text('Aucun produit populaire disponible'));
+            }
 
             return ListView.builder(
               scrollDirection: Axis.horizontal,
