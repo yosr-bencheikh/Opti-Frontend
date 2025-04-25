@@ -78,4 +78,34 @@ class Optician extends Equatable {
       'status': status,
     };
   }
+
+  Optician copyWith({
+    String? id,
+    String? nom,
+    String? prenom,
+    String? email,
+    String? date,
+    String? genre,
+    String? password,
+    String? phone,
+    String? region,
+    String? address,
+    String? status,
+    String? imageUrl,
+  }) {
+    return Optician(
+      id: id ?? this.id,
+      nom: nom ?? this.nom,
+      prenom: prenom ?? this.prenom,
+      email: email ?? this.email,
+      date: date ?? this.date,
+      genre: genre ?? this.genre,
+      password: password ?? this.password,
+      phone: phone ?? this.phone,
+      region: region ?? this.region,
+      address: address ?? this.address,
+      status: status ?? this.status,
+      imageUrl: imageUrl ?? this.imageUrl,
+    );
+  }
 }

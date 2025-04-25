@@ -1,114 +1,100 @@
 name: opti_app
 description: "A new Flutter project."
-# The following line prevents the package from being accidentally published to
-# pub.dev using `flutter pub publish`. This is preferred for private packages.
-publish_to: "none" # Remove this line if you wish to publish to pub.dev
-
-# The following defines the version and build number for your application.
-# A version number is three numbers separated by dots, like 1.2.43
-# followed by an optional build number separated by a +.
-# Both the version and the builder number may be overridden in flutter
-# build by specifying --build-name and --build-number, respectively.
-# In Android, build-name is used as versionName while build-number used as versionCode.
-# Read more about Android versioning at https://developer.android.com/studio/publish/versioning
-# In iOS, build-name is used as CFBundleShortVersionString while build-number is used as CFBundleVersion.
-# Read more about iOS versioning at
-# https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-# In Windows, build-name is used as the major, minor, and patch parts
-# of the product and file versions while build-number is used as the build suffix.
+publish_to: "none"
 version: 1.0.0+1
 
 environment:
   sdk: ^3.6.1
 
-# Dependencies specify other packages that your package needs in order to work.
-# To automatically upgrade your package dependencies to the latest versions
-# consider running `flutter pub upgrade --major-versions`. Alternatively,
-# dependencies can be manually updated by changing the version numbers below to
-# the latest version available on pub.dev. To see which dependencies have newer
-# versions available, run `flutter pub outdated`.
 dependencies:
   flutter:
     sdk: flutter
+  
+  # Core UI packages
   fl_chart: ^0.70.2
+  carousel_slider: ^5.0.0
+  flutter_colorpicker: ^1.1.0
+  cupertino_icons: ^1.0.8
+  google_fonts: ^6.1.0
+  animate_do: ^4.1.1
+  flutter_animate: ^4.2.0
+  shimmer: ^3.0.0
+  swipe_to: ^1.0.6
+
+  # Networking and data handling
   http: ^1.3.0
-  shared_preferences: ^2.0.15
-  flutter_facebook_auth: ^7.1.1 
-  google_sign_in: ^6.2.2
-  dartz: ^0.10.1
+  dio: ^5.4.0
+  cached_network_image: ^3.3.1
+  
+  # State management
+  provider: ^6.0.5
   get: ^4.6.6
+  equatable: ^2.0.7
+  dartz: ^0.10.1
+  
+  # Storage
+  shared_preferences: ^2.0.15
+  flutter_secure_storage: ^9.0.0
+  path: ^1.8.3
+  
+  # Authentication
+  flutter_facebook_auth: ^7.1.1
+  google_sign_in: ^6.2.2
+  jwt_decoder: ^2.0.1
+  
+  # Image and file
   image_picker: ^1.0.7
   file_picker: ^9.1.0
-  carousel_slider: ^5.0.0
+  
+  # Location and Maps
   geolocator: ^13.0.2
   geocoding: ^3.0.0
   google_maps_flutter: ^2.2.3
+  flutter_polyline_points: ^2.0.0
+  
+  # Date, time and formatting
   intl: ^0.20.2
   time_range_picker: ^2.3.0
-  flutter_colorpicker: ^1.1.0
-
-  cupertino_icons: ^1.0.8
-  path: ^1.8.3 
-  equatable: ^2.0.7
-  provider: ^6.0.5
-  jwt_decoder: ^2.0.1
-  flutter_secure_storage: ^9.0.0
-  google_fonts: ^6.1.0
-  animate_do: ^4.1.1
-  dio: ^5.4.0
-  cached_network_image: ^3.3.1
-  camera: ^0.11.0+2
-  google_ml_kit: ^0.19.0
-  google_mlkit_face_detection: ^0.12.0
-  url_launcher: ^6.3.1
-  model_viewer_plus: ^1.9.1
-  webview_flutter_android: ^4.3.2
-  webview_flutter_wkwebview: ^3.9.0
-  onesignal_flutter: ^5.3.0
-  flutter_animate: ^4.2.0
   
-  
-  share_plus: ^10.1.4
-  
-
-#  arcore_flutter_plugin: 
-#    path: C:\Users\LENOVO\Downloads\arcore_flutter_plugin-master\arcore_flutter_plugin-master
-    
-  
-
-  flutter_polyline_points: ^2.0.0
-  permission_handler: ^11.0.1
+  # PDF handling
   pdf: ^3.10.0
   open_file: ^3.3.1
   flutter_pdfview: ^1.3.2
+  
+  # Notifications and sharing
+  onesignal_flutter: ^5.3.0
+  share_plus: ^10.1.4
+  url_launcher: ^6.3.1
+  
+  # Camera and ML
+  camera: ^0.11.0+2
+  google_ml_kit: ^0.19.0
+  google_mlkit_face_detection: ^0.12.0
   google_mlkit_commons: ^0.9.0
   google_mlkit_barcode_scanning: ^0.13.0
+  
+  # Permissions
+  permission_handler: ^11.0.1
+
+  # Remove model_viewer_plus if you don't need 3D model viewing
+  # model_viewer_plus: ^1.9.0
+  
+  # Keep only if you need 3D functionality
+  flutter_3d_controller: ^2.2.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
-  # The "flutter_lints" package below contains a set of recommended lints to
-  # encourage good coding practices. The lint set provided by the package is
-  # activated in the `analysis_options.yaml` file located at the root of your
-  # package. See that file for information about deactivating specific lint
-  # rules and activating additional ones.
   flutter_lints: ^5.0.0
 
-# For information on the generic Dart part of this file, see the
-# following page: https://dart.dev/tools/pub/pubspec
-
-# The following section is specific to Flutter packages.
 flutter:
-  # The following line ensures that the Material Icons font is
-  # included with your application, so that you can use the icons in
-  # the material Icons class.
   uses-material-design: true
 
-  # To add assets to your application, add an assets section, like this:
   assets:
     - assets/images/Virtualreality.gif
     - assets/images/AR1.avif
+    - assets/images/homme.avif
+    - assets/images/femme.avif
     - assets/images/image.jpg
     - assets/images/b1.jpeg
     - assets/images/b2.jpeg
@@ -116,38 +102,6 @@ flutter:
     - assets/images/vu.jpeg
     - assets/images/
     - assets/
-
-  
     - assets/images/login_illustration.png
     - assets/3d_models/scene.gltf
     - assets/3d_models/scene.bin
-
-
-
-  #   - images/a_dot_ham.jpeg
-
-  # An image asset can refer to one or more resolution-specific "variants", see
-  # https://flutter.dev/to/resolution-aware-images
-
-  # For details regarding adding assets from package dependencies, see
-  # https://flutter.dev/to/asset-from-package
-
-  # To add custom fonts to your application, add a fonts section here,
-  # in this "flutter" section. Each entry in this list should have a
-  # "family" key with the font family name, and a "fonts" key with a
-  # list giving the asset and other descriptors for the font. For
-  # example:
-  # fonts:
-  #   - family: Schyler
-  #     fonts:
-  #       - asset: fonts/Schyler-Regular.ttf
-  #       - asset: fonts/Schyler-Italic.ttf
-  #         style: italic
-  #   - family: Trajan Pro
-  #     fonts:
-  #       - asset: fonts/TrajanPro.ttf
-  #       - asset: fonts/TrajanPro_Bold.ttf
-  #         weight: 700
-  #
-  # For details regarding fonts from package dependencies,
-  # see https://flutter.dev/to/font-from-package

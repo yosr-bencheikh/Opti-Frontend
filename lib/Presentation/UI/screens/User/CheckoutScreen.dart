@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:opti_app/Presentation/UI/screens/Admin/Product3DViewer.dart';
 import 'package:opti_app/Presentation/UI/screens/User/location_picker_screen.dart';
 import 'package:opti_app/Presentation/UI/screens/User/pdf.dart';
 import 'dart:developer' as developer;
@@ -220,34 +221,51 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             return const SizedBox.shrink();
           }
 
+          final bool has3DModel = product.model3D.isNotEmpty;
+
           return ListTile(
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
               vertical: 8,
             ),
-            leading: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: product.image.startsWith('assets/')
-                  ? Image.asset(
-                      product.image,
-                      width: 50,
-                      height: 50,
-                      fit: BoxFit.cover,
-                    )
-                  : Image.network(
-                      product.image,
-                      width: 50,
-                      height: 50,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          width: 50,
-                          height: 50,
-                          color: Colors.grey[200],
-                          child: const Icon(Icons.image_not_supported),
-                        );
-                      },
-                    ),
+            leading: Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                color: Colors.grey[200],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: has3DModel
+                    ? Fixed3DViewer(
+                        modelUrl: product.model3D,
+                        compactMode: true,
+                        autoRotate: true,
+                      )
+                    : product.image.isNotEmpty
+                        ? product.image.startsWith('assets/')
+                            ? Image.asset(
+                                product.image,
+                                width: 50,
+                                height: 50,
+                                fit: BoxFit.cover,
+                              )
+                            : Image.network(
+                                product.image,
+                                width: 50,
+                                height: 50,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    color: Colors.grey[200],
+                                    child:
+                                        const Icon(Icons.image_not_supported),
+                                  );
+                                },
+                              )
+                        : Icon(Icons.image, color: Colors.grey[400]),
+              ),
             ),
             title: Text(
               product.name,

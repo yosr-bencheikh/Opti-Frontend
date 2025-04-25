@@ -42,12 +42,22 @@ class Product {
   factory Product.fromJson(Map<String, dynamic> json) {
     final imageUrl = _constructImageUrl(json['image'] ?? json['imageUrl']);
 
-    // Handle model3D which could be an ObjectId string, a URL string, or null
+    // Gestion améliorée du modèle 3D
     String model3DValue = '';
     if (json['model3D'] != null) {
       if (json['model3D'] is Map) {
-        model3DValue = json['model3D']['_id']?.toString() ?? '';
+        // Si c'est un objet MongoDB peuplé
+        model3DValue = json['model3D']['filePath']?.toString() ??
+            json['model3D']['_id']?.toString() ??
+            '';
+      } else if (json['model3D'].toString().startsWith('http')) {
+        // Si c'est déjà une URL complète
+        model3DValue = json['model3D'].toString();
+      } else if (json['model3D'].toString().startsWith('/models/')) {
+        // Si c'est un chemin relatif
+        model3DValue = 'http://localhost:3000${json['model3D']}';
       } else {
+        // Autres cas (ID simple)
         model3DValue = json['model3D'].toString();
       }
     }
@@ -64,7 +74,7 @@ class Product {
     }
 
     final productId = json['_id']?.toString() ?? '';
-    
+
     return Product(
       id: productId,
       name: json['name']?.toString() ?? '',
@@ -87,24 +97,25 @@ class Product {
   }
 
   // Load a product with persisted ratings data
-  static Future<Product> fromJsonWithPersistedRatings(Map<String, dynamic> json) async {
+  static Future<Product> fromJsonWithPersistedRatings(
+      Map<String, dynamic> json) async {
     Product product = Product.fromJson(json);
-    
+
     if (product.id != null && product.id!.isNotEmpty) {
       await product.loadPersistedRatings();
     }
-    
+
     return product;
   }
 
   // Load persisted ratings from local storage
   Future<void> loadPersistedRatings() async {
     if (id == null || id!.isEmpty) return;
-    
+
     final prefs = await SharedPreferences.getInstance();
     final rating = prefs.getDouble('product_rating_$id') ?? 0.0;
     final reviews = prefs.getInt('product_reviews_$id') ?? 0;
-    
+
     averageRating = rating;
     totalReviews = reviews;
   }
@@ -112,24 +123,25 @@ class Product {
   // Save ratings to local storage
   Future<void> saveRatings() async {
     if (id == null || id!.isEmpty) return;
-    
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble('product_rating_$id', averageRating);
     await prefs.setInt('product_reviews_$id', totalReviews);
   }
 
   // Update the ratings and save them to persistence
-  Future<void> updateRatings(double newRating, {bool isNewReview = true}) async {
+  Future<void> updateRatings(double newRating,
+      {bool isNewReview = true}) async {
     // Calculate new average rating
     double totalRatingPoints = averageRating * totalReviews;
-    
+
     if (isNewReview) {
       totalReviews += 1;
     }
-    
+
     totalRatingPoints += newRating;
     averageRating = totalReviews > 0 ? totalRatingPoints / totalReviews : 0;
-    
+
     // Save to local persistence
     await saveRatings();
   }
@@ -177,6 +189,7 @@ class Product {
     double? prix,
     int? quantiteStock,
     String? image,
+    String? model3D,
     String? typeVerre,
     String? materiel,
     String? sexe,
@@ -195,11 +208,12 @@ class Product {
       prix: prix ?? this.prix,
       quantiteStock: quantiteStock ?? this.quantiteStock,
       image: image ?? this.image,
+      model3D: model3D ?? this.model3D,
       typeVerre: typeVerre ?? this.typeVerre,
-      boutiqueId: boutiqueId ?? this.boutiqueId,
-      averageRating: averageRating ?? this.averageRating,
       materiel: materiel ?? this.materiel,
       sexe: sexe ?? this.sexe,
+      boutiqueId: boutiqueId ?? this.boutiqueId,
+      averageRating: averageRating ?? this.averageRating,
       totalReviews: totalReviews ?? this.totalReviews,
       style: style ?? this.style,
     );

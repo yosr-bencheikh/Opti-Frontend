@@ -27,7 +27,7 @@ class _MonthlySalesChartState extends State<MonthlySalesChart> {
     final OrderController orderController = Get.find<OrderController>();
 
     return Container(
-      height: 380,
+      height: 680,
       child: Card(
         elevation: 8,
         shape: RoundedRectangleBorder(

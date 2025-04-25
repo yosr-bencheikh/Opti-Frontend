@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:http/http.dart' as http;
+import 'package:opti_app/Presentation/UI/screens/Admin/3D.dart';
+import 'package:opti_app/Presentation/UI/screens/Admin/Product3DViewer.dart';
+import 'package:opti_app/Presentation/UI/screens/User/Rotating3DModel.dart';
 import 'package:opti_app/Presentation/UI/screens/User/home_screen.dart';
 
 import 'package:opti_app/Presentation/controllers/navigation_controller.dart';
@@ -88,6 +92,11 @@ class CartScreen extends StatelessWidget {
     }
 
     final String volumeText = 'Volume 80ml';
+    final bool has3DModel = product.model3D.isNotEmpty;
+
+    // Normaliser l'URL du modèle 3D
+    String normalizedModelUrl =
+        product.model3D.isNotEmpty ? _normalizeModelUrl(product.model3D) : '';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -106,30 +115,92 @@ class CartScreen extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: product.image.startsWith('assets/')
-                ? Image.asset(
-                    product.image,
-                    width: 60,
-                    height: 60,
-                    fit: BoxFit.cover,
-                  )
-                : Image.network(
-                    product.image,
-                    width: 60,
-                    height: 60,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        width: 60,
-                        height: 60,
-                        color: Colors.grey[200],
-                        child: const Icon(Icons.image_not_supported),
-                      );
-                    },
-                  ),
+          // Ajout du modèle 3D ou de l'image ici
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              color: Colors.grey[100],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: has3DModel
+                  ? FutureBuilder<bool>(
+                      future: _checkModelAvailability(normalizedModelUrl),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return Center(
+                              child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.blue),
+                          ));
+                        }
+
+                        if (snapshot.hasData && snapshot.data == true) {
+                          return Stack(
+                            children: [
+                              Rotating3DModel(modelUrl: normalizedModelUrl),
+                              Positioned(
+                                right: 4,
+                                top: 4,
+                                child: GestureDetector(
+                                  onTap: () =>
+                                      _showFullScreen3DModel(context, product),
+                                  child: Container(
+                                    padding: EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.7),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      Icons.view_in_ar,
+                                      size: 16,
+                                      color: const Color(0xFFFFA837),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        } else {
+                          // Fallback à l'image si le modèle n'est pas disponible
+                          return product.image.isNotEmpty
+                              ? Image.network(product.image, fit: BoxFit.cover)
+                              : Center(
+                                  child: Icon(Icons.image,
+                                      size: 40, color: Colors.grey));
+                        }
+                      },
+                    )
+                  : product.image.isNotEmpty
+                      ? Image.network(
+                          product.image,
+                          fit: BoxFit.cover,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Center(
+                              child: CircularProgressIndicator(
+                                value: loadingProgress.expectedTotalBytes !=
+                                        null
+                                    ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
+                                    : null,
+                              ),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) => Center(
+                              child: Icon(Icons.broken_image,
+                                  size: 40, color: Colors.grey)),
+                        )
+                      : Center(
+                          child:
+                              Icon(Icons.image, size: 40, color: Colors.grey)),
+            ),
           ),
+
           const SizedBox(width: 11),
           Expanded(
             child: Column(
@@ -222,6 +293,52 @@ class CartScreen extends StatelessWidget {
             onPressed: () => cartController.deleteCartItem(id),
           ),
         ],
+      ),
+    );
+  }
+
+  // Méthodes pour gérer les modèles 3D
+  Future<bool> _checkModelAvailability(String url) async {
+    if (url.isEmpty) return false;
+
+    try {
+      final response = await http.head(Uri.parse(url));
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Erreur de vérification du modèle 3D: $e');
+      return false;
+    }
+  }
+
+  String _normalizeModelUrl(String url) {
+    // Implémentez votre logique de normalisation d'URL ici
+    return GlassesManagerService.ensureAbsoluteUrl(url);
+  }
+
+  void _showFullScreen3DModel(BuildContext context, dynamic product) {
+    if (product.model3D.isEmpty) return;
+
+    final String normalizedModelUrl = _normalizeModelUrl(product.model3D);
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          appBar: AppBar(
+            title: Text(
+              product.name,
+              style: TextStyle(color: Colors.black87, fontSize: 18),
+            ),
+            backgroundColor: Colors.white,
+            elevation: 0,
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back, color: Colors.black87),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ),
+          body: Center(
+            child: Rotating3DModel(modelUrl: normalizedModelUrl),
+          ),
+        ),
       ),
     );
   }

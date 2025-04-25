@@ -38,14 +38,20 @@ class _GestionBoutiqueState extends State<GestionBoutique> {
   List<Boutique> _filteredBoutique = [];
   int _currentPage = 0;
   final int _itemsPerPage = 5;
-  final Color _primaryColor = const Color.fromARGB(255, 33, 199, 146);
-  final Color _secondaryColor = const Color.fromARGB(255, 16, 16, 17);
-  final Color _accentColor = const Color(0xFFFF4081);
-  final Color _lightPrimaryColor = const Color(0xFFC5CAE9);
-  final Color _backgroundColor = const Color(0xFFF5F7FA);
+
+// Professional color palette
+final Color _lightPrimaryColor = Color(0xFFE8F5E9); // Light green
+  final Color _primaryColor = Color(0xFF2E7D32); // Dark green
+  final Color _secondaryColor = Color(0xFF6A1B9A); // Purple
+  final Color _accentColor = Color(0xFF00C853); // Light green
+  final Color _backgroundColor = Color(0xFFF5F5F6); // Light gray
   final Color _cardColor = Colors.white;
-  final Color _textPrimaryColor = const Color(0xFF212121);
-  final Color _textSecondaryColor = const Color(0xFF757575);
+  final Color _textPrimaryColor = Color(0xFF263238); // Dark blue-gray
+  final Color _textSecondaryColor = Color(0xFF546E7A); // Medium blue-gray
+  final Color _successColor = Color(0xFF388E3C); // Success green
+  final Color _errorColor = Color(0xFFD32F2F); // Error red
+  final Color _warningColor = Color(0xFFFFA000); // Warning amber
+  final Color _infoColor = Color(0xFF1976D2); // Info blue
 
   @override
   void initState() {
@@ -143,38 +149,52 @@ class _GestionBoutiqueState extends State<GestionBoutique> {
     return (_filteredOpticiens.length / _itemsPerPage).ceil();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Row(
-        children: [
-          // Ajout de la CustomSidebar
-          CustomSidebar(currentPage: 'Boutiques'),
-          
-          // Contenu principal
-          Expanded(
-            child: Scaffold(
-              backgroundColor: Colors.grey[50],
-              body: Obx(
-                () => Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildHeader(),
-                    _buildSearchBar(),
-                    if (_showFilters) _buildAdvancedFilters(),
-                    Expanded(
-                      child: _buildContent(),
-                    ),
-                  ],
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    body: Row(
+      children: [
+        // Utilisation de votre CustomSidebar existant
+        CustomSidebar(currentPage: 'Boutiques'),
+        
+        // Contenu principal amélioré
+        Expanded(
+          child: Container(
+            padding: EdgeInsets.all(24),
+            color: _backgroundColor,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header amélioré
+                _buildHeader(),
+                
+                SizedBox(height: 16),
+                
+                // Barre de recherche et filtres
+                _buildSearchFilterBar(),
+                
+                SizedBox(height: 16),
+                
+                // Filtres avancés (conditionnel)
+                if (_showFilters) _buildAdvancedFilters(),
+                
+                SizedBox(height: 24),
+                
+                // Tableau de données
+                Expanded(
+                  child: _buildDataTable(),
                 ),
-              ),
+                
+                // Pagination
+                _buildPaginationControls(),
+              ],
             ),
           ),
-        ],
-      ),
-    );
-  }
-
+        ),
+      ],
+    ),
+  );
+}
   // ... (le reste des méthodes reste inchangé)
   void _filterOpticiens() {
     setState(() {});
@@ -191,664 +211,530 @@ class _GestionBoutiqueState extends State<GestionBoutique> {
       _currentPage = 1;
     });
   }
-
-  Widget _buildAdvancedFilters() {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      margin: const EdgeInsets.only(top: 16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
+ Widget _buildSearchFilterBar() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-        border: Border.all(color: Colors.grey[300]!, width: 1),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.filter_alt, color: _primaryColor),
-              const SizedBox(width: 8),
-              Text(
-                'Filtres',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: _primaryColor,
-                ),
-              ),
-              const Spacer(),
-              IconButton(
-                icon: const Icon(Icons.help_outline),
-                color: _textSecondaryColor,
-                tooltip: 'Aide sur les filtres',
-                onPressed: () {},
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Row(
-            children: [
-              Expanded(
-                child: _buildFilterTextField(
-                  label: 'Nom',
-                  hintText: 'Filtrer par nom',
-                  icon: Icons.store,
-                  value: _filters['nom'],
-                  onChanged: (value) {
-                    setState(() {
-                      _filters['nom'] = value;
-                      _filterOpticiens();
-                    });
-                  },
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildFilterTextField(
-                  label: 'Adresse',
-                  hintText: 'Filtrer par adresse',
-                  icon: Icons.location_on,
-                  value: _filters['adresse'],
-                  onChanged: (value) {
-                    setState(() {
-                      _filters['adresse'] = value;
-                      _filterOpticiens();
-                    });
-                  },
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildFilterTextField(
-                  label: 'Ville',
-                  hintText: 'Filtrer par ville',
-                  icon: Icons.location_city,
-                  value: _filters['ville'],
-                  onChanged: (value) {
-                    setState(() {
-                      _filters['ville'] = value;
-                      _filterOpticiens();
-                    });
-                  },
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Row(
-            children: [
-              Expanded(
-                child: _buildFilterTextField(
-                  label: 'Email',
-                  hintText: 'Filtrer par email',
-                  icon: Icons.email,
-                  value: _filters['email'],
-                  onChanged: (value) {
-                    setState(() {
-                      _filters['email'] = value;
-                      _filterOpticiens();
-                    });
-                  },
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildFilterTextField(
-                  label: 'Téléphone',
-                  hintText: 'Filtrer par téléphone',
-                  icon: Icons.phone,
-                  value: _filters['phone'],
-                  onChanged: (value) {
-                    setState(() {
-                      _filters['phone'] = value;
-                      _filterOpticiens();
-                    });
-                  },
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildFilterTextField(
-                  label: 'Description',
-                  hintText: 'Filtrer par description',
-                  icon: Icons.description,
-                  value: _filters['description'],
-                  onChanged: (value) {
-                    setState(() {
-                      _filters['description'] = value;
-                      _filterOpticiens();
-                    });
-                  },
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Row(
-            children: [
-              Expanded(
-                child: _buildFilterTextField(
-                  label: 'Horaires',
-                  hintText: 'Filtrer par horaires',
-                  icon: Icons.access_time,
-                  value: _filters['horaires'],
-                  onChanged: (value) {
-                    setState(() {
-                      _filters['horaires'] = value;
-                      _filterOpticiens();
-                    });
-                  },
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-      final opticianController = Get.find<OpticianController>();
-
-    return Container(
-      padding: const EdgeInsets.fromLTRB(32, 40, 32, 20),
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: _lightPrimaryColor,
-            width: 2,
-          ),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Gestion des Boutiques',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: _textPrimaryColor,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              const SizedBox(height: 8),
-             Text(
-              opticianController.isLoggedIn.value
-                  ? '${_filteredOpticiens.length} boutiques (Vos boutiques)'
-                  : '${_filteredOpticiens.length} boutiques',
-              style: TextStyle(
-                fontSize: 14,
-                color: _textSecondaryColor,
-                fontWeight: FontWeight.w500,
-              ),
-              ),
-            ],
-          ),
-        
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSearchBar() {
-    return Container(
-      decoration: BoxDecoration(
-        color: _cardColor,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _searchController,
-                                decoration: InputDecoration(
-                    hintText:
-                        'Rechercher un boutique par nom, email, téléphone...',
-                    prefixIcon: Icon(Icons.search, color: _primaryColor),
-                    filled: true,
-                    fillColor: _backgroundColor,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide.none,
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(color: _primaryColor, width: 2),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                        vertical: 16, horizontal: 20),
-                    hintStyle: TextStyle(color: _textSecondaryColor),
-                  ),
-                  style: TextStyle(color: _textPrimaryColor, fontSize: 15),
-                ),
-              ),
-              const SizedBox(width: 16),
-              ElevatedButton.icon(
-                onPressed: () {
-                  setState(() {
-                    _showFilters = !_showFilters;
-                  });
-                },
-                icon: Icon(
-                    _showFilters ? Icons.filter_list_off : Icons.filter_list),
-                label:
-                    Text(_showFilters ? 'Masquer filtres' : 'Filtrer'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                      _showFilters ? _lightPrimaryColor : _primaryColor,
-                  foregroundColor: _showFilters ? _primaryColor : Colors.white,
-                  elevation: _showFilters ? 0 : 2,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          if (_filteredBoutique.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 16),
-              child: Row(
-                children: [
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: _lightPrimaryColor,
-                      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: 'Rechercher une boutique...',
+                      prefixIcon: Icon(Icons.search, color: _textSecondaryColor),
+                      filled: true,
+                      fillColor: Colors.grey[50],
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                     ),
                   ),
-                  const Spacer(),
-                  if (_showFilters || _currentSearchTerm.isNotEmpty)
-                    TextButton.icon(
+                ),
+                SizedBox(width: 16),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      _showFilters = !_showFilters;
+                    });
+                  },
+                  icon: Icon(_showFilters ? Icons.filter_alt_off : Icons.filter_alt),
+                  label: Text(_showFilters ? 'Cacher Filtres' : 'Filtres'),
+                  style: OutlinedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    side: BorderSide(color: _primaryColor),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (_searchController.text.isNotEmpty || _showFilters)
+              Padding(
+                padding: EdgeInsets.only(top: 16),
+                child: Row(
+                  children: [
+                    Chip(
+                      label: Text('${_filteredOpticiens.length} résultats'),
+                      backgroundColor: _primaryColor.withOpacity(0.1),
+                    ),
+                    Spacer(),
+                    TextButton(
                       onPressed: _resetFilters,
-                      icon: Icon(Icons.clear_all, color: _accentColor),
-                      label: Text(
-                        'Réinitialiser les filtres',
-                        style: TextStyle(
-                          color: _accentColor,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      child: Text(
+                        'Réinitialiser',
+                        style: TextStyle(color: _errorColor),
                       ),
                     ),
-                ],
+                  ],
+                ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
-  Widget _buildFilterTextField({
-    required String label,
-    required String hintText,
-    required IconData icon,
-    required String? value,
-    required Function(String) onChanged,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Colors.black,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.grey[100],
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: Colors.grey[300]!,
-              width: 1,
-            ),
-          ),
-          child: TextField(
-            controller: TextEditingController(text: value),
-            onChanged: onChanged,
-            style: TextStyle(color: Colors.black),
-            decoration: InputDecoration(
-              hintText: hintText,
-              hintStyle: TextStyle(color: Colors.grey[600]),
-              prefixIcon: Icon(icon,
-                  color: Color.fromARGB(255, 84, 151, 198), size: 20),
-              border: InputBorder.none,
-              contentPadding:
-                  const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 
-  Widget _buildContent() {
+
+  Widget _buildDataTable() {
+     return Obx(() {
     if (opticienController.isLoading.value) {
-      return const Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF3A7BD5)),
-        ),
+      return Center(
+        child: CircularProgressIndicator(color: _primaryColor),
       );
     }
-
-    if (opticienController.error.isNotEmpty) {
+    if (opticienController.error.value.isNotEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: Colors.red[300],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Erreur: ${opticienController.error}',
-              style: const TextStyle(
-                fontSize: 16,
-                color: Colors.black54,
-              ),
-            ),
-            const SizedBox(height: 24),
+            Icon(Icons.error_outline, size: 48, color: _errorColor),
+            SizedBox(height: 16),
+            Text('Erreur de chargement', style: TextStyle(fontSize: 18, color: _textPrimaryColor)),
+            SizedBox(height: 8),
+            Text(opticienController.error.value, style: TextStyle(color: _textSecondaryColor), textAlign: TextAlign.center),
+            SizedBox(height: 24),
             ElevatedButton(
               onPressed: () => opticienController.refreshBoutiques(),
-              child: const Text('Réessayer'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF3A7BD5),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              ),
+              child: Text('Réessayer'),
+              style: ElevatedButton.styleFrom(backgroundColor: _primaryColor, foregroundColor: Colors.white),
             ),
           ],
         ),
       );
     }
-
+    
     if (_filteredOpticiens.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.store_outlined,
-              size: 64,
-              color: Colors.grey[400],
-            ),
-            const SizedBox(height: 16),
+            Icon(Icons.store_mall_directory, size: 48, color: _textSecondaryColor),
+            SizedBox(height: 16),
             Text(
-              _searchController.text.isEmpty
-                  ? 'Aucune boutique disponible'
-                  : 'Aucune boutique ne correspond à votre recherche',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[600],
-              ),
+              _searchController.text.isEmpty ? 'Aucune boutique disponible' : 'Aucun résultat trouvé',
+              style: TextStyle(fontSize: 18, color: _textPrimaryColor),
             ),
-            const SizedBox(height: 24),
             if (_searchController.text.isNotEmpty)
-              TextButton.icon(
-                onPressed: () {
-                  setState(() {
-                    _searchController.clear();
-                  });
-                },
-                icon: const Icon(Icons.refresh),
-                label: const Text('Effacer la recherche'),
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: TextButton(
+                  onPressed: _resetFilters,
+                  child: Text('Réinitialiser la recherche', style: TextStyle(color: _primaryColor)),
+                ),
               ),
           ],
         ),
       );
     }
-
+    
     return Padding(
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.all(12.0),
       child: Card(
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: BorderSide(color: Colors.grey.shade200),
-        ),
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // En-tête du tableau
+            Container(
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+              decoration: BoxDecoration(
+                color: _primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+              ),
+              child: _buildTableHeader(),
+            ),
+            
+            // Contenu du tableau
             Expanded(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: SingleChildScrollView(
-                  child: DataTable(
-                    headingRowColor: MaterialStateProperty.all(Colors.grey[50]),
-                    dataRowHeight: 72,
-                    headingRowHeight: 56,
-                    horizontalMargin: 24,
-                    columnSpacing: 24,
-                    headingTextStyle: TextStyle(
-                      color: const Color.fromARGB(255, 14, 14, 15),
+              child: ListView.separated(
+                itemCount: _paginatedOpticiens.length,
+                separatorBuilder: (context, index) => Divider(height: 1, color: Colors.grey[200]),
+                itemBuilder: (context, index) {
+                  final boutique = _paginatedOpticiens[index];
+                  return Container(
+                    padding: EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                    color: index.isEven ? Colors.white : Colors.grey[50],
+                    child: _buildTableRow(boutique),
+);
+                        },
+                      ),
+              ),
+     ]),
+          ));
+  });
+      
+  
+  }
+
+
+Widget _buildTableHeader() {
+  final columns = [
+    TableColumn(flex: 15, label: 'Nom', icon: Icons.business),
+    TableColumn(flex: 15, label: 'Opticien', icon: Icons.person),
+    TableColumn(flex: 20, label: 'Adresse', icon: Icons.location_on),
+    TableColumn(flex: 15, label: 'Email', icon: Icons.email),
+    TableColumn(flex: 10, label: 'Ville', icon: Icons.location_city),
+    TableColumn(flex: 10, label: 'Téléphone', icon: Icons.phone),
+    TableColumn(flex: 25, label: 'Description', icon: Icons.description),
+    TableColumn(flex: 20, label: 'Horaires', icon: Icons.schedule),
+    TableColumn(flex: 10, label: 'Actions', icon: Icons.settings, isActions: true),
+  ];
+
+  return Row(
+    children: columns.map((col) {
+      return Expanded(
+        flex: col.flex,
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 4),
+          child: Tooltip(
+            message: col.label,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(col.icon, size: 16, color: _primaryColor),
+                SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    col.label,
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
+                      color: _textPrimaryColor,
+                      fontSize: 12,
                     ),
-                    dividerThickness: 1,
-                    showBottomBorder: true,
-                    columns: const [
-                      DataColumn(label: Text('Nom')),
-                      DataColumn(label: Text('Optician')),
-                      DataColumn(label: Text('Adresse')),
-                      DataColumn(label: Text('Ville')), // New column
-                      DataColumn(label: Text('Téléphone')),
-                      DataColumn(label: Text('Email')),
-                      DataColumn(label: Text('Description')),
-                      DataColumn(label: Text('Horaires')),
-                      DataColumn(label: Text('Actions')),
-                    ],
-                    rows: _paginatedOpticiens.map((opticien) {
-                      return DataRow(
-                        cells: [
-                          DataCell(
-                            Text(
-                              opticien.nom,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                    DataCell(
-  Container(
-    padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-    decoration: BoxDecoration(
-      color: Colors.grey.shade50,
-      borderRadius: BorderRadius.circular(4),
-    ),
-    child: Text(
-      opticienController.getOpticienNom(opticien.opticien_id) ?? 'Non attribué',
-      style: TextStyle(
-        color: opticien.opticien_id == null ? Colors.grey : Colors.black,
-        fontWeight: FontWeight.w500,
-      ),
-    ),
-  ),
-),
-                          DataCell(
-                            Container(
-                              constraints: const BoxConstraints(maxWidth: 200),
-                              child: Text(
-                                opticien.adresse,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ),
-                          DataCell(
-                            Container(
-                              constraints: const BoxConstraints(maxWidth: 150),
-                              child: Text(
-                                opticien
-                                    .ville, // Add this line for the new column
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ),
-                          DataCell(Text(opticien.phone)),
-                          DataCell(
-                            Container(
-                              constraints: const BoxConstraints(maxWidth: 200),
-                              child: Text(
-                                opticien.email,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ),
-                          DataCell(
-                            Container(
-                              constraints: const BoxConstraints(maxWidth: 250),
-                              child: Text(
-                                opticien.description,
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 2,
-                              ),
-                            ),
-                          ),
-                          DataCell(
-                            Container(
-                              constraints: const BoxConstraints(maxWidth: 150),
-                              child: Text(
-                                opticien.opening_hours,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ),
-                          DataCell(_buildActionButtons(opticien)),
-                        ],
-                      );
-                    }).toList(),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-              ),
+              ],
             ),
-            _buildPagination(),
+          ),
+        ),
+      );
+    }).toList(),
+  );
+}
+
+Widget _buildTableRow(Boutique boutique) {
+  return Row(
+    children: [
+      // Nom
+      Expanded(
+        flex: 15,
+        child: _buildTableCell(
+          icon: Icons.store,
+          text: boutique.nom,
+          isImportant: true,
+        ),
+      ),
+      
+      // Opticien
+      Expanded(
+        flex: 15,
+        child: _buildTableCell(
+          icon: Icons.person_outline,
+          text: opticianController.getOpticienNom(boutique.opticien_id) ?? 'Non attribué',
+          isImportant: boutique.opticien_id != null,
+        ),
+      ),
+      
+      // Adresse
+      Expanded(
+        flex: 20,
+        child: _buildTableCell(
+          icon: Icons.place,
+          text: boutique.adresse,
+        ),
+      ),
+      
+      // Email
+      Expanded(
+        flex: 15,
+        child: _buildTableCell(
+          icon: Icons.mail_outline,
+          text: boutique.email ?? '-',
+        ),
+      ),
+      
+      // Ville
+      Expanded(
+        flex: 10,
+        child: _buildTableCell(
+          icon: Icons.location_city,
+          text: boutique.ville,
+        ),
+      ),
+      
+      // Téléphone
+      Expanded(
+        flex: 10,
+        child: _buildTableCell(
+          icon: Icons.phone_outlined,
+          text: boutique.phone,
+        ),
+      ),
+      
+      // Description
+      Expanded(
+        flex: 25,
+        child: _buildTableCell(
+          icon: Icons.subject,
+          text: boutique.description ?? '-',
+        ),
+      ),
+      
+      // Horaires
+      Expanded(
+        flex: 20,
+        child: _buildTableCell(
+          icon: Icons.access_time,
+          text: boutique.opening_hours ?? '-',
+        ),
+      ),
+      
+      // Actions
+      Expanded(
+        flex: 10,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            IconButton(
+              icon: Icon(Icons.edit, size: 18, color: _infoColor),
+              onPressed: () => _showEditBoutiqueDialog(context, boutique),
+              padding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+              tooltip: 'Modifier',
+            ),
+            SizedBox(width: 8),
+            IconButton(
+              icon: Icon(Icons.delete, size: 18, color: _errorColor),
+              onPressed: () => _showDeleteConfirmation(context, boutique),
+              padding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+              tooltip: 'Supprimer',
+            ),
           ],
         ),
       ),
-    );
-  }
+    ],
+  );
+}
 
-  Widget _buildPagination() {
-    final totalPages = _pageCount;
-
-    if (totalPages <= 1) {
-      return const SizedBox.shrink();
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          top: BorderSide(color: Colors.grey.shade200),
-        ),
-      ),
+Widget _buildTableCell({required IconData icon, required String text, bool isImportant = false}) {
+  return Padding(
+    padding: EdgeInsets.symmetric(horizontal: 4),
+    child: Tooltip(
+      message: text,
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            'Affichage de ${_paginatedOpticiens.length} sur ${_filteredOpticiens.length} boutiques',
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 14,
+          Icon(icon, size: 16, color: _textSecondaryColor),
+          SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isImportant ? FontWeight.w500 : FontWeight.normal,
+                color: isImportant ? _textPrimaryColor : _textSecondaryColor,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
-          Row(
-            children: [
-              OutlinedButton(
-                onPressed: _currentPage > 0
-                    ? () => setState(() {
-                          _currentPage--;
-                        })
-                    : null,
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  side: BorderSide(color: Colors.grey.shade300),
-                ),
-                child: const Text('Précédent'),
-              ),
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text('${_currentPage + 1} / $totalPages'),
-              ),
-              OutlinedButton(
-                onPressed: _currentPage < totalPages - 1
-                    ? () => setState(() {
-                          _currentPage++;
-                        })
-                    : null,
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  side: BorderSide(color: Colors.grey.shade300),
-                ),
-                child: const Text('Suivant'),
-              ),
-            ],
+        ],
+      ),
+    ),
+  );
+}
+
+
+ Widget _buildPaginationControls() {
+    final totalPages = _pageCount;
+    if (totalPages <= 1) return SizedBox();
+
+    return Padding(
+      padding: EdgeInsets.only(top: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          IconButton(
+            icon: Icon(Icons.chevron_left),
+            onPressed: _currentPage > 0
+                ? () => setState(() => _currentPage--)
+                : null,
+          ),
+          SizedBox(width: 16),
+          Text(
+            'Page ${_currentPage + 1} sur $totalPages',
+            style: TextStyle(
+              color: _textSecondaryColor,
+            ),
+          ),
+          SizedBox(width: 16),
+          IconButton(
+            icon: Icon(Icons.chevron_right),
+            onPressed: _currentPage < totalPages - 1
+                ? () => setState(() => _currentPage++)
+                : null,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildActionButtons(Boutique opticien) {
+  Widget _buildAdvancedFilters() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      margin: EdgeInsets.only(top: 8),
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.filter_list, color: _primaryColor),
+                SizedBox(width: 8),
+                Text(
+                  'Filtres Avancés',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: _primaryColor,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 16),
+            Wrap(
+              spacing: 16,
+              runSpacing: 16,
+              children: [
+                _buildFilterField(
+                  label: 'Nom',
+                  value: _filters['nom'],
+                  icon: Icons.store,
+                  onChanged: (value) => setState(() {
+                    _filters['nom'] = value;
+                    _filterOpticiens();
+                  }),
+                ),
+                _buildFilterField(
+                  label: 'Adresse',
+                  value: _filters['adresse'],
+                  icon: Icons.location_on,
+                  onChanged: (value) => setState(() {
+                    _filters['adresse'] = value;
+                    _filterOpticiens();
+                  }),
+                ),
+                _buildFilterField(
+                  label: 'Ville',
+                  value: _filters['ville'],
+                  icon: Icons.location_city,
+                  onChanged: (value) => setState(() {
+                    _filters['ville'] = value;
+                    _filterOpticiens();
+                  }),
+                ),
+                _buildFilterField(
+                  label: 'Email',
+                  value: _filters['email'],
+                  icon: Icons.email,
+                  onChanged: (value) => setState(() {
+                    _filters['email'] = value;
+                    _filterOpticiens();
+                  }),
+                ),
+                _buildFilterField(
+                  label: 'Téléphone',
+                  value: _filters['phone'],
+                  icon: Icons.phone,
+                  onChanged: (value) => setState(() {
+                    _filters['phone'] = value;
+                    _filterOpticiens();
+                  }),
+                ),
+                _buildFilterField(
+                  label: 'Horaires',
+                  value: _filters['horaires'],
+                  icon: Icons.access_time,
+                  onChanged: (value) => setState(() {
+                    _filters['horaires'] = value;
+                    _filterOpticiens();
+                  }),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+Widget _buildFilterField({
+  required String label,
+  required String? value,
+  required IconData icon,
+  required Function(String) onChanged,
+}) {
+  return SizedBox(
+    width: 250,
+    child: TextField(
+      controller: TextEditingController(text: value ?? ''),
+      onChanged: onChanged,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon, size: 20),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      ),
+    ),
+  );
+}
+
+ Widget _buildHeader() {
+    final opticianController = Get.find<OpticianController>();
+
     return Row(
-      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        IconButton(
-          icon: const Icon(Icons.edit_outlined),
-          onPressed: () => _showEditBoutiqueDialog(context, opticien),
-          tooltip: 'Modifier',
-          color: const Color(0xFF3A7BD5),
-          splashRadius: 24,
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Gestion des Boutiques',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: _textPrimaryColor,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              opticianController.isLoggedIn.value
+                  ? '${_filteredOpticiens.length} boutiques'
+                  : '${_filteredOpticiens.length} boutiques',
+              style: TextStyle(
+                fontSize: 14,
+                color: _textSecondaryColor,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 8),
-        IconButton(
-          icon: const Icon(Icons.delete_outline),
-          onPressed: () => _showDeleteConfirmation(context, opticien),
-          tooltip: 'Supprimer',
-          color: Colors.red[400],
-          splashRadius: 24,
-        ),
+        
       ],
     );
   }
@@ -1194,29 +1080,24 @@ Widget _buildOpticianDropdown(
     return selectedSchedule;
   }
 
-  void _showEditBoutiqueDialog(BuildContext context, Boutique opticien) {
+  void _showEditBoutiqueDialog(BuildContext context, Boutique boutique) {
   final formKey = GlobalKey<FormState>();
-  final nomController = TextEditingController(text: opticien.nom);
-  final adresseController = TextEditingController(text: opticien.adresse);
-  final phoneController = TextEditingController(text: opticien.phone);
-  final emailController = TextEditingController(text: opticien.email);
-  final descriptionController = TextEditingController(text: opticien.description);
-  final openingHoursController = TextEditingController(text: opticien.opening_hours);
-  final villeController = TextEditingController(text: opticien.ville);
+  final nomController = TextEditingController(text: boutique.nom);
+  final adresseController = TextEditingController(text: boutique.adresse);
+  final phoneController = TextEditingController(text: boutique.phone);
+  final emailController = TextEditingController(text: boutique.email);
+  final descriptionController = TextEditingController(text: boutique.description);
+  final openingHoursController = TextEditingController(text: boutique.opening_hours);
+  final villeController = TextEditingController(text: boutique.ville);
 
   // Initialiser les valeurs de l'opticien sélectionné
-  final RxString selectedOpticianId = (opticien.opticien_id ?? '').obs;
-  final RxString selectedOpticianName = (opticien.opticien_nom ?? 'Non attribué').obs;
-
-  // Charger la liste des opticiens
-  opticianController.fetchOpticians();
+  final RxString selectedOpticianId = (boutique.opticien_id ?? '').obs;
+  final RxString selectedOpticianName = (boutique.opticien_nom ?? 'Non attribué').obs;
 
   showDialog(
     context: context,
     builder: (dialogContext) => Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
         width: 500,
         padding: const EdgeInsets.all(24),
@@ -1255,8 +1136,7 @@ Widget _buildOpticianDropdown(
                         label: 'Nom',
                         hint: 'Entrez le nom de la boutique',
                         prefixIcon: Icons.store,
-                        validator: (value) =>
-                            value?.isEmpty ?? true ? 'Champ requis' : null,
+                        validator: (value) => value?.isEmpty ?? true ? 'Champ requis' : null,
                       ),
                       const SizedBox(height: 16),
                       _buildFormField(
@@ -1264,36 +1144,26 @@ Widget _buildOpticianDropdown(
                         label: 'Adresse',
                         hint: 'Entrez l\'adresse complète',
                         prefixIcon: Icons.location_on,
-                        validator: (value) =>
-                            value?.isEmpty ?? true ? 'Champ requis' : null,
+                        validator: (value) => value?.isEmpty ?? true ? 'Champ requis' : null,
                       ),
                       _buildFormField(
                         controller: villeController,
                         label: 'Ville',
                         hint: 'Sélectionnez la ville',
                         prefixIcon: Icons.location_city,
-                        validator: (value) =>
-                            value?.isEmpty ?? true ? 'Champ requis' : null,
+                        validator: (value) => value?.isEmpty ?? true ? 'Champ requis' : null,
                         isDropdown: true,
                       ),
                       const SizedBox(height: 16),
-                      TextFormField(
+                      _buildFormField(
                         controller: phoneController,
-                        decoration: const InputDecoration(
-                          labelText: 'Téléphone',
-                          border: OutlineInputBorder(),
-                          hintText: '8 chiffres',
-                          contentPadding: EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 16),
-                        ),
-                        keyboardType: TextInputType.phone,
+                        label: 'Téléphone',
+                        hint: '8 chiffres',
+                        prefixIcon: Icons.phone,
                         validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Veuillez entrer un numéro de téléphone';
-                          }
-                          if (value.length != 8 ||
-                              !RegExp(r'^[0-9]{8}$').hasMatch(value)) {
-                            return 'Le téléphone doit contenir exactement 8 chiffres';
+                          if (value == null || value.isEmpty) return 'Veuillez entrer un numéro';
+                          if (value.length != 8 || !RegExp(r'^[0-9]{8}$').hasMatch(value)) {
+                            return '8 chiffres requis';
                           }
                           return null;
                         },
@@ -1305,9 +1175,7 @@ Widget _buildOpticianDropdown(
                         hint: 'Ex: contact@boutique.com',
                         prefixIcon: Icons.email,
                         validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Veuillez entrer un email';
-                          }
+                          if (value == null || value.isEmpty) return 'Veuillez entrer un email';
                           if (!value.endsWith('@gmail.com')) {
                             return 'L\'email doit être sous format @gmail.com';
                           }
@@ -1321,12 +1189,7 @@ Widget _buildOpticianDropdown(
                         hint: 'Décrivez la boutique en quelques mots',
                         prefixIcon: Icons.description,
                         maxLines: 3,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Veuillez entrer une description';
-                          }
-                          return null;
-                        },
+                        validator: (value) => value?.isEmpty ?? true ? 'Champ requis' : null,
                       ),
                       const SizedBox(height: 16),
                       _buildFormField(
@@ -1334,8 +1197,7 @@ Widget _buildOpticianDropdown(
                         label: 'Horaires d\'ouverture',
                         hint: 'Ex: Lun-Ven: 9h-18h, Sam: 9h-12h',
                         prefixIcon: Icons.access_time,
-                        validator: (value) =>
-                            value?.isEmpty ?? true ? 'Champ requis' : null,
+                        validator: (value) => value?.isEmpty ?? true ? 'Champ requis' : null,
                         isSchedulePicker: true,
                       ),
                       const SizedBox(height: 16),
@@ -1355,22 +1217,14 @@ Widget _buildOpticianDropdown(
               children: [
                 OutlinedButton(
                   onPressed: () => Navigator.pop(dialogContext),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
                   child: const Text('Annuler'),
                 ),
                 const SizedBox(width: 16),
                 ElevatedButton(
                   onPressed: () async {
                     if (formKey.currentState?.validate() ?? false) {
-                      // Create updated Boutique with form data
                       final updatedBoutique = Boutique(
-                        id: opticien.id,
+                        id: boutique.id,
                         nom: nomController.text,
                         adresse: adresseController.text,
                         ville: villeController.text,
@@ -1379,61 +1233,34 @@ Widget _buildOpticianDropdown(
                         description: descriptionController.text,
                         opening_hours: openingHoursController.text,
                         opticien_id: selectedOpticianId.value.isNotEmpty 
-                          ? selectedOpticianId.value 
-                          : null,
+                            ? selectedOpticianId.value 
+                            : null,
                         opticien_nom: selectedOpticianName.value != 'Non attribué'
-                          ? selectedOpticianName.value
-                          : null,
+                            ? selectedOpticianName.value
+                            : null,
                       );
 
-                      // Close the dialog first to avoid context issues
                       Navigator.pop(dialogContext);
-
-                      // Update the boutique
+                      
                       final success = await opticienController.updateOpticien(
-                          opticien.id, updatedBoutique);
-
-                      // Show a snackbar with the result
+                          boutique.id, updatedBoutique);
+                      
                       if (!context.mounted) return;
-                      final scaffold = ScaffoldMessenger.of(context);
-                      scaffold.showSnackBar(
+                      ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
                             success
                                 ? 'Boutique mise à jour avec succès'
-                                : 'Erreur: ${opticienController.error.value}',
-                            style: const TextStyle(color: Colors.white),
+                                : 'Erreur lors de la mise à jour',
+                            style: TextStyle(color: Colors.white),
                           ),
-                          backgroundColor:
-                              success ? Colors.green : Colors.red,
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          margin: const EdgeInsets.all(16),
-                          action: SnackBarAction(
-                            label: 'OK',
-                            textColor: Colors.white,
-                            onPressed: () {
-                              scaffold.hideCurrentSnackBar();
-                            },
-                          ),
+                          backgroundColor: success ? Colors.green : Colors.red,
+                          duration: Duration(seconds: 2),
                         ),
                       );
                     }
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF3A7BD5),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: const Text(
-                    'Mettre à jour',
-                    style: TextStyle(color: Colors.white),
-                  ),
+                  child: const Text('Mettre à jour'),
                 ),
               ],
             ),
@@ -1443,42 +1270,53 @@ Widget _buildOpticianDropdown(
     ),
   );
 }
-  void _showDeleteConfirmation(BuildContext context, Boutique opticien) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Confirmer la suppression'),
-        content: Text('Voulez-vous vraiment supprimer ${opticien.nom} ?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Annuler'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () async {
-              // Close the dialog first to avoid context issues
-              Navigator.pop(dialogContext);
 
-              // Delete the optician
-              final success =
-                  await opticienController.deleteOpticien(opticien.id);
-
-              // Show a snackbar with the result
-              final scaffold = ScaffoldMessenger.of(context);
-              scaffold.showSnackBar(
-                SnackBar(
-                  content: Text(success
-                      ? 'Boutique supprimée avec succès'
-                      : 'Erreur: ${opticienController.error.value}'),
-                  backgroundColor: success ? Colors.green : Colors.red,
+void _showDeleteConfirmation(BuildContext context, Boutique boutique) {
+  showDialog(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('Confirmer la suppression'),
+      content: Text('Voulez-vous vraiment supprimer ${boutique.nom} ?'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext),
+          child: const Text('Annuler'),
+        ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+          onPressed: () async {
+            Navigator.pop(dialogContext);
+            final success = await opticienController.deleteOpticien(boutique.id);
+            
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  success ? 'Boutique supprimée avec succès' : 'Erreur lors de la suppression',
+                  style: TextStyle(color: Colors.white),
                 ),
-              );
-            },
-            child: const Text('Supprimer'),
-          ),
-        ],
-      ),
-    );
-  }
+                backgroundColor: success ? Colors.green : Colors.red,
+                duration: Duration(seconds: 2),
+              ),
+            );
+          },
+          child: const Text('Supprimer', style: TextStyle(color: Colors.white)),
+        ),
+      ],
+    ),
+  );
+}
+}
+ class TableColumn {
+  final int flex;
+  final String label;
+  final IconData icon;
+  final bool isActions;
+
+  TableColumn({
+    required this.flex,
+    required this.label,
+    required this.icon,
+    this.isActions = false,
+  });
 }

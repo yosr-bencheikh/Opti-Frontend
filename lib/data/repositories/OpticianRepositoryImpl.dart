@@ -7,6 +7,20 @@ class OpticianRepositoryImpl implements OpticianRepository {
 
   OpticianRepositoryImpl(this._dataSource);
 
+@override
+Future<void> sendPasswordResetEmail(String email) async {
+  await _dataSource.sendPasswordResetEmail(email);
+}
+
+@override
+Future<bool> verifyResetCode(String email, String code) async {
+  return await _dataSource.verifyResetCode(email, code);
+}
+
+@override
+Future<bool> resetPassword(String email, String code, String newPassword) async {
+  return await _dataSource.resetPassword(email, code, newPassword);
+}
   @override
   Future<List<Optician>> getOpticians() async {
     return await _dataSource.getOpticians();

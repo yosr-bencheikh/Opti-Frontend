@@ -22,24 +22,22 @@ class _OpticienOrdersPageState extends State<OpticienOrdersPage> {
     'Annulée'
   ];
 
-final List<String> cancellationReasons = [
-  'Rupture de stock',
-  'Client indisponible',
-  'Problème de paiement',
-  'Autre raison',
-];
+  final List<String> cancellationReasons = [
+    'Rupture de stock',
+    'Client indisponible',
+    'Problème de paiement',
+    'Autre raison',
+  ];
   String? _selectedUserId;
   DateTime? _selectedUserTimestamp;
 
-@override
-void initState() {
-  super.initState();
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    orderController.loadOrdersForCurrentOpticianWithDetails();
-  });
-}
-
-
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      orderController.loadOrdersForCurrentOpticianWithDetails();
+    });
+  }
 
   Color _getStatusColor(String status) {
     switch (status) {
@@ -79,11 +77,12 @@ void initState() {
         elevation: 0,
         backgroundColor: const Color.fromARGB(255, 252, 252, 252),
         actions: [
-        IconButton(
-  icon: Icon(Icons.refresh, color: Colors.white),
-  onPressed: () => orderController.loadOrdersForCurrentOpticianWithDetails(),
-  tooltip: 'Actualiser',
-),
+          IconButton(
+            icon: Icon(Icons.refresh, color: Colors.white),
+            onPressed: () =>
+                orderController.loadOrdersForCurrentOpticianWithDetails(),
+            tooltip: 'Actualiser',
+          ),
         ],
       ),
       body: Row(
@@ -295,45 +294,54 @@ void initState() {
                                               child: _buildStatusChip(
                                                   order.status)),
                                         ),
-                                      DataCell(
-  Row(
-    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-    children: [
-      _buildActionButton(
-        icon: Icons.visibility,
-        color: Colors.indigo.shade600,
-        tooltip: 'Voir les détails',
-        onPressed: () => _showOrderDetails(order),
-        iconSize: 24,
-      ),
-      // Ne montre le bouton modifier que si le statut n'est pas Annulée
-      if (order.status != 'Annulée')
-        _buildActionButton(
-          icon: Icons.edit,
-          color: Colors.amber.shade700,
-          tooltip: 'Modifier le statut',
-          onPressed: () => _showStatusUpdateDialog(order),
-          iconSize: 24,
-        ),
-      if (order.status == 'En attente') ...[
-        _buildActionButton(
-          icon: Icons.check_circle,
-          color: Colors.green.shade600,
-          tooltip: 'Accepter',
-          onPressed: () => _updateOrderStatus(order, 'Confirmée'),
-          iconSize: 24,
-        ),
-        _buildActionButton(
-          icon: Icons.cancel,
-          color: Colors.red.shade600,
-          tooltip: 'Refuser',
-          onPressed: () => _updateOrderStatus(order, 'Annulée'),
-          iconSize: 24,
-        ),
-      ],
-    ],
-  ),
-),
+                                        DataCell(
+                                          Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceEvenly,
+                                            children: [
+                                              _buildActionButton(
+                                                icon: Icons.visibility,
+                                                color: Colors.indigo.shade600,
+                                                tooltip: 'Voir les détails',
+                                                onPressed: () =>
+                                                    _showOrderDetails(order),
+                                                iconSize: 24,
+                                              ),
+                                              // Ne montre le bouton modifier que si le statut n'est pas Annulée
+                                              if (order.status != 'Annulée')
+                                                _buildActionButton(
+                                                  icon: Icons.edit,
+                                                  color: Colors.amber.shade700,
+                                                  tooltip: 'Modifier le statut',
+                                                  onPressed: () =>
+                                                      _showStatusUpdateDialog(
+                                                          order),
+                                                  iconSize: 24,
+                                                ),
+                                              if (order.status ==
+                                                  'En attente') ...[
+                                                _buildActionButton(
+                                                  icon: Icons.check_circle,
+                                                  color: Colors.green.shade600,
+                                                  tooltip: 'Accepter',
+                                                  onPressed: () =>
+                                                      _updateOrderStatus(
+                                                          order, 'Confirmée'),
+                                                  iconSize: 24,
+                                                ),
+                                                _buildActionButton(
+                                                  icon: Icons.cancel,
+                                                  color: Colors.red.shade600,
+                                                  tooltip: 'Refuser',
+                                                  onPressed: () =>
+                                                      _updateOrderStatus(
+                                                          order, 'Annulée'),
+                                                  iconSize: 24,
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                        ),
                                       ],
                                     );
                                   }).toList(),
@@ -503,79 +511,181 @@ void initState() {
     // Count orders by status
     int pendingCount = 0;
     int confirmedCount = 0;
-    int deliveredCount = 0;
+    int deliveryCount = 0;
+    int completedCount = 0;
     int cancelledCount = 0;
 
     for (var order in orderController.allOrders) {
-      if (order.status == 'En attente') pendingCount++;
-      if (order.status == 'Confirmée') confirmedCount++;
-      if (order.status == 'Livrée') deliveredCount++;
-      if (order.status == 'Annulée') cancelledCount++;
+      switch (order.status) {
+        case 'En attente':
+          pendingCount++;
+          break;
+        case 'Confirmée':
+          confirmedCount++;
+          break;
+        case 'En livraison':
+          deliveryCount++;
+          break;
+        case 'Completée':
+          completedCount++;
+          break;
+        case 'Annulée':
+          cancelledCount++;
+          break;
+      }
     }
 
-    return Container(
-      height: 100,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center, // Center the cards
         children: [
-          _buildStatCard('En attente', pendingCount, Colors.orange),
-          _buildStatCard('Confirmées', confirmedCount, Colors.blue),
-          _buildStatCard('Livrées', deliveredCount, Colors.green),
-          _buildStatCard('Annulées', cancelledCount, Colors.red),
-          _buildStatCard('Total', orderController.allOrders.length,
-              Colors.indigo.shade700),
+          _buildStatCard(
+            title: 'En attente',
+            count: pendingCount,
+            color: Colors.orange,
+            icon: Icons.hourglass_top,
+          ),
+          _buildStatCard(
+            title: 'Confirmées',
+            count: confirmedCount,
+            color: Colors.blue,
+            icon: Icons.check_circle_outline,
+          ),
+          _buildTotalCard(
+            count: orderController.allOrders.length,
+          ), // Total card in the center
+          _buildStatCard(
+            title: 'En livraison',
+            count: deliveryCount,
+            color: Colors.purple,
+            icon: Icons.local_shipping,
+          ),
+          _buildStatCard(
+            title: 'Completée',
+            count: completedCount,
+            color: Colors.green,
+            icon: Icons.done_all,
+          ),
+          _buildStatCard(
+            title: 'Annulées',
+            count: cancelledCount,
+            color: Colors.red,
+            icon: Icons.cancel_outlined,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildStatCard(String title, int count, Color color) {
-    return Card(
-      elevation: 2,
-      margin: EdgeInsets.only(right: 16),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade200),
-      ),
-      child: Container(
-        width: 140,
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade700,
-                fontWeight: FontWeight.w500,
-              ),
+  Widget _buildStatCard({
+    required String title,
+    required int count,
+    required Color color,
+    required IconData icon,
+  }) {
+    return Container(
+      width: 120, // Smaller width for status cards
+      margin: EdgeInsets.symmetric(horizontal: 8), // Add horizontal spacing
+      child: Card(
+        elevation: 8, // Increased elevation for a more pronounced shadow
+        shape: RoundedRectangleBorder(
+          borderRadius:
+              BorderRadius.circular(20), // More pronounced rounded corners
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                color.withOpacity(0.2),
+                color.withOpacity(0.1),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-            SizedBox(height: 8),
-            Row(
+            borderRadius:
+                BorderRadius.circular(20), // Match the card's border radius
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 12,
-                  height: 12,
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.2),
-                    border: Border.all(color: color, width: 2),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                ),
-                SizedBox(width: 8),
-                Text(
-                  count.toString(),
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey.shade800,
-                  ),
+                Icon(icon, color: color, size: 28), // Slightly larger icon
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 14, // Slightly larger font size
+                        color: Colors.grey.shade700,
+                        fontWeight: FontWeight.w600, // Bolder font weight
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      count.toString(),
+                      style: TextStyle(
+                        fontSize: 24, // Slightly larger font size
+                        fontWeight: FontWeight.bold,
+                        color: color,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTotalCard({required int count}) {
+    return Container(
+      width: 160, // Larger width for the total card
+      margin: EdgeInsets.symmetric(horizontal: 8), // Add horizontal spacing
+      child: Card(
+        elevation: 6,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15),
+        ),
+        color: Colors.indigo.shade700,
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.shopping_cart_checkout,
+                  color: Colors.white.withOpacity(0.8),
+                  size: 32), // Larger icon
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Total Commandes',
+                    style: TextStyle(
+                      fontSize: 14, // Larger font size
+                      color: Colors.white.withOpacity(0.9),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    count.toString(),
+                    style: TextStyle(
+                      fontSize: 28, // Larger font size
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -655,109 +765,113 @@ void initState() {
     return rowColor;
   }
 
-void _showStatusUpdateDialog(Order order) {
-  final allowedStatuses = getAllowedStatuses(order.status);
+  void _showStatusUpdateDialog(Order order) {
+    final allowedStatuses = getAllowedStatuses(order.status);
 
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: Text('Modifier le statut'),
-      content: Container(
-        width: double.minPositive,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: allowedStatuses.map((status) {
-            return ListTile(
-              title: Text(status),
-              leading: CircleAvatar(
-                backgroundColor: _getStatusColor(status).withOpacity(0.2),
-                child: Icon(_getStatusIcon(status),
-                    color: _getStatusColor(status), size: 18),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                if (status == 'Annulée') {
-                  _showCancellationReasonDialog(order);
-                } else {
-                  _updateOrderStatus(order, status);
-                }
-              },
-            );
-          }).toList(),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text('Annuler'),
-        ),
-      ],
-    ),
-  );
-}
-void _showCancellationReasonDialog(Order order) {
-  String? selectedReason;
-  final TextEditingController customReasonController = TextEditingController();
-
-  showDialog(
-    context: context,
-    builder: (context) {
-      return StatefulBuilder(
-        builder: (context, setState) {
-          return AlertDialog(
-            title: Text('Raison d\'annulation'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ...cancellationReasons.map((reason) {
-                  return RadioListTile<String>(
-                    title: Text(reason),
-                    value: reason,
-                    groupValue: selectedReason,
-                    onChanged: (value) {
-                      setState(() {
-                        selectedReason = value;
-                      });
-                    },
-                  );
-                }).toList(),
-                if (selectedReason == 'Autre raison')
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: TextField(
-                      controller: customReasonController,
-                      decoration: InputDecoration(
-                        labelText: 'Précisez la raison',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('Annuler'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  final reason = selectedReason == 'Autre raison'
-                      ? customReasonController.text
-                      : selectedReason;
-                  if (reason != null && reason.isNotEmpty) {
-                    Navigator.pop(context);
-                    _updateOrderStatus(order, 'Annulée', cancellationReason: reason);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Modifier le statut'),
+        content: Container(
+          width: double.minPositive,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: allowedStatuses.map((status) {
+              return ListTile(
+                title: Text(status),
+                leading: CircleAvatar(
+                  backgroundColor: _getStatusColor(status).withOpacity(0.2),
+                  child: Icon(_getStatusIcon(status),
+                      color: _getStatusColor(status), size: 18),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  if (status == 'Annulée') {
+                    _showCancellationReasonDialog(order);
+                  } else {
+                    _updateOrderStatus(order, status);
                   }
                 },
-                child: Text('Confirmer'),
+              );
+            }).toList(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Annuler'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showCancellationReasonDialog(Order order) {
+    String? selectedReason;
+    final TextEditingController customReasonController =
+        TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text('Raison d\'annulation'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ...cancellationReasons.map((reason) {
+                    return RadioListTile<String>(
+                      title: Text(reason),
+                      value: reason,
+                      groupValue: selectedReason,
+                      onChanged: (value) {
+                        setState(() {
+                          selectedReason = value;
+                        });
+                      },
+                    );
+                  }).toList(),
+                  if (selectedReason == 'Autre raison')
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: TextField(
+                        controller: customReasonController,
+                        decoration: InputDecoration(
+                          labelText: 'Précisez la raison',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                ],
               ),
-            ],
-          );
-        },
-      );
-    },
-  );
-}
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text('Annuler'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    final reason = selectedReason == 'Autre raison'
+                        ? customReasonController.text
+                        : selectedReason;
+                    if (reason != null && reason.isNotEmpty) {
+                      Navigator.pop(context);
+                      _updateOrderStatus(order, 'Annulée',
+                          cancellationReason: reason);
+                    }
+                  },
+                  child: Text('Confirmer'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   IconData _getStatusIcon(String status) {
     switch (status) {
       case 'En attente':
@@ -773,12 +887,13 @@ void _showCancellationReasonDialog(Order order) {
     }
   }
 
-void _updateOrderStatus(Order order, String newStatus, {String? cancellationReason}) async {
-  final success = await orderController.updateOrderStatus(
-    order.id!,
-    newStatus,
-    cancellationReason: cancellationReason,
-  );
+  void _updateOrderStatus(Order order, String newStatus,
+      {String? cancellationReason}) async {
+    final success = await orderController.updateOrderStatus(
+      order.id!,
+      newStatus,
+      cancellationReason: cancellationReason,
+    );
     if (success) {
       orderController.updateLocalOrderStatus(order.id!, newStatus);
 
@@ -1235,20 +1350,21 @@ void _updateOrderStatus(Order order, String newStatus, {String? cancellationReas
       ),
     );
   }
+
   List<String> getAllowedStatuses(String currentStatus) {
-  switch (currentStatus) {
-    case 'En attente':
-      return ['Confirmée', 'Annulée'];
-    case 'Confirmée':
-      return ['En livraison', 'Annulée'];
-    case 'En livraison':
-      return ['Completée', 'Annulée'];
-    case 'Completée':
-      return [];
-    case 'Annulée':
-      return [];
-    default:
-      return [];
+    switch (currentStatus) {
+      case 'En attente':
+        return ['Confirmée', 'Annulée'];
+      case 'Confirmée':
+        return ['En livraison', 'Annulée'];
+      case 'En livraison':
+        return ['Completée', 'Annulée'];
+      case 'Completée':
+        return [];
+      case 'Annulée':
+        return [];
+      default:
+        return [];
+    }
   }
-}
 }

@@ -65,6 +65,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:opti_app/Presentation/UI/screens/User/ordersList_screen.dart';
 
 void main() async {
+  if (kDebugMode) {
+    print('Démarrage de l\'application en mode debug');
+  }
+
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize SharedPreferences
@@ -101,7 +105,6 @@ void main() async {
   Get.put<AuthController>(
       AuthController(authRepository: authRepository, prefs: prefs));
 
-  // Initialisation des dépendances pour Optician
   final opticianDataSource = OpticianDataSourceImpl();
   Get.put<OpticianDataSource>(opticianDataSource);
 
@@ -109,7 +112,7 @@ void main() async {
   Get.put<OpticianRepository>(opticianRepository);
 
   final opticianController = OpticianController();
-  Get.put<OpticianController>(opticianController, permanent: true);
+  Get.put<OpticianController>(opticianController);
 
   // Initialisation des dépendances pour Boutique
   final boutiqueRemoteDataSource = BoutiqueRemoteDataSourceImpl(client: client);
@@ -131,6 +134,7 @@ void main() async {
     repository: cartItemRepository,
     productRepository: productRepository,
   ));
+  // Initialisation des dépendances pour Optician
 
   final dio = Dio();
   final wishlistRemoteDataSource = WishlistRemoteDataSourceImpl(dio);
@@ -161,7 +165,7 @@ void main() async {
     Get.find<StoreReviewRepository>(),
     Get.find<UserRepository>(), // Deuxième paramètre requis
   ));
- Get.lazyPut<StoreWishlistController>(() => StoreWishlistController());
+  Get.lazyPut<StoreWishlistController>(() => StoreWishlistController());
 
   runApp(const MyApp());
 }
@@ -278,7 +282,6 @@ class MyApp extends StatelessWidget {
         ),
         GetPage(
           name: '/Commande',
-          
           page: () => OpticienOrdersPage(),
           binding: AuthBinding(),
         ),
@@ -293,7 +296,7 @@ class MyApp extends StatelessWidget {
           binding: AuthBinding(),
         ),
         GetPage(
-          name: '/recommendations',
+          name: '/SummaryScreen',
           page: () => RecommendationsScreen(),
           binding: AuthBinding(),
         ),

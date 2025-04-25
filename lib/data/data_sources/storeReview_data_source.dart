@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class StoreReviewDataSource {
-  final String baseUrl = 'http://192.168.1.19:3000/api';
+  final String baseUrl = 'http://localhost:3000/api';
 
   Future<List<dynamic>> fetchBoutiqueReviews(String boutiqueId) async {
     final url = Uri.parse('$baseUrl/boutique-reviews/$boutiqueId');

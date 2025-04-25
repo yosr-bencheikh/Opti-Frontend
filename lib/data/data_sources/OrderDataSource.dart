@@ -22,7 +22,7 @@ abstract class OrderDataSource {
 class OrderDataSourceImpl implements OrderDataSource {
   final http.Client client;
 
-  final String baseUrl = "http://192.168.1.19:3000";
+  final String baseUrl = "http://localhost:3000";
 
   OrderDataSourceImpl({required this.client});
 

@@ -80,4 +80,29 @@ class User extends Equatable {
       'status': status,
     };
   }
+  User copyWith({
+  String? nom,
+  String? prenom,
+  String? email,
+  String? date,
+  String? region,
+  String? genre,
+  String? password,
+  String? phone,
+  String? status,
+  String? imageUrl,
+}) {
+  return User(
+    nom: nom ?? this.nom,
+    prenom: prenom ?? this.prenom,
+    email: email ?? this.email,
+    date: date ?? this.date,
+    region: region ?? this.region,
+    genre: genre ?? this.genre,
+    password: password ?? this.password,
+    phone: phone ?? this.phone,
+    status: status ?? this.status,
+    imageUrl: imageUrl ?? this.imageUrl,
+  );
+}
 }

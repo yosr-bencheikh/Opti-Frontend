@@ -26,7 +26,7 @@ class AuthBinding extends Bindings {
   void _registerCoreDependencies() {
     if (!Get.isRegistered<SharedPreferences>()) {
       Get.putAsync<SharedPreferences>(
-        () async => await SharedPreferences.getInstance());
+          () async => await SharedPreferences.getInstance());
     }
 
     if (!Get.isRegistered<http.Client>()) {
@@ -68,7 +68,7 @@ class AuthBinding extends Bindings {
   }
 
   void _registerOpticianDependencies() {
-    Get.lazyPut<OpticianDataSource>(() => OpticianDataSourceImpl());
+    /* Get.lazyPut<OpticianDataSource>(() => OpticianDataSourceImpl());
     
     Get.lazyPut<OpticianRepository>(
       () => OpticianRepositoryImpl(Get.find<OpticianDataSource>()),
@@ -77,7 +77,7 @@ class AuthBinding extends Bindings {
     Get.lazyPut<OpticianController>(
       () => OpticianController(),
       fenix: true,
-    );
-     Get.lazyPut(() => StoreWishlistController());
+    );*/
+    Get.lazyPut(() => StoreWishlistController());
   }
 }

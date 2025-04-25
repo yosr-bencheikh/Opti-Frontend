@@ -18,6 +18,8 @@ class BoutiqueController extends GetxController {
   final RxList<Optician> _opticiens = <Optician>[].obs;
   final RxBool _showOnlyUserBoutiques = false.obs;
   final RxMap<String, dynamic> boutiquesStats = <String, dynamic>{}.obs;
+    bool get isloading => isLoading.value;
+  String? get _error => error.value;
 
   BoutiqueController(this.opticianController,
       {required this.boutiqueRepository});
@@ -41,6 +43,7 @@ class BoutiqueController extends GetxController {
 
   Future<void> loadInitialData() async {
     try {
+      
       await (opticianController.isLoggedIn.value
           ? getboutiqueByOpticianId(opticianController.currentUserId.value)
           : getboutique());
@@ -251,38 +254,45 @@ class BoutiqueController extends GetxController {
   }
 
   Future<bool> updateOpticien(String id, Boutique opticien) async {
-    try {
-      isLoading(true);
-      error('');
+  try {
+    isLoading(true);
+    error('');
 
-      await boutiqueRepository.updateOpticien(id, opticien);
-      await getboutique();
-
-      return true;
-    } catch (e) {
-      error(e.toString());
-      print('Error updating optician: $e');
-      return false;
-    } finally {
-      isLoading(false);
+    await boutiqueRepository.updateOpticien(id, opticien);
+    
+    // Mise à jour directe de la liste sans recharger depuis le serveur
+    final index = opticiensList.indexWhere((b) => b.id == id);
+    if (index != -1) {
+      opticiensList[index] = opticien;
     }
+
+    return true;
+  } catch (e) {
+    error(e.toString());
+    print('Error updating optician: $e');
+    return false;
+  } finally {
+    isLoading(false);
   }
+}
 
-  Future<bool> deleteOpticien(String id) async {
-    try {
-      isLoading(true);
-      error('');
+Future<bool> deleteOpticien(String id) async {
+  try {
+    isLoading(true);
+    error('');
 
-      await boutiqueRepository.deleteOpticien(id);
-      await getboutique();
+    await boutiqueRepository.deleteOpticien(id);
+    
+    // Suppression directe de la liste sans recharger depuis le serveur
+    opticiensList.removeWhere((b) => b.id == id);
 
-      return true;
-    } catch (e) {
-      error(e.toString());
-      print('Error deleting optician: $e');
-      return false;
-    } finally {
-      isLoading(false);
-    }
+    return true;
+  } catch (e) {
+    error(e.toString());
+    print('Error deleting optician: $e');
+    return false;
+  } finally {
+    isLoading(false);
   }
+}
 }

@@ -3,6 +3,9 @@ import 'package:get/get.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:opti_app/Presentation/controllers/OrderController.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'dart:math' as math;
+import 'package:shimmer/shimmer.dart';
 
 class OrderStatusChart extends StatefulWidget {
   const OrderStatusChart({Key? key}) : super(key: key);
@@ -19,39 +22,90 @@ class _OrderStatusChartState extends State<OrderStatusChart>
   String selectedMonth = '';
   late AnimationController _animationController;
   late Animation<double> _animation;
+  late Animation<double> _rotationAnimation;
   bool showDetailView = false;
+  bool showExportOptions = false;
+
+  // Dates pour le filtre
+  DateTime? startDate;
+  DateTime? endDate;
+
+  // Palette de couleurs pastel professionnelle
+  final Map<String, Color> statusColors = {
+    'En attente': const Color(0xFFA0C4FF), // Bleu pastel
+    'Confirmée': const Color(0xFFBDB2FF), // Lavande pastel
+    'En livraison': const Color(0xFF9BF6FF), // Cyan pastel
+    'Completée': const Color(0xFFA0E7BA), // Vert menthe pastel
+    'Annulée': const Color(0xFFFFDAD6), // Saumon pastel
+    'Non défini': const Color(0xFFE7E7E7), // Gris pâle
+  };
+
+  // Couleurs alternatives pastels
+  final List<Color> defaultColors = [
+    const Color(0xFFFFC6FF), // Rose pastel
+    const Color(0xFFFFDEB4), // Pêche pastel
+    const Color(0xFFCDEAC0), // Vert pastel
+    const Color(0xFFB5DEFF), // Bleu ciel pastel
+    const Color(0xFFE2D8FF), // Violet pastel
+    const Color(0xFFF0E6D3), // Beige pastel
+  ];
+
+  // Création d'un contrôleur de défilement pour les détails
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 500),
-    );
-    _animation = CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
+      duration: const Duration(milliseconds: 800),
     );
 
-    // Set initial month to current month
+    _animation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOutCubic,
+    );
+
+    _rotationAnimation = Tween<double>(
+      begin: 0.0,
+      end: 2 * math.pi,
+    ).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
+      ),
+    );
+
+    // Initialiser le mois sélectionné au mois courant
     selectedMonth = DateFormat('MMMM').format(DateTime.now());
+
+    // Initialiser la plage de dates (dernier mois)
+    try {
+      endDate = DateTime.now();
+      startDate = DateTime(endDate!.year, endDate!.month - 1, endDate!.day);
+    } catch (e) {
+      // If there's an error calculating dates, use default range
+      endDate = DateTime.now();
+      startDate = endDate!.subtract(const Duration(days: 30));
+    }
   }
 
   @override
   void dispose() {
     _animationController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
   void _toggleView(String status) {
     setState(() {
       if (selectedStatus == status && showDetailView) {
-        // If already showing details for this status, go back to overview
+        // Si les détails sont déjà affichés pour ce statut, revenir à l'aperçu
         showDetailView = false;
         selectedStatus = null;
         _animationController.reverse();
       } else {
-        // Show details for this status
+        // Afficher les détails pour ce statut
         showDetailView = true;
         selectedStatus = status;
         _animationController.forward();
@@ -63,25 +117,26 @@ class _OrderStatusChartState extends State<OrderStatusChart>
   Widget build(BuildContext context) {
     return Obx(() {
       if (_orderController.isLoading.value) {
-        return const Center(child: CircularProgressIndicator());
+        return _buildShimmerLoading();
       }
 
       if (_orderController.allOrders.isEmpty) {
-        return const Center(child: Text('Aucune commande disponible'));
+        return _buildEmptyState();
       }
 
       return Card(
         elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shadowColor: Colors.black12,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
         color: Colors.white,
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(24),
           child: Column(
             children: [
-              // Title with back button when in detail view
               _buildHeader(),
-
-              // Content with animation between views
+              if (!showDetailView) _buildDateRangeSelector(),
               AnimatedBuilder(
                 animation: _animation,
                 builder: (context, child) {
@@ -104,77 +159,509 @@ class _OrderStatusChartState extends State<OrderStatusChart>
     });
   }
 
-  Widget _buildHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        if (showDetailView)
-          IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () {
-              _toggleView(selectedStatus!);
-            },
-          )
-        else
-          const SizedBox(width: 40), // Placeholder for alignment
-
-        Text(
-          showDetailView
-              ? 'Commandes ${selectedStatus ?? ""}'
-              : 'Statut des commandes',
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
+  Widget _buildShimmerLoading() {
+    return Card(
+      elevation: 4,
+      shadowColor: Colors.black12,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+      ),
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Shimmer.fromColors(
+          baseColor: Colors.grey[300]!,
+          highlightColor: Colors.grey[100]!,
+          child: Column(
+            children: [
+              Container(
+                height: 30,
+                width: 200,
+                margin: const EdgeInsets.only(bottom: 24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              Container(
+                height: 300,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Container(
+                height: 80,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ],
           ),
         ),
+      ),
+    );
+  }
 
-        const SizedBox(width: 40), // Placeholder for alignment
+  Widget _buildEmptyState() {
+    return Card(
+      elevation: 4,
+      shadowColor: Colors.black12,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+      ),
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.analytics_outlined,
+              size: 80,
+              color: statusColors['En attente']!.withOpacity(0.5),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Aucune commande disponible',
+              style: GoogleFonts.poppins(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF6C757D),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Les données des commandes s\'afficheront ici lorsqu\'elles seront disponibles',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                color: const Color(0xFF6C757D).withOpacity(0.7),
+              ),
+            ),
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        // Titre centré
+        Center(
+          child: Text(
+            showDetailView
+                ? 'Commandes ${selectedStatus ?? ""}'
+                : 'Votre Activité',
+            style: GoogleFonts.poppins(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF2C3E50),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+        // Bouton retour à gauche
+        if (showDetailView)
+          Positioned(
+            left: 0,
+            child: AnimatedBuilder(
+              animation: _rotationAnimation,
+              builder: (context, child) {
+                return Transform.rotate(
+                  angle: _rotationAnimation.value,
+                  child: IconButton(
+                    icon: Icon(
+                      Icons.arrow_back_rounded,
+                      color: statusColors[selectedStatus ?? 'En attente'],
+                      size: 24,
+                    ),
+                    onPressed: () => _toggleView(selectedStatus!),
+                  ),
+                );
+              },
+            ),
+          ),
+        // Espace fictif à droite pour équilibrer
+        if (showDetailView)
+          const Positioned(
+            right: 0,
+            child: SizedBox(width: 48), // même largeur que IconButton environ
+          ),
       ],
     );
   }
 
+  Widget _buildDateRangeSelector() {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      height: showExportOptions ? 120 : 50,
+      child: Column(
+        children: [
+          // Options d'exportation
+
+          // Sélecteur de dates
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8F9FA),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE9ECEF), width: 1),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.date_range_rounded,
+                      size: 18,
+                      color: Color(0xFF6C757D),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Période:',
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.w500,
+                        fontSize: 14,
+                        color: const Color(0xFF2C3E50),
+                      ),
+                    ),
+                  ],
+                ),
+                Row(
+                  children: [
+                    _buildDatePill('Aujourd\'hui', () {
+                      setState(() {
+                        endDate = DateTime.now();
+                        startDate = DateTime.now();
+                      });
+                    }),
+                    _buildDatePill('7 jours', () {
+                      setState(() {
+                        endDate = DateTime.now();
+                        startDate =
+                            DateTime.now().subtract(const Duration(days: 7));
+                      });
+                    }),
+                    _buildDatePill('30 jours', () {
+                      setState(() {
+                        endDate = DateTime.now();
+                        startDate =
+                            DateTime.now().subtract(const Duration(days: 30));
+                      });
+                    }),
+                    _buildDatePill('Personnalisé', () async {
+                      final picked = await showDateRangePicker(
+                        context: context,
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime.now(),
+                        builder: (context, child) {
+                          return Theme(
+                            data: Theme.of(context).copyWith(
+                              colorScheme: ColorScheme.light(
+                                primary: statusColors['Confirmée']!,
+                                onPrimary: Colors.white,
+                                surface: Colors.white,
+                                onSurface: const Color(0xFF2C3E50),
+                              ),
+                            ),
+                            child: child!,
+                          );
+                        },
+                      );
+
+                      if (picked != null) {
+                        setState(() {
+                          startDate = picked.start;
+                          endDate = picked.end;
+                        });
+                      }
+                    }),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDatePill(String text, VoidCallback onTap) {
+    bool isSelected = false;
+
+    if (startDate != null && endDate != null) {
+      if (text == 'Aujourd\'hui') {
+        final today = DateTime.now();
+        isSelected = startDate?.day == today.day &&
+            startDate?.month == today.month &&
+            startDate?.year == today.year &&
+            endDate?.day == today.day &&
+            endDate?.month == today.month &&
+            endDate?.year == today.year;
+      } else if (text == '7 jours') {
+        final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
+        isSelected = startDate != null &&
+            (startDate!.difference(sevenDaysAgo).inDays.abs() <= 1) &&
+            endDate != null &&
+            (endDate!.difference(DateTime.now()).inDays.abs() <= 1);
+      } else if (text == '30 jours') {
+        final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30));
+        isSelected = startDate != null &&
+            (startDate!.difference(thirtyDaysAgo).inDays.abs() <= 1) &&
+            endDate != null &&
+            (endDate!.difference(DateTime.now()).inDays.abs() <= 1);
+      }
+    }
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(left: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? statusColors['Confirmée']!.withOpacity(0.2)
+              : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected
+                ? statusColors['Confirmée']!
+                : const Color(0xFFDEE2E6),
+            width: 1,
+          ),
+        ),
+        child: Text(
+          text,
+          style: GoogleFonts.poppins(
+            fontSize: 12,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+            color: isSelected
+                ? statusColors['Confirmée']
+                : const Color(0xFF6C757D),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildOverviewChart() {
-    // Préparer les données pour le graphique
     final statusData = _prepareStatusData();
 
     return Column(
       children: [
         SizedBox(
-          height: 310,
-          child: PieChart(
-            PieChartData(
-              pieTouchData: PieTouchData(
-                touchCallback: (FlTouchEvent event, pieTouchResponse) {
-                  setState(() {
-                    if (!event.isInterestedForInteractions ||
-                        pieTouchResponse == null ||
-                        pieTouchResponse.touchedSection == null) {
-                      touchedIndex = -1;
-                      return;
-                    }
+          height: 250,
+          child: Stack(
+            children: [
+              Center(
+                child: AnimatedBuilder(
+                  animation: _animationController,
+                  builder: (context, child) {
+                    return TweenAnimationBuilder(
+                      tween: Tween<double>(begin: 0, end: 1),
+                      duration: const Duration(milliseconds: 1000),
+                      curve: Curves.easeOutQuad,
+                      builder: (context, double value, child) {
+                        return PieChart(
+                          PieChartData(
+                            pieTouchData: PieTouchData(
+                              touchCallback:
+                                  (FlTouchEvent event, pieTouchResponse) {
+                                setState(() {
+                                  if (!event.isInterestedForInteractions ||
+                                      pieTouchResponse == null ||
+                                      pieTouchResponse.touchedSection == null) {
+                                    touchedIndex = -1;
+                                    return;
+                                  }
 
-                    touchedIndex =
-                        pieTouchResponse.touchedSection!.touchedSectionIndex;
+                                  touchedIndex = pieTouchResponse
+                                      .touchedSection!.touchedSectionIndex;
 
-                    // Handle tap on release
-                    if (event is FlTapUpEvent && touchedIndex >= 0) {
-                      final statusList = statusData.keys.toList();
-                      if (touchedIndex < statusList.length) {
-                        _toggleView(statusList[touchedIndex]);
-                      }
-                    }
-                  });
-                },
+                                  if (event is FlTapUpEvent &&
+                                      touchedIndex >= 0) {
+                                    final statusList = statusData.keys.toList();
+                                    if (touchedIndex < statusList.length) {
+                                      _toggleView(statusList[touchedIndex]);
+                                    }
+                                  }
+                                });
+                              },
+                            ),
+                            borderData: FlBorderData(show: false),
+                            sectionsSpace: 3,
+                            centerSpaceRadius:
+                                0, // Changed from 60 to 0 to make it a full pie
+                            sections: _getSections(statusData, value),
+                            startDegreeOffset: 180,
+                          ),
+                          swapAnimationDuration:
+                              const Duration(milliseconds: 600),
+                        );
+                      },
+                    );
+                  },
+                ),
               ),
-              borderData: FlBorderData(show: false),
-              sectionsSpace: 0,
-              centerSpaceRadius: 0,
-              sections: _getSections(statusData),
-            ),
+            ],
           ),
         ),
+        const SizedBox(height: 8),
+
+        // Added total count display here since it can't be in the center of the pie
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Total: ',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFF6C757D),
+                ),
+              ),
+              Text(
+                _orderController.allOrders.length.toString(),
+                style: GoogleFonts.poppins(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF2C3E50),
+                ),
+              ),
+              Text(
+                ' commandes',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  color: const Color(0xFF6C757D),
+                ),
+              ),
+            ],
+          ),
+        ),
+
         const SizedBox(height: 16),
         _buildLegend(statusData),
+        const SizedBox(height: 8),
+        _buildSummaryMetrics(statusData),
+      ],
+    );
+  }
+
+  Widget _buildSummaryMetrics(Map<String, int> data) {
+    // Calculer les statistiques
+    final totalOrders = _orderController.allOrders.length;
+    final completedOrders = data['Completée'] ?? 0;
+    final completionRate =
+        totalOrders > 0 ? completedOrders / totalOrders * 100 : 0;
+
+    // Calculer le revenu total
+    final double totalRevenue =
+        _orderController.allOrders.fold(0, (sum, order) => sum + order.total);
+
+    // Calculer le revenu moyen par commande
+    final avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFFF8F9FA),
+            Colors.white,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildMetricCard(
+            'Taux de succès',
+            '${completionRate.toStringAsFixed(1)}%',
+            Icons.check_circle_outline_rounded,
+            statusColors['Completée']!,
+          ),
+          _buildMetricCard(
+            'Revenu total',
+            '${totalRevenue.toStringAsFixed(2)} TND',
+            Icons.payments_rounded,
+            statusColors['Confirmée']!,
+          ),
+          _buildMetricCard(
+            'Valeur moyenne',
+            '${avgOrderValue.toStringAsFixed(2)} TND',
+            Icons.shopping_bag_outlined,
+            statusColors['En livraison']!,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetricCard(
+      String title, String value, IconData icon, Color color) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            icon,
+            color: color,
+            size: 20,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: GoogleFonts.poppins(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: const Color(0xFF2C3E50),
+          ),
+        ),
+        Text(
+          title,
+          style: GoogleFonts.poppins(
+            fontSize: 12,
+            color: const Color(0xFF6C757D),
+          ),
+        ),
       ],
     );
   }
@@ -182,14 +669,13 @@ class _OrderStatusChartState extends State<OrderStatusChart>
   Widget _buildDetailView() {
     if (selectedStatus == null) return const SizedBox();
 
-    // Build the month dropdown with only months that have orders for this status
     return Column(
-      mainAxisSize: MainAxisSize.min, // Make Column wrap its content
+      mainAxisSize: MainAxisSize.min,
       children: [
         _buildMonthDropdownForStatus(),
         const SizedBox(height: 20),
         SizedBox(
-          height: 300, // Fixed height for the chart
+          height: 350,
           child: _buildOrdersChartForStatusAndMonth(),
         ),
       ],
@@ -197,154 +683,466 @@ class _OrderStatusChartState extends State<OrderStatusChart>
   }
 
   Widget _buildOrdersChartForStatusAndMonth() {
-    final selectedMonthNumber = DateFormat('MMMM').parse(selectedMonth).month;
-
-    // Filter orders by status and selected month
+    // FIXED: Modified the filtering logic to respect the 'Tous' (All) months option
     final filteredOrders = _orderController.allOrders.where((order) {
       final orderStatus = (order.status == null || order.status.isEmpty)
           ? 'Non défini'
           : _formatStatus(order.status);
 
-      return orderStatus == selectedStatus &&
-          order.createdAt.month == selectedMonthNumber;
+      if (selectedMonth == 'Tous') {
+        // Show all orders with the selected status regardless of month
+        return orderStatus == selectedStatus;
+      } else {
+        // Filter by both status and month
+        final selectedMonthNumber =
+            DateFormat('MMMM').parse(selectedMonth).month;
+        return orderStatus == selectedStatus &&
+            order.createdAt.month == selectedMonthNumber;
+      }
     }).toList();
 
     if (filteredOrders.isEmpty) {
-      return const Center(
-        child: Text('Aucune commande pour ce statut ce mois-ci'),
-      );
-    }
-
-    // Calculate total revenue
-    final double totalRevenue =
-        filteredOrders.fold(0, (sum, order) => sum + order.total);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Revenue header (remains fixed)
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            Icon(
+              Icons.search_off_rounded,
+              size: 64,
+              color: statusColors[selectedStatus]!.withOpacity(0.3),
+            ),
+            const SizedBox(height: 16),
             Text(
-              '${totalRevenue.toStringAsFixed(2)} TND',
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+              selectedMonth == 'Tous'
+                  ? 'Aucune commande pour ce statut'
+                  : 'Aucune commande pour ce statut ce mois-ci',
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF6C757D),
               ),
             ),
-            const Text(
-              'Total Revenue',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey,
+            const SizedBox(height: 8),
+            Text(
+              selectedMonth == 'Tous'
+                  ? 'Essayez de sélectionner un autre statut'
+                  : 'Essayez de sélectionner un autre mois',
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                color: const Color(0xFF6C757D).withOpacity(0.7),
               ),
             ),
           ],
         ),
+      );
+    }
+
+    final double totalRevenue =
+        filteredOrders.fold(0, (sum, order) => sum + order.total);
+
+    // Trier les commandes par montant
+    filteredOrders.sort((a, b) => b.total.compareTo(a.total));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildStatusRevenueCard(filteredOrders, totalRevenue),
         const SizedBox(height: 16),
-
-        // Scrollable container for the orders
+        Text(
+          'Répartition des commandes (${filteredOrders.length})',
+          style: GoogleFonts.poppins(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF2C3E50),
+          ),
+        ),
+        const SizedBox(height: 8),
         Expanded(
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: filteredOrders.map((order) {
-                final dateString =
-                    DateFormat('dd/MM/yy').format(order.createdAt);
-                final orderTotal = order.total;
-                final fractionOfTotal =
-                    totalRevenue > 0 ? orderTotal / totalRevenue : 0.0;
+          child: TweenAnimationBuilder(
+            tween: Tween<double>(begin: 0, end: 1),
+            duration: const Duration(milliseconds: 800),
+            curve: Curves.easeOutQuad,
+            builder: (context, double value, child) {
+              return ListView.builder(
+                controller: _scrollController,
+                padding: EdgeInsets.zero,
+                itemCount: filteredOrders.length,
+                itemBuilder: (context, index) {
+                  // Animation d'apparition séquentielle
+                  final orderIndex = (index / filteredOrders.length) * 0.8;
+                  final appearValue = (value - orderIndex) / 0.2;
+                  final opacity =
+                      math.max(0, math.min(1, appearValue)).toDouble();
 
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Order #${order.id}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: LayoutBuilder(
-                            builder: (context, constraints) {
-                              final totalWidth = constraints.maxWidth;
-                              final fillWidth = fractionOfTotal * totalWidth;
+                  if (opacity <= 0) return const SizedBox();
 
-                              return Stack(
-                                children: [
-                                  Container(
-                                    height: 24,
-                                    decoration: BoxDecoration(
-                                      color: const Color.fromARGB(
-                                          255, 255, 255, 255),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                  ),
-                                  Container(
-                                    height: 24,
-                                    width: fillWidth,
-                                    decoration: BoxDecoration(
-                                      gradient: const LinearGradient(
-                                        colors: [
-                                          Color.fromARGB(255, 236, 238, 89),
-                                          Color.fromARGB(255, 229, 140, 24)
-                                        ],
-                                        begin: Alignment.centerLeft,
-                                        end: Alignment.centerRight,
-                                      ),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                  ),
-                                  Positioned.fill(
-                                    child: Center(
-                                      child: Text(
-                                        '${orderTotal.toStringAsFixed(2)} TND',
-                                        style: const TextStyle(
-                                          color:
-                                              Color.fromARGB(255, 140, 66, 66),
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          dateString,
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                      ],
+                  final order = filteredOrders[index];
+                  final dateString =
+                      DateFormat('dd/MM/yy').format(order.createdAt);
+                  final orderTotal = order.total;
+                  final fractionOfTotal =
+                      totalRevenue > 0 ? orderTotal / totalRevenue : 0.0;
+
+                  return Transform.translate(
+                    offset: Offset(0, 20 * (1 - opacity)),
+                    child: Opacity(
+                      opacity: opacity,
+                      child: _buildOrderItem(
+                          order, dateString, orderTotal, fractionOfTotal),
                     ),
-                    const SizedBox(height: 16),
-                  ],
-                );
-              }).toList(),
-            ),
+                  );
+                },
+              );
+            },
           ),
         ),
       ],
     );
   }
 
+  Widget _buildStatusRevenueCard(
+      List<dynamic> filteredOrders, double totalRevenue) {
+    // Count the orders that match the selected status for the selected month
+    int ordersWithSelectedStatus = 0;
+
+    for (final order in _orderController.allOrders) {
+      final orderStatus =
+          (order.status.isEmpty) ? 'Non défini' : _formatStatus(order.status);
+      final orderMonth =
+          DateFormat('MMMM').format(DateTime(0, order.createdAt.month));
+
+      if (orderStatus == selectedStatus && orderMonth == selectedMonth) {
+        ordersWithSelectedStatus++;
+      }
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            statusColors[selectedStatus!]!.withOpacity(0.1),
+            statusColors[selectedStatus!]!.withOpacity(0.02),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.insert_chart_outlined_rounded,
+                    size: 18,
+                    color: statusColors[selectedStatus!],
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Analyse des revenus',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: statusColors[selectedStatus!],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '${totalRevenue.toStringAsFixed(2)} TND',
+                style: GoogleFonts.poppins(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF2C3E50),
+                ),
+              ),
+              Text(
+                'Total des revenus',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: const Color(0xFF6C757D),
+                ),
+              ),
+            ],
+          ),
+          Row(
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '$ordersWithSelectedStatus',
+                    style: GoogleFonts.poppins(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF2C3E50),
+                    ),
+                  ),
+                  Text(
+                    'Commandes',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: const Color(0xFF6C757D),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  _getStatusIcon(selectedStatus!),
+                  size: 24,
+                  color: statusColors[selectedStatus!],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _getStatusIcon(String status) {
+    switch (status) {
+      case 'En attente':
+        return Icons.hourglass_empty_rounded;
+      case 'Confirmée':
+        return Icons.thumb_up_alt_rounded;
+      case 'En livraison':
+        return Icons.local_shipping_rounded;
+      case 'Completée':
+        return Icons.check_circle_rounded;
+      case 'Annulée':
+        return Icons.cancel_rounded;
+      default:
+        return Icons.help_outline_rounded;
+    }
+  }
+
+  Widget _buildOrderItem(dynamic order, String dateString, double orderTotal,
+      double fractionOfTotal) {
+    final Color baseColor = statusColors[selectedStatus!] ?? Colors.blue;
+    final Color badgeColor = statusColors[selectedStatus!] ?? Colors.grey;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: statusColors[selectedStatus!]!.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.shopping_bag_outlined,
+                      size: 16,
+                      color: statusColors[selectedStatus!],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'CMD-${order.id}',
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      color: const Color(0xFF2C3E50),
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8F9FA),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.calendar_today_rounded,
+                      size: 12,
+                      color: Color(0xFF6C757D),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      dateString,
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: const Color(0xFF6C757D),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final totalWidth = constraints.maxWidth;
+              final fillWidth = fractionOfTotal * totalWidth;
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Stack(
+                    children: [
+                      Container(
+                        height: 8,
+                        width: totalWidth,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F3F5),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      Container(
+                        height: 8,
+                        width: fillWidth,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              baseColor.withOpacity(0.6),
+                              baseColor,
+                            ],
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                          ),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: baseColor.withAlpha(
+                                  (255 * 0.1).toInt()), // 10% opacity
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              '${(fractionOfTotal * 100).toStringAsFixed(1)}%',
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: baseColor,
+                              ),
+                            ),
+                          ),
+                          if (fractionOfTotal > 0.25)
+                            Container(
+                              margin: const EdgeInsets.only(left: 8),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF8F9FA),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.trending_up_rounded,
+                                    size: 12,
+                                    color: statusColors['Completée'],
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Haut revenu',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12,
+                                      color: statusColors['Completée'],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: badgeColor.withAlpha(
+                              (255 * 0.1).toInt()), // Equivalent to 10% opacity
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '${orderTotal.toStringAsFixed(2)} TND',
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: badgeColor,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   Color _getStatusColor(String status) {
-    final statusColors = _getStatusColors();
-    return statusColors[status] ?? Colors.grey;
+    return statusColors[status] ?? const Color(0xFFE7E7E7);
   }
 
   Widget _buildMonthDropdownForStatus() {
-    // Get unique months that have orders with the selected status
     final Set<int> monthsWithOrdersForStatus = {};
 
-    // Collect months that have orders with this status
     for (final order in _orderController.allOrders) {
       final orderStatus =
           (order.status.isEmpty) ? 'Non défini' : _formatStatus(order.status);
@@ -354,7 +1152,6 @@ class _OrderStatusChartState extends State<OrderStatusChart>
       }
     }
 
-    // Convert month numbers to month names and sort them
     final List<String> availableMonths = monthsWithOrdersForStatus
         .map((monthNum) => DateFormat('MMMM').format(DateTime(0, monthNum)))
         .toList()
@@ -362,82 +1159,93 @@ class _OrderStatusChartState extends State<OrderStatusChart>
             DateFormat('MMMM').parse(b).month,
           ));
 
-    // Handle case when no months have orders
     if (availableMonths.isEmpty) {
-      return const Text('Aucune commande disponible');
+      return Text(
+        'Aucune commande disponible',
+        style: GoogleFonts.poppins(
+          fontSize: 14,
+          color: const Color(0xFF6C757D),
+        ),
+      );
     }
 
-    // Set default month if current selection is not valid
     if (!availableMonths.contains(selectedMonth)) {
       selectedMonth = availableMonths.first;
     }
 
-    return Row(
-      children: [
-        const Text('Mois: ', style: TextStyle(fontWeight: FontWeight.bold)),
-        const SizedBox(width: 8),
-        DropdownButton<String>(
-          value: selectedMonth,
-          onChanged: (String? newValue) {
-            if (newValue != null) {
-              setState(() {
-                selectedMonth = newValue;
-              });
-            }
-          },
-          items: availableMonths.map<DropdownMenuItem<String>>((String month) {
-            return DropdownMenuItem<String>(
-              value: month,
-              child: Text(month),
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildOrdersListForStatusAndMonth() {
-    final selectedMonthNumber = DateFormat('MMMM').parse(selectedMonth).month;
-
-    // Filter orders by status and selected month
-    final filteredOrders = _orderController.allOrders.where((order) {
-      final orderStatus = (order.status == null || order.status.isEmpty)
-          ? 'Non défini'
-          : _formatStatus(order.status);
-
-      return orderStatus == selectedStatus &&
-          order.createdAt.month == selectedMonthNumber;
-    }).toList();
-
-    if (filteredOrders.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Text('Aucune commande pour ce statut ce mois-ci'),
-      );
-    }
-
-    return Expanded(
-      child: ListView.builder(
-        shrinkWrap: true,
-        itemCount: filteredOrders.length,
-        itemBuilder: (context, index) {
-          final order = filteredOrders[index];
-          return Card(
-            margin: const EdgeInsets.symmetric(vertical: 4),
-            child: ListTile(
-              title: Text('Commande #${order.id}'),
-              subtitle: Text(
-                  'Date: ${DateFormat('dd/MM/yyyy').format(order.createdAt)}'),
-              trailing: Text(
-                '${order.total.toStringAsFixed(2)} TND',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F9FA),
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.calendar_month_rounded,
+                size: 20,
+                color: statusColors[selectedStatus!],
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Filtrer par mois:',
+                style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.w500,
+                  fontSize: 14,
+                  color: const Color(0xFF2C3E50),
                 ),
               ),
+            ],
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFE9ECEF), width: 1),
             ),
-          );
-        },
+            child: DropdownButton<String>(
+              value: selectedMonth,
+              icon: Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: statusColors[selectedStatus!],
+              ),
+              underline: const SizedBox(),
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF2C3E50),
+              ),
+              onChanged: (String? newValue) {
+                if (newValue != null) {
+                  setState(() {
+                    selectedMonth = newValue;
+                  });
+                }
+              },
+              items:
+                  availableMonths.map<DropdownMenuItem<String>>((String month) {
+                return DropdownMenuItem<String>(
+                  value: month,
+                  child: Text(month),
+                );
+              }).toList(),
+              dropdownColor: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              menuMaxHeight: 300,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -445,9 +1253,22 @@ class _OrderStatusChartState extends State<OrderStatusChart>
   Map<String, int> _prepareStatusData() {
     Map<String, int> data = {};
 
-    // Récupérer tous les statuts possibles
-    for (var order in _orderController.allOrders) {
-      // Utiliser "Non défini" si le statut est vide ou null
+    // Filtrer les commandes par date si une plage est définie
+    final filteredOrders = _orderController.allOrders.where((order) {
+      if (startDate == null || endDate == null) return true;
+
+      // Vérifier si la date de la commande est dans la plage sélectionnée
+      return order.createdAt.isAfter(startDate!) &&
+          order.createdAt.isBefore(endDate!.add(const Duration(days: 1)));
+    }).toList();
+
+    if (filteredOrders.isEmpty) {
+      // Add a default status to prevent empty data errors
+      data['Non défini'] = 0;
+      return data;
+    }
+
+    for (var order in filteredOrders) {
       final status = (order.status == null || order.status.isEmpty)
           ? 'Non défini'
           : _formatStatus(order.status);
@@ -458,7 +1279,6 @@ class _OrderStatusChartState extends State<OrderStatusChart>
     return data;
   }
 
-  // Formatter le texte du statut pour l'affichage
   String _formatStatus(String status) {
     switch (status.toLowerCase()) {
       case 'pending':
@@ -478,104 +1298,214 @@ class _OrderStatusChartState extends State<OrderStatusChart>
     }
   }
 
-  List<PieChartSectionData> _getSections(Map<String, int> data) {
+  List<PieChartSectionData> _getSections(
+      Map<String, int> data, double animValue) {
     final sections = <PieChartSectionData>[];
-    final statusColors = _getStatusColors();
-    final defaultColors = _getDefaultColors();
     int defaultColorIndex = 0;
 
-    int index = 0;
-    data.forEach((key, value) {
-      final isTouched = index == touchedIndex;
-      final double fontSize = isTouched ? 18 : 14;
-      final double radius = isTouched ? 120 : 110;
+    // Safety check for empty data
+    if (_orderController.allOrders.isEmpty) {
+      sections.add(
+        PieChartSectionData(
+          color: const Color(0xFFE7E7E7),
+          value: 1,
+          title: '100%',
+          radius: 110 * animValue,
+          titleStyle: GoogleFonts.poppins(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+      );
+      return sections;
+    }
 
-      // Utiliser une couleur prédéfinie si disponible, sinon utiliser une couleur par défaut
+    int index = 0;
+    for (var entry in data.entries) {
+      final key = entry.key;
+      final value = entry.value;
+
+      final isTouched = index == touchedIndex;
+      final double fontSize = isTouched ? 16 : 14;
+      final double radius = (isTouched ? 130 : 110) * animValue;
+
       final color = statusColors[key] ??
-          defaultColors[defaultColorIndex++ % defaultColors.length];
+          defaultColors[defaultColorIndex % defaultColors.length];
+      defaultColorIndex++;
+
+      final totalOrders = _orderController.allOrders.length;
+      final percentage = totalOrders > 0 ? (value / totalOrders * 100) : 0;
 
       sections.add(
         PieChartSectionData(
           color: color,
-          value: value.toDouble(),
-          title:
-              '${(value / _orderController.allOrders.length * 100).toStringAsFixed(1)}%',
+          value: value > 0
+              ? value.toDouble()
+              : 0.1, // Ensure at least a small value
+          title: '${percentage.toStringAsFixed(0)}%',
           radius: radius,
-          titleStyle: TextStyle(
+          titleStyle: GoogleFonts.poppins(
             fontSize: fontSize,
             fontWeight: FontWeight.bold,
             color: Colors.white,
-            shadows: const [Shadow(color: Colors.black, blurRadius: 2)],
+            shadows: [
+              Shadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 2,
+                offset: const Offset(0, 1),
+              ),
+            ],
           ),
+          badgeWidget: isTouched
+              ? TweenAnimationBuilder<double>(
+                  tween: Tween<double>(begin: 0, end: 1),
+                  duration: const Duration(milliseconds: 300),
+                  builder: (context, value, _) {
+                    return Transform.scale(
+                      scale: value,
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 4,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          _getStatusIcon(key),
+                          size: 16,
+                          color: color,
+                        ),
+                      ),
+                    );
+                  },
+                )
+              : null,
+          badgePositionPercentageOffset: 1.1,
         ),
       );
       index++;
-    });
+    }
 
     return sections;
   }
 
-  Map<String, Color> _getStatusColors() {
-    return {
-      'En attente': const Color(0xFFFFA726), // Orange
-      'Confirmée': const Color(0xFF66BB6A), // Vert
-      'En livraison': const Color(0xFF990099), // Violet
-      'Completée': const Color(0xFF42A5F5), // Bleu
-      'Annulée': const Color.fromARGB(255, 187, 19, 17), // Rouge
-      'Non défini': const Color(0xFF9E9E9E), // Gris
-    };
-  }
-
-  List<Color> _getDefaultColors() {
-    return [
-      const Color(0xFFFF9900),
-      const Color(0xFF109618),
-      const Color(0xFF990099),
-      const Color(0xFF0099C6),
-      const Color(0xFF3366CC),
-      const Color(0xFFDC3912),
-    ];
-  }
-
   Widget _buildLegend(Map<String, int> data) {
-    final statusColors = _getStatusColors();
-    final defaultColors = _getDefaultColors();
     int defaultColorIndex = 0;
+    final totalOrders = _orderController.allOrders.isEmpty
+        ? 1
+        : _orderController.allOrders.length;
 
-    return Wrap(
-      spacing: 10,
-      runSpacing: 10,
-      children: data.entries.map((entry) {
-        final statusLabel = entry.key;
-        final count = entry.value;
-        final percentage = (count / _orderController.allOrders.length * 100)
-            .toStringAsFixed(1);
-
-        final color = statusColors[statusLabel] ??
-            defaultColors[defaultColorIndex++ % defaultColors.length];
-
-        return GestureDetector(
-          onTap: () => _toggleView(statusLabel),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 12,
-                height: 12,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 4),
-              Text(
-                '$statusLabel ($count, ${percentage}%)',
-                style: const TextStyle(fontSize: 12),
-              ),
-            ],
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F9FA),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
           ),
-        );
-      }).toList(),
+        ],
+      ),
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 12,
+        alignment: WrapAlignment.center,
+        children: data.entries.map((entry) {
+          final statusLabel = entry.key;
+          final count = entry.value;
+          final percentage = (count / totalOrders * 100).toStringAsFixed(1);
+
+          final color = statusColors[statusLabel] ??
+              defaultColors[defaultColorIndex % defaultColors.length];
+          defaultColorIndex++;
+
+          return GestureDetector(
+            onTap: () => _toggleView(statusLabel),
+            child: TweenAnimationBuilder<double>(
+              tween: Tween<double>(begin: 0.9, end: 1.0),
+              duration: const Duration(milliseconds: 200),
+              builder: (context, scale, child) {
+                // Safely check if touchedIndex is valid
+                bool isSelected = touchedIndex >= 0 &&
+                    touchedIndex < data.length &&
+                    defaultColorIndex - 1 == touchedIndex;
+
+                return Transform.scale(
+                  scale: isSelected ? scale : 1.0,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: color.withOpacity(0.3),
+                        width: 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: color.withOpacity(0.1),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 12,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: color,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              statusLabel,
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                color: const Color(0xFF2C3E50),
+                              ),
+                            ),
+                            Text(
+                              '$count ($percentage%)',
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                color: const Color(0xFF6C757D),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(width: 8),
+                        Icon(
+                          Icons.touch_app_rounded,
+                          size: 14,
+                          color: color.withOpacity(0.7),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 }

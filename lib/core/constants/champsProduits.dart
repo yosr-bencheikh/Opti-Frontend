@@ -11,14 +11,11 @@ final List<String> marques = [
   'Carrera'
 ];
 final List<String> categories = [
-  'Solaire',
   'Vue',
+  'Solaire',
   'Sport',
   'Lecture',
   'Enfant',
-  'Luxe',
-  'Tendance',
-  'Protection'
 ];
 
 final List<String> typesVerre = [
@@ -36,7 +33,4 @@ final List<String> styles = [
   'Rond',
   'Aviateur',
   'Wayfarer',
-  'Oversized',
-  'Sports',
-  'Vintage'
 ];

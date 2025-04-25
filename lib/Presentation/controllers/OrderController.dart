@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:get/get.dart';
 import 'package:opti_app/Presentation/controllers/OpticianController.dart';
@@ -31,52 +32,160 @@ class OrderController extends GetxController {
   final RxBool isLoading = false.obs;
   final RxBool isCreating = false.obs;
   final Rx<Order?> currentOrder = Rx<Order?>(null);
+  bool get isloading => isLoading.value;
 
   // Pour les champs de la commande
   final RxString selectedAddress = ''.obs;
   final RxString selectedPaymentMethod = ''.obs;
 
   final deliveryFee = 5.50;
-Future<void> loadOrdersForCurrentOpticianWithDetails() async {
-  try {
-    isLoading.value = true;
-    
-    final opticianController = Get.find<OpticianController>();
-    final boutiqueController = Get.find<BoutiqueController>();
-    
-    // 1. Get boutiques for current optician
-    await boutiqueController.getboutiqueByOpticianId(opticianController.currentUserId.value);
-    final boutiqueIds = boutiqueController.opticiensList.map((b) => b.id).toList();
-    
-    // 2. Load all orders
-    final orders = await orderRepository.getAllOrders();
-    
-    // 3. Filter and enrich with boutique details
-    final enrichedOrders = orders.where((order) {
-      return order.items.any((item) => boutiqueIds.contains(item.boutiqueId));
-    }).map((order) {
-      // Add boutique details to each order
-      final boutiqueId = order.items.firstWhere(
-        (item) => boutiqueIds.contains(item.boutiqueId),
-      )?.boutiqueId;
-      
-      if (boutiqueId != null) {
-        final boutique = boutiqueController.opticiensList.firstWhere(
-          (b) => b.id == boutiqueId,
-        );
-        return order.copyWith(boutique: boutique);
+  Future<void> refreshOrders() async {
+    try {
+      isLoading.value = true;
+
+      // Si c'est un opticien qui est connecté
+      final opticianController = Get.find<OpticianController>();
+      if (opticianController.isLoggedIn.value) {
+        await loadOrdersForCurrentOpticianWithDetails();
+      } else {
+        // Si c'est un administrateur ou un autre type d'utilisateur
+        final orders = await orderRepository.getAllOrders();
+        allOrders.assignAll(orders);
       }
-      return order;
-    }).toList();
-    
-    allOrders.assignAll(enrichedOrders);
-    
-  } catch (e) {
-    error.value = e.toString();
-  } finally {
-    isLoading.value = false;
+
+      error.value = null;
+    } catch (e) {
+      error.value = 'Erreur lors du chargement des commandes: ${e.toString()}';
+      print('Erreur dans refreshOrders: $e');
+    } finally {
+      isLoading.value = false;
+    }
   }
-}
+
+  Future<List<String>> getUserIdsByOptician(String opticianId) async {
+    try {
+      final orders = await orderRepository.getAllOrders();
+      final userIds = orders
+          .where((order) =>
+              order.items.any((item) => item.boutiqueId == opticianId))
+          .map((order) => order.userId)
+          .toSet()
+          .toList();
+      return userIds;
+    } catch (e) {
+      error.value = 'Failed to get user IDs: ${e.toString()}';
+      rethrow;
+    }
+  }
+
+// Dans OrderController, modifiez getUsersByOptician
+  Future<List<User>> getUsersByOptician(String connectedOpticianId) async {
+    try {
+      // 1. Récupérer les boutiques associées à l'opticien
+      final boutiqueController = Get.find<BoutiqueController>();
+      await boutiqueController.getboutiqueByOpticianId(connectedOpticianId);
+      final boutiques = boutiqueController.opticiensList;
+
+      // Debugging
+      print("Nombre de boutiques trouvées: ${boutiques.length}");
+      print("IDs des boutiques: ${boutiques.map((b) => b.id).toList()}");
+
+      // Si aucune boutique trouvée, retourner liste vide
+      if (boutiques.isEmpty) {
+        print("Aucune boutique trouvée pour l'opticien: $connectedOpticianId");
+        return [];
+      }
+
+      final boutiqueIds = boutiques.map((b) => b.id).toList();
+
+      // 2. Récupérer toutes les commandes
+      final orders = await orderRepository.getAllOrders();
+      print("Nombre total de commandes: ${orders.length}");
+
+      // 3. Filtrer les commandes pertinentes
+      final filteredOrders = orders.where((order) {
+        return order.items.any((item) {
+          final matchesBoutique = boutiqueIds.contains(item.boutiqueId);
+          final matchesOpticien = item.opticienId != null &&
+              (item.opticienId == connectedOpticianId ||
+                  boutiqueIds.contains(item.opticienId));
+          return matchesBoutique || matchesOpticien;
+        });
+      }).toList();
+
+      print("Nombre de commandes filtrées: ${filteredOrders.length}");
+
+      // 4. Extraire les IDs utilisateurs uniques
+      final userIds = filteredOrders.map((o) => o.userId).toSet().toList();
+      print("Nombre d'utilisateurs uniques: ${userIds.length}");
+
+      if (userIds.isEmpty) {
+        print("Aucun utilisateur trouvé avec des commandes pour cet opticien");
+        return [];
+      }
+
+      // 5. Récupérer les détails des utilisateurs
+      final users = await userController.getUsersByIds(userIds);
+
+      // Defer error clearing to after build
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        error.value = null;
+      });
+
+      return users;
+    } catch (e) {
+      // Defer error setting to after build
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        error.value = e.toString();
+      });
+      rethrow;
+    }
+  }
+
+  Future<void> loadOrdersForCurrentOpticianWithDetails() async {
+    try {
+      isLoading.value = true;
+
+      final opticianController = Get.find<OpticianController>();
+      final boutiqueController = Get.find<BoutiqueController>();
+
+      // 1. Get boutiques for current optician
+      await boutiqueController
+          .getboutiqueByOpticianId(opticianController.currentUserId.value);
+      final boutiqueIds =
+          boutiqueController.opticiensList.map((b) => b.id).toList();
+
+      // 2. Load all orders
+      final orders = await orderRepository.getAllOrders();
+
+      // 3. Filter and enrich with boutique details
+      final enrichedOrders = orders.where((order) {
+        return order.items.any((item) => boutiqueIds.contains(item.boutiqueId));
+      }).map((order) {
+        // Add boutique details to each order
+        final boutiqueId = order.items
+            .firstWhere(
+              (item) => boutiqueIds.contains(item.boutiqueId),
+            )
+            ?.boutiqueId;
+
+        if (boutiqueId != null) {
+          final boutique = boutiqueController.opticiensList.firstWhere(
+            (b) => b.id == boutiqueId,
+          );
+          return order.copyWith(boutique: boutique);
+        }
+        return order;
+      }).toList();
+
+      allOrders.assignAll(enrichedOrders);
+    } catch (e) {
+      error.value = e.toString();
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
   Future<void> createOrderFromCart(String userId) async {
     try {
       isCreating.value = true;

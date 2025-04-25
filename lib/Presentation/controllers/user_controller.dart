@@ -12,6 +12,9 @@ class UserController extends GetxController {
   final _users = <User>[].obs;
   final _isLoading = false.obs;
   final _error = Rxn<String>();
+  final RxBool isLoadingUsers = false.obs;
+  final RxBool hasUserError = false.obs;
+  final RxList<User> opticianUsers = <User>[].obs;
 
   // Utilisateur actuellement connecté
   final Rxn<User> _currentUser = Rxn<User>();
@@ -34,6 +37,33 @@ class UserController extends GetxController {
   /// Définir l'utilisateur actuellement connecté
   void setCurrentUser(User user) {
     _currentUser.value = user;
+  }
+
+  Future<User> fetchUserById(String userId) async {
+    try {
+      _isLoading.value = true;
+      final user = await _dataSource.getUserById(
+          userId); // Utilisez la méthode appropriée dans UserDataSource
+      return user;
+    } catch (e) {
+      print('Error fetching user by ID: $e');
+      throw e; // Re-lancez l'exception pour la gérer dans l'appelant
+    } finally {
+      _isLoading.value = false;
+    }
+  }
+
+  Future<List<User>> getUsersByIds(List<String> userIds) async {
+    try {
+      _isLoading.value = true;
+      final users = await _dataSource.getUsersByIds(userIds);
+      return users;
+    } catch (e) {
+      _error.value = e.toString();
+      rethrow;
+    } finally {
+      _isLoading.value = false;
+    }
   }
 
   Future<void> fetchUsers() async {
@@ -127,7 +157,6 @@ class UserController extends GetxController {
     try {
       _isLoading.value = true;
       _error.value = null;
-      
 
       await _dataSource.addUser(user);
       await fetchUsers(); // Rafraîchir la liste des utilisateurs
@@ -320,18 +349,5 @@ class UserController extends GetxController {
     // Retournez le nom complet de l'utilisateur
     return '${user.nom} ${user.prenom}'.trim();
   }
-
-  Future<User> fetchUserById(String userId) async {
-    try {
-      _isLoading.value = true;
-      final user = await _dataSource.getUserById(
-          userId); // Utilisez la méthode appropriée dans UserDataSource
-      return user;
-    } catch (e) {
-      print('Error fetching user by ID: $e');
-      throw e; // Re-lancez l'exception pour la gérer dans l'appelant
-    } finally {
-      _isLoading.value = false;
-    }
-  }
+  
 }

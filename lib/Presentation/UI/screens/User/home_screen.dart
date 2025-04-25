@@ -1,10 +1,13 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_3d_controller/flutter_3d_controller.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
+import 'package:opti_app/Presentation/UI/screens/Admin/3D.dart';
 import 'package:opti_app/Presentation/UI/screens/User/Face_detection.dart';
+import 'package:opti_app/Presentation/UI/screens/User/Rotating3DModel.dart';
 import 'package:opti_app/Presentation/UI/screens/User/optician_product_screen.dart';
 // ignore: unused_import
 import 'package:opti_app/Presentation/UI/screens/User/stores_screen.dart';
@@ -499,17 +502,13 @@ class HomeScreen extends GetView<AuthController> {
   Widget buildPopularProducts() {
     final productController = Get.find<ProductController>();
 
-    // Make sure popular products are calculated when this widget is built
-
-    productController.calculatePopularProducts();
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Padding(
           padding: EdgeInsets.all(16),
           child: Text(
-            'Top 5 Produits Populaires',
+            'Produits Populaires',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -517,7 +516,7 @@ class HomeScreen extends GetView<AuthController> {
           ),
         ),
         SizedBox(
-          height: 220,
+          height: 242,
           child: Obx(() {
             if (productController.isLoading) {
               return const Center(child: CircularProgressIndicator());
@@ -527,19 +526,10 @@ class HomeScreen extends GetView<AuthController> {
               return Center(child: Text('Erreur: ${productController.error}'));
             }
 
-            // Get the 5 most popular products
-            final topProducts =
-                productController.popularProducts.take(5).toList();
-
-            // Fallback to regular products if popular products aren't available
-            final productsToDisplay = topProducts.isNotEmpty
-                ? topProducts
-                : productController.products.take(5).toList();
-
-            if (productsToDisplay.isEmpty) {
-              return const Center(
-                  child: Text('Aucun produit populaire disponible'));
-            }
+            final productsToDisplay =
+                productController.popularProducts.isNotEmpty
+                    ? productController.popularProducts
+                    : productController.products.take(10).toList();
 
             return ListView.builder(
               scrollDirection: Axis.horizontal,
@@ -547,11 +537,29 @@ class HomeScreen extends GetView<AuthController> {
               itemCount: productsToDisplay.length,
               itemBuilder: (context, index) {
                 final product = productsToDisplay[index];
+
+                // Préparation de l'URL du modèle 3D comme dans le premier widget
+                String model3DUrl = product.model3D;
+                if (model3DUrl.isNotEmpty) {
+                  model3DUrl =
+                      GlassesManagerService.ensureAbsoluteUrl(model3DUrl);
+                }
+
+                // Création d'une copie du produit avec l'URL du modèle 3D mise à jour
+                final updatedProduct = product.copyWith(model3D: model3DUrl);
+
                 return ProductCard(
-                  product: product,
+                  product: updatedProduct,
                   isHorizontalList: true,
                   wishlistController: wishlistController,
                   authController: controller,
+                  customImageWidget: model3DUrl.isNotEmpty
+                      ? SizedBox(
+                          height: 120,
+                          width: 160,
+                          child: Flutter3DViewer(src: model3DUrl),
+                        )
+                      : null,
                 );
               },
             );
@@ -734,6 +742,12 @@ Future<void> showProductDialog(BuildContext context, Product product) async {
   final CartItemController cartController = Get.find<CartItemController>();
   final AuthController authController = Get.find<AuthController>();
 
+  // Préparation de l'URL du modèle 3D
+  String model3DUrl = product.model3D;
+  if (model3DUrl.isNotEmpty) {
+    model3DUrl = GlassesManagerService.ensureAbsoluteUrl(model3DUrl);
+  }
+
   Future<void> _addToCart() async {
     final userId = authController.currentUserId.value;
     if (userId.isEmpty) {
@@ -789,19 +803,28 @@ Future<void> showProductDialog(BuildContext context, Product product) async {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.network(
-                    product.image,
-                    height: 100,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      height: 100,
-                      color: Colors.grey[200],
-                      child: const Icon(Icons.image),
-                    ),
-                  ),
-                ),
+                // Afficher le modèle 3D ou l'image selon la disponibilité du modèle 3D
+                model3DUrl.isNotEmpty
+                    ? SizedBox(
+                        height: 200,
+                        width: double.infinity,
+                        child: Rotating3DModel(modelUrl: model3DUrl),
+                      )
+                    : ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          product.image,
+                          height: 150,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(
+                            height: 150,
+                            color: Colors.grey[200],
+                            child: const Icon(Icons.image),
+                          ),
+                        ),
+                      ),
                 const SizedBox(height: 16),
                 Text(
                   'Prix: \$${product.prix.toStringAsFixed(2)}',
@@ -815,8 +838,7 @@ Future<void> showProductDialog(BuildContext context, Product product) async {
                       icon: const Icon(Icons.remove),
                       onPressed: () {
                         if (quantity.value > 1) {
-                          quantity.value =
-                              quantity.value--; // Decrease quantity
+                          quantity.value--; // Corrected decrement
                         }
                       },
                     ),

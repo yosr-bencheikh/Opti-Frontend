@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:http/http.dart' as http;
+import 'package:opti_app/Presentation/UI/screens/Admin/3D.dart';
+import 'package:opti_app/Presentation/UI/screens/Admin/Product3DViewer.dart';
 import 'package:opti_app/Presentation/UI/screens/User/Augmented_faces.dart';
 import 'package:opti_app/Presentation/UI/screens/User/Face_detection.dart';
+import 'package:opti_app/Presentation/UI/screens/User/Rotating3DModel.dart';
 import 'package:opti_app/Presentation/UI/screens/User/home_screen.dart';
 import 'package:opti_app/Presentation/UI/screens/User/reviews_screen.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
@@ -20,6 +24,11 @@ class ProductDetailsScreen extends GetView<ProductController> {
   final RxBool isCheckingWishlist = true.obs;
   final RxBool showArAnimation =
       true.obs; // Pour contrôler l'animation du bouton AR
+  final RxBool show3DModelView = false.obs;
+  // Normaliser l'URL du modèle 3D
+  String get normalizedModelUrl => product.model3D.isNotEmpty
+      ? _normalizeModelUrl(product.model3D)
+      : ''; // To control whether to show 3D view
 
   @override
   Widget build(BuildContext context) {
@@ -38,35 +47,94 @@ class ProductDetailsScreen extends GetView<ProductController> {
             flexibleSpace: Stack(
               children: [
                 FlexibleSpaceBar(
-                  background: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.grey[200],
-                    ),
-                    child: product.image.isNotEmpty
-                        ? Container(
-                            width: double.infinity,
-                            height: 300,
-                            child: Image.network(
-                              product.image,
-                              fit: BoxFit.cover,
+                  background: Stack(
+                    children: [
+                      product.model3D.isNotEmpty
+                          ? FutureBuilder<bool>(
+                              future:
+                                  _checkModelAvailability(normalizedModelUrl),
+                              builder: (context, snapshot) {
+                                if (snapshot.connectionState ==
+                                    ConnectionState.waiting) {
+                                  return Center(
+                                      child: CircularProgressIndicator());
+                                }
+
+                                if (snapshot.hasData && snapshot.data == true) {
+                                  return Rotating3DModel(
+                                    modelUrl: normalizedModelUrl,
+                                    // Ajustez selon vos préférences
+                                  );
+                                } else {
+                                  // Fallback à l'image si le modèle n'est pas disponible
+                                  return Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[200],
+                                    ),
+                                    child: product.image.isNotEmpty
+                                        ? Image.network(
+                                            product.image,
+                                            fit: BoxFit.cover,
+                                            width: double.infinity,
+                                            height: double.infinity,
+                                          )
+                                        : Center(
+                                            child: Icon(Icons.image,
+                                                size: 100, color: Colors.grey),
+                                          ),
+                                  );
+                                }
+                              },
+                            )
+                          : Container(
+                              decoration: BoxDecoration(
+                                color: Colors.grey[200],
+                              ),
+                              child: product.image.isNotEmpty
+                                  ? Image.network(
+                                      product.image,
+                                      fit: BoxFit.cover,
+                                      width: double.infinity,
+                                      height: double.infinity,
+                                    )
+                                  : Center(
+                                      child: Icon(Icons.image,
+                                          size: 100, color: Colors.grey),
+                                    ),
                             ),
-                          )
-                        : Container(
-                            width: double.infinity,
-                            height: 300,
+                      if (product.model3D.isNotEmpty)
+                        Positioned(
+                          bottom: 10,
+                          left: 10,
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                              color: Colors.grey[200],
+                              color: Colors.black.withOpacity(0.6),
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            child: Icon(Icons.image,
-                                size: 100, color: Colors.grey),
+                            child: Text(
+                              "Vue 3D active",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                              ),
+                            ),
                           ),
+                        ),
+                    ],
                   ),
                 ),
                 // Bouton AR en superposition
                 Positioned(
                   right: 16,
                   bottom: 16,
-                  child: _buildARButton(context),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      _buildARButtons(context),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -78,13 +146,111 @@ class ProductDetailsScreen extends GetView<ProductController> {
               children: [
                 _buildProductInfo(),
                 _buildProductDescription(),
-                _buildProductSpecs(),
+                _buildProductSpecs(context), // Pass context here
               ],
             ),
           ),
         ],
       ),
       bottomNavigationBar: _buildBottomBar(),
+    );
+  }
+
+  // Vérifiez la disponibilité du modèle 3D
+  Future<bool> _checkModelAvailability(String url) async {
+    if (url.isEmpty) return false;
+
+    try {
+      final response = await http.head(Uri.parse(url));
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Erreur de vérification du modèle 3D: $e');
+      return false;
+    }
+  }
+
+  // Normalisation de l'URL
+  String _normalizeModelUrl(String url) {
+    // Utilisation du service comme dans OpticianProductsScreen
+    return GlassesManagerService.ensureAbsoluteUrl(url);
+  }
+
+  // Ajoutez la méthode pour afficher le modèle 3D en plein écran
+  void _showFullScreen3DModel(BuildContext context, Product product) {
+    if (product.model3D.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Aucun modèle 3D disponible pour ce produit')),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          appBar: AppBar(
+            title: Text('Vue 3D - ${product.name}'),
+          ),
+          body: Rotating3DModel(modelUrl: product.model3D),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildARButtons(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        // Bouton 3D (seulement si le produit a un modèle 3D)
+        if (product.model3D.isNotEmpty) ...[
+          _build3DViewButton(context),
+          SizedBox(height: 12),
+        ],
+        // Bouton AR
+        _buildARButton(context),
+      ],
+    );
+  }
+
+  // Bouton pour ouvrir le modèle 3D en dialog
+  Widget _build3DViewButton(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(50),
+        onTap: () {
+          _showFullScreen3DModel(context, product);
+        },
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.purple[600],
+            borderRadius: BorderRadius.circular(50),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 6,
+                spreadRadius: 1,
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.fullscreen, color: Colors.white, size: 20),
+              SizedBox(width: 8),
+              Text(
+                "Plein écran 3D",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -308,7 +474,8 @@ class ProductDetailsScreen extends GetView<ProductController> {
     );
   }
 
-  Widget _buildProductSpecs() {
+  // Pass the BuildContext parameter here
+  Widget _buildProductSpecs(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -337,6 +504,8 @@ class ProductDetailsScreen extends GetView<ProductController> {
                 _buildSpecRow('Catégorie', product.category),
                 const Divider(),
                 _buildSpecRow('Référence', product.id ?? 'Non spécifié'),
+                const Divider(),
+                // Now we need to use context in the onTap callback
               ],
             ),
           ),
@@ -345,28 +514,41 @@ class ProductDetailsScreen extends GetView<ProductController> {
     );
   }
 
-  Widget _buildSpecRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[600],
+  // Mettez à jour _buildSpecRow pour gérer le cas spécial et l'interaction
+  Widget _buildSpecRow(String label, String value,
+      {bool special = false, VoidCallback? onTap}) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[600],
+              ),
             ),
-          ),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: Colors.black87,
+            Row(
+              children: [
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: special ? Colors.purple : Colors.black87,
+                  ),
+                ),
+                if (onTap != null) ...[
+                  SizedBox(width: 8),
+                  Icon(Icons.arrow_forward_ios, size: 14, color: Colors.purple),
+                ],
+              ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -379,7 +561,7 @@ class ProductDetailsScreen extends GetView<ProductController> {
     return GestureDetector(
       onTap: () => Get.to(() => ReviewsScreen(product: product)),
       child: Obx(() {
-        // Look up the updated product in the controller’s products list.
+        // Look up the updated product in the controller's products list.
         // If not found, fall back to the passed product instance.
         final updatedProduct = productController.products.firstWhere(
           (p) => p.id == product.id,
@@ -466,7 +648,6 @@ class ProductDetailsScreen extends GetView<ProductController> {
                       // Si produit n'est pas dans la liste de souhaits, l'ajouter
                       final wishlistItem = WishlistItem(
                         // ID sera généré côté serveur
-
                         userId: userEmail,
                         productId: product.id!,
                       );
