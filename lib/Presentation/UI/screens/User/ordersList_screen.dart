@@ -161,7 +161,7 @@ class OrdersListPage extends StatelessWidget {
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                   SizedBox(height: 4), // Add some space between ID and status
-                  _buildStatusBadge(order.status ?? 'En attente'),
+                  _buildStatusBadge(order.status),
                 ],
               ),
               SizedBox(height: 8),
@@ -366,13 +366,13 @@ class OrdersListPage extends StatelessWidget {
           _buildDetailRow(
             icon: Icons.location_on,
             label: 'Adresse',
-            content: Text(order.address ?? 'Non spécifiée'),
+            content: Text(order.address),
           ),
           Divider(height: 24, color: Colors.grey.shade300),
           _buildDetailRow(
             icon: Icons.payment,
             label: 'Méthode de paiement',
-            content: Text(order.paymentMethod ?? 'Non spécifiée'),
+            content: Text(order.paymentMethod),
           ),
         ],
       ),

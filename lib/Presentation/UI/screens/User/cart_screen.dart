@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_3d_controller/flutter_3d_controller.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:opti_app/Presentation/UI/screens/Admin/3D.dart';
@@ -142,27 +143,7 @@ class CartScreen extends StatelessWidget {
                         if (snapshot.hasData && snapshot.data == true) {
                           return Stack(
                             children: [
-                              Rotating3DModel(modelUrl: normalizedModelUrl),
-                              Positioned(
-                                right: 4,
-                                top: 4,
-                                child: GestureDetector(
-                                  onTap: () =>
-                                      _showFullScreen3DModel(context, product),
-                                  child: Container(
-                                    padding: EdgeInsets.all(4),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.7),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(
-                                      Icons.view_in_ar,
-                                      size: 16,
-                                      color: const Color(0xFFFFA837),
-                                    ),
-                                  ),
-                                ),
-                              ),
+                              Flutter3DViewer(src: product.model3D),
                             ],
                           );
                         } else {
@@ -313,34 +294,6 @@ class CartScreen extends StatelessWidget {
   String _normalizeModelUrl(String url) {
     // Implémentez votre logique de normalisation d'URL ici
     return GlassesManagerService.ensureAbsoluteUrl(url);
-  }
-
-  void _showFullScreen3DModel(BuildContext context, dynamic product) {
-    if (product.model3D.isEmpty) return;
-
-    final String normalizedModelUrl = _normalizeModelUrl(product.model3D);
-
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => Scaffold(
-          appBar: AppBar(
-            title: Text(
-              product.name,
-              style: TextStyle(color: Colors.black87, fontSize: 18),
-            ),
-            backgroundColor: Colors.white,
-            elevation: 0,
-            leading: IconButton(
-              icon: Icon(Icons.arrow_back, color: Colors.black87),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ),
-          body: Center(
-            child: Rotating3DModel(modelUrl: normalizedModelUrl),
-          ),
-        ),
-      ),
-    );
   }
 
   Widget _buildCheckoutSection() {

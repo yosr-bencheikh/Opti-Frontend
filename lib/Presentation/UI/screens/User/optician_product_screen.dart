@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_3d_controller/flutter_3d_controller.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:opti_app/Presentation/UI/screens/Admin/3D.dart';
-import 'package:opti_app/Presentation/UI/screens/Admin/Product3DViewer.dart';
-import 'package:opti_app/Presentation/UI/screens/User/Rotating3DModel.dart';
+
 import 'package:opti_app/Presentation/UI/screens/User/product_details_screen.dart';
 import 'package:opti_app/Presentation/controllers/auth_controller.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
@@ -476,9 +476,7 @@ class _OpticianProductsScreenState extends State<OpticianProductsScreen> {
 
                               if (snapshot.hasData && snapshot.data == true) {
                                 // Utiliser le widget Rotating3DModel avec autoRotate contrôlé par le passage de la souris
-                                return Rotating3DModel(
-                                  modelUrl: normalizedModelUrl,
-                                );
+                                return Flutter3DViewer(src: product.model3D);
                               } else {
                                 // Fallback à l'image si le modèle n'est pas disponible
                                 return product.image.isNotEmpty
@@ -512,19 +510,6 @@ class _OpticianProductsScreenState extends State<OpticianProductsScreen> {
                       onPressed: () => _toggleWishlist(product),
                     ),
                   ),
-                  // Bouton AR uniquement si un modèle 3D est disponible
-                  if (product.model3D.isNotEmpty)
-                    Positioned(
-                      right: 8,
-                      top: 8,
-                      child: IconButton(
-                        icon:
-                            Icon(Icons.view_in_ar, color: Colors.blue.shade700),
-                        onPressed: () {
-                          _showFullScreen3DModel(context, product);
-                        },
-                      ),
-                    ),
                 ],
               ),
             ),
@@ -583,26 +568,5 @@ class _OpticianProductsScreenState extends State<OpticianProductsScreen> {
   String _normalizeModelUrl(String url) {
     // Implémentez votre logique de normalisation d'URL ici
     return GlassesManagerService.ensureAbsoluteUrl(url);
-  }
-
-  void _showFullScreen3DModel(BuildContext context, Product product) {
-    if (product.model3D.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Aucun modèle 3D disponible pour ce produit')),
-      );
-      return;
-    }
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => Scaffold(
-          appBar: AppBar(
-            title: Text('Vue 3D - ${product.name}'),
-          ),
-          body: Rotating3DModel(modelUrl: product.model3D),
-        ),
-      ),
-    );
   }
 }

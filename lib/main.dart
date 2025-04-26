@@ -296,7 +296,7 @@ class MyApp extends StatelessWidget {
           binding: AuthBinding(),
         ),
         GetPage(
-          name: '/SummaryScreen',
+          name: '/recommandationScreen',
           page: () => RecommendationsScreen(),
           binding: AuthBinding(),
         ),

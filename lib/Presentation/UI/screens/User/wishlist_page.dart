@@ -3,8 +3,6 @@ import 'package:flutter_3d_controller/flutter_3d_controller.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:opti_app/Presentation/UI/screens/Admin/3D.dart';
-import 'package:opti_app/Presentation/UI/screens/Admin/Product3DViewer.dart';
-import 'package:opti_app/Presentation/UI/screens/User/Rotating3DModel.dart';
 import 'package:opti_app/Presentation/UI/screens/User/product_details_screen.dart';
 import 'package:opti_app/Presentation/UI/screens/User/stores_screen.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
@@ -295,25 +293,6 @@ class WishlistPage extends StatelessWidget {
                                         Flutter3DViewer(
                                           src: normalizedModelUrl,
                                         ),
-                                        Positioned(
-                                          right: 4,
-                                          top: 4,
-                                          child: GestureDetector(
-                                            onTap: () => _showFullScreen3DModel(
-                                                context, product),
-                                            child: Container(
-                                              padding: EdgeInsets.all(4),
-                                              decoration: BoxDecoration(
-                                                color: Colors.white
-                                                    .withOpacity(0.7),
-                                                shape: BoxShape.circle,
-                                              ),
-                                              child: Icon(Icons.view_in_ar,
-                                                  size: 16,
-                                                  color: Colors.blue.shade700),
-                                            ),
-                                          ),
-                                        ),
                                       ],
                                     );
                                   } else {
@@ -486,62 +465,4 @@ class WishlistPage extends StatelessWidget {
     return GlassesManagerService.ensureAbsoluteUrl(url);
   }
 
-  void _showFullScreen3DModel(BuildContext context, Product product) {
-    if (product.model3D.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Aucun modèle 3D disponible pour ce produit')),
-      );
-      return;
-    }
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => Scaffold(
-          appBar: AppBar(
-            title: Text('Vue 3D - ${product.name}'),
-          ),
-          body: Rotating3DModel(modelUrl: product.model3D),
-        ),
-      ),
-    );
-
-    Future<bool> _checkModelAvailability(String url) async {
-      if (url.isEmpty) return false;
-
-      try {
-        final response = await http.head(Uri.parse(url));
-        return response.statusCode == 200;
-      } catch (e) {
-        print('Erreur de vérification du modèle 3D: $e');
-        return false;
-      }
-    }
-
-    String _normalizeModelUrl(String url) {
-      // Implémentez votre logique de normalisation d'URL ici
-      return GlassesManagerService.ensureAbsoluteUrl(url);
-    }
-
-    void _showFullScreen3DModel(BuildContext context, Product product) {
-      if (product.model3D.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Aucun modèle 3D disponible pour ce produit')),
-        );
-        return;
-      }
-
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => Scaffold(
-            appBar: AppBar(
-              title: Text('Vue 3D - ${product.name}'),
-            ),
-            body: Fixed3DViewer(modelUrl: product.model3D),
-          ),
-        ),
-      );
-    }
-  }
 }

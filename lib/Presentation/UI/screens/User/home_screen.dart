@@ -225,7 +225,7 @@ class HomeScreen extends GetView<AuthController> {
       final filteredProducts = productController.products
           .where((product) =>
               product.name.toLowerCase().contains(query) ||
-              (product.marque?.toLowerCase() ?? '').contains(query))
+              (product.marque.toLowerCase()).contains(query))
           .toList();
 
       final filteredOpticians = opticienController.opticiensList
@@ -330,10 +330,9 @@ class HomeScreen extends GetView<AuthController> {
                                     ),
                                   ],
                                 ),
-                                if (product.marque != null &&
-                                    product.marque!.isNotEmpty)
+                                if (product.marque.isNotEmpty)
                                   Text(
-                                    product.marque!,
+                                    product.marque,
                                     style: const TextStyle(
                                       fontSize: 12,
                                       color: Colors.grey,

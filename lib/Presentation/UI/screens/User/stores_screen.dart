@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:opti_app/Presentation/UI/screens/User/optician_product_screen.dart';
+
 import 'package:opti_app/Presentation/controllers/boutique_controller.dart';
 import 'package:opti_app/Presentation/controllers/navigation_controller.dart';
 import 'package:opti_app/Presentation/controllers/store_wishlist_controller.dart';
 import 'package:opti_app/Presentation/widgets/opticalstoreCard.dart';
-import 'package:url_launcher/url_launcher.dart';
+
 
 class StoresScreen extends StatelessWidget {
   final NavigationController navigationController = Get.find();
@@ -299,7 +299,7 @@ class StoresScreen extends StatelessWidget {
     final Set<String> uniqueCities = {};
 
     for (var optician in opticianController.opticiensList) {
-      if (optician.ville != null && optician.ville.isNotEmpty) {
+      if (optician.ville.isNotEmpty) {
         uniqueCities.add(optician.ville.trim());
       }
     }
@@ -327,8 +327,7 @@ class StoresScreen extends StatelessWidget {
 
         // City filter
         final matchesCity = selectedCity.value.isEmpty ||
-            (optician.ville != null &&
-                optician.ville.toLowerCase() ==
+            (optician.ville.toLowerCase() ==
                     selectedCity.value.toLowerCase());
 
         // Favorites filter
@@ -456,14 +455,4 @@ class StoresScreen extends StatelessWidget {
     );
   }
 
-  void _showErrorSnackbar(String message) {
-    Get.snackbar(
-      'Erreur',
-      message,
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.red.shade100,
-      colorText: Colors.red.shade800,
-      duration: Duration(seconds: 3),
-    );
-  }
 }

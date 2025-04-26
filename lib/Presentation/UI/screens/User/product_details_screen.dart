@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_3d_controller/flutter_3d_controller.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:opti_app/Presentation/UI/screens/Admin/3D.dart';
-import 'package:opti_app/Presentation/UI/screens/Admin/Product3DViewer.dart';
-import 'package:opti_app/Presentation/UI/screens/User/Augmented_faces.dart';
+
 import 'package:opti_app/Presentation/UI/screens/User/Face_detection.dart';
-import 'package:opti_app/Presentation/UI/screens/User/Rotating3DModel.dart';
+
 import 'package:opti_app/Presentation/UI/screens/User/home_screen.dart';
 import 'package:opti_app/Presentation/UI/screens/User/reviews_screen.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
@@ -61,10 +61,7 @@ class ProductDetailsScreen extends GetView<ProductController> {
                                 }
 
                                 if (snapshot.hasData && snapshot.data == true) {
-                                  return Rotating3DModel(
-                                    modelUrl: normalizedModelUrl,
-                                    // Ajustez selon vos préférences
-                                  );
+                                  return Flutter3DViewer(src: product.model3D);
                                 } else {
                                   // Fallback à l'image si le modèle n'est pas disponible
                                   return Container(
@@ -176,83 +173,19 @@ class ProductDetailsScreen extends GetView<ProductController> {
   }
 
   // Ajoutez la méthode pour afficher le modèle 3D en plein écran
-  void _showFullScreen3DModel(BuildContext context, Product product) {
-    if (product.model3D.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Aucun modèle 3D disponible pour ce produit')),
-      );
-      return;
-    }
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => Scaffold(
-          appBar: AppBar(
-            title: Text('Vue 3D - ${product.name}'),
-          ),
-          body: Rotating3DModel(modelUrl: product.model3D),
-        ),
-      ),
-    );
-  }
+ 
 
   Widget _buildARButtons(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        // Bouton 3D (seulement si le produit a un modèle 3D)
-        if (product.model3D.isNotEmpty) ...[
-          _build3DViewButton(context),
-          SizedBox(height: 12),
-        ],
-        // Bouton AR
+      
         _buildARButton(context),
       ],
     );
   }
 
-  // Bouton pour ouvrir le modèle 3D en dialog
-  Widget _build3DViewButton(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(50),
-        onTap: () {
-          _showFullScreen3DModel(context, product);
-        },
-        child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: Colors.purple[600],
-            borderRadius: BorderRadius.circular(50),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                blurRadius: 6,
-                spreadRadius: 1,
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.fullscreen, color: Colors.white, size: 20),
-              SizedBox(width: 8),
-              Text(
-                "Plein écran 3D",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+
 
   void _initializeData() {
     // Check if this has already been initialized to prevent multiple calls

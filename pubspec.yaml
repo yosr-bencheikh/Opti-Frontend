@@ -93,8 +93,7 @@ flutter:
   assets:
     - assets/images/Virtualreality.gif
     - assets/images/AR1.avif
-    - assets/images/homme.avif
-    - assets/images/femme.avif
+
     - assets/images/image.jpg
     - assets/images/b1.jpeg
     - assets/images/b2.jpeg
