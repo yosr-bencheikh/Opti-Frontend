@@ -26,7 +26,7 @@ abstract class UserDataSource {
 
 class UserDataSourceImpl implements UserDataSource {
   final http.Client client;
-  final String baseUrl = 'http://localhost:3000/api';
+  final String baseUrl = 'http://192.168.1.8:3000/api';
   final dio_pkg.Dio _dio;
   UserDataSourceImpl({required this.client}) : _dio = dio_pkg.Dio();
 

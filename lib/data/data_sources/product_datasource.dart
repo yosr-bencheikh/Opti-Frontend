@@ -8,7 +8,7 @@ import 'package:opti_app/domain/entities/Boutique.dart';
 import 'package:opti_app/domain/entities/product_entity.dart';
 
 class ProductDatasource {
-  final String baseUrl = 'http://localhost:3000/api/products';
+  final String baseUrl = 'http://192.168.1.8:3000/api/products';
 
   final Dio _dio = Dio(); // Créez une instance de Dio
 
@@ -102,7 +102,7 @@ class ProductDatasource {
 
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('http://localhost:3000/upload'),
+        Uri.parse('http://192.168.1.8:3000/upload'),
       );
 
       var multipartFile = await http.MultipartFile.fromPath(
@@ -234,7 +234,7 @@ class ProductDatasource {
   Future<List<Boutique>> getOpticiens() async {
     try {
       final response =
-          await http.get(Uri.parse('http://localhost:3000/opticiens'));
+          await http.get(Uri.parse('http://192.168.1.8:3000/opticiens'));
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
@@ -306,7 +306,7 @@ class ProductDatasource {
       final String apiFormatFaceShape = faceShape.replaceAll('Visage ', '');
       // Fetch recommendations from your API
       final response = await http.get(Uri.parse(
-          'http://localhost:3000/api/recommendations/$apiFormatFaceShape'));
+          'http://192.168.1.8:3000/api/recommendations/$apiFormatFaceShape'));
 
       if (response.statusCode == 200) {
         return json.decode(response.body);

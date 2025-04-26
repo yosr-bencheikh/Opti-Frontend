@@ -665,13 +665,7 @@ class AdminPanelApp extends StatelessWidget {
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Row(
-              children: [
-                Icon(Icons.pie_chart, size: 18),
-                SizedBox(width: 4),
-                Text("Secteurs"),
-              ],
-            ),
+          
           ),
         ],
       ),
