@@ -182,7 +182,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      initialRoute: '/Admin_pannel',
+      initialRoute: '/splash',
       getPages: [
         GetPage(
           name: '/splash',
@@ -296,7 +296,7 @@ class MyApp extends StatelessWidget {
           binding: AuthBinding(),
         ),
         GetPage(
-          name: '/SummaryScreen',
+          name: '/recommandationScreen',
           page: () => RecommendationsScreen(),
           binding: AuthBinding(),
         ),

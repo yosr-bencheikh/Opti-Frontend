@@ -628,49 +628,37 @@ class AdminPanelApp extends StatelessWidget {
     );
   }
 
-  Widget _buildChartTypeSelector(Rx<String> chartType) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
+Widget _buildChartTypeSelector(Rx<String> chartType) {
+  return Container(
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 5,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    ),
+    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.bar_chart, color: Color(0xFF2D4263), size: 20),
+        SizedBox(width: 8),
+        Text(
+          "Barres",
+          style: TextStyle(
+            color: Color(0xFF2D4263),
+            fontWeight: FontWeight.bold,
           ),
-        ],
-      ),
-      child: ToggleButtons(
-        borderRadius: BorderRadius.circular(12),
-        renderBorder: false,
-        fillColor: Color(0xFFECDBBA),
-        selectedColor: Color(0xFF2D4263),
-        color: Color(0xFF94A4A6),
-        constraints: BoxConstraints(minHeight: 36, minWidth: 60),
-        isSelected: [chartType.value == "bar", chartType.value == "pie"],
-        onPressed: (index) {
-          chartType.value = index == 0 ? "bar" : "pie";
-        },
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Row(
-              children: [
-                Icon(Icons.bar_chart, size: 18),
-                SizedBox(width: 4),
-                Text("Barres"),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-          
-          ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
+
 
   Widget _buildBarChart(
     List<MapEntry<String, int>> topProducts,

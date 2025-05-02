@@ -12,7 +12,7 @@ abstract class WishlistRemoteDataSource {
 class WishlistRemoteDataSourceImpl implements WishlistRemoteDataSource {
   final Dio dio;
   final String baseUrl =
-      'http://192.168.1.8:3000/api'; // Update with your actual API base URL
+      'http://localhost:3000/api'; // Update with your actual API base URL
 
   // Update with your actual API base URL
 

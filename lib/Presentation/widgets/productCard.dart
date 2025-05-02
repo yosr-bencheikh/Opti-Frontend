@@ -4,6 +4,7 @@ import 'package:opti_app/Presentation/UI/screens/User/home_screen.dart';
 import 'package:opti_app/Presentation/UI/screens/User/product_details_screen.dart';
 import 'package:opti_app/Presentation/controllers/auth_controller.dart';
 import 'package:opti_app/Presentation/controllers/wishlist_controller.dart';
+import 'package:opti_app/core/styles/colors.dart';
 import 'package:opti_app/domain/entities/wishlist_item.dart';
 
 class ProductCard extends StatelessWidget {
@@ -36,7 +37,7 @@ class ProductCard extends StatelessWidget {
           color: Colors.white,
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
+              color: AppColors.greyTextColor.withOpacity(0.1),
               spreadRadius: 1,
               blurRadius: 4,
               offset: const Offset(0, 1),
@@ -90,7 +91,7 @@ Flexible(
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: Colors.blue[700],
+                        color: AppColors.secondaryColor, 
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -111,7 +112,7 @@ Flexible(
                         child: Text(
                           '${product.prix.toStringAsFixed(2)}${isHorizontalList ? '\$' : 'TND'}',
                           style: const TextStyle(
-                            color: Colors.blue,
+                            color: AppColors.accentColor,
                             fontWeight: FontWeight.bold,
                           ),
                         ),

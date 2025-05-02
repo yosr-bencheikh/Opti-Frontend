@@ -80,11 +80,7 @@ class AppTextStyles {
     fontStyle: FontStyle.italic,
   );
 
-  static TextStyle welcomeButtonStyle = GoogleFonts.poppins(
-    fontSize: 18,
-    fontWeight: FontWeight.bold,
-    color: AppColors.welcomeGradientStart,
-  );
+
 }
 
 class AppDecorations {
@@ -127,15 +123,22 @@ class AppDecorations {
       ),
     ],
   );
-  static BoxDecoration welcomeGradientDecoration = BoxDecoration(
+
+
+
+
+
+    static BoxDecoration welcomeGradientDecoration = BoxDecoration(
     gradient: LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
       colors: [
         AppColors.welcomeGradientStart,
         AppColors.welcomeGradientMiddle,
-        AppColors.welcomeGradientStart.withOpacity(0.9),
+        AppColors.welcomeGradientEnd,
       ],
+      stops: [0.1, 0.5, 0.9],
+      transform: GradientRotation(0.2), // Légère rotation pour plus de dynamisme
     ),
   );
 
@@ -143,33 +146,42 @@ class AppDecorations {
     borderRadius: BorderRadius.circular(20),
     boxShadow: [
       BoxShadow(
-        color: Colors.black.withOpacity(0.2),
-        blurRadius: 15,
-        offset: const Offset(0, 5),
-      ),
-    ],
+        color: AppColors.welcomeGradientStart.withOpacity(0.4),
+        blurRadius: 20,
+        offset: Offset(0, 10),
+  )],
+    border: Border.all(
+      color: AppColors.softWhite.withOpacity(0.3),
+      width: 1,
+    ),
   );
 
   static BoxDecoration welcomeLogoDecoration = BoxDecoration(
-    color: Colors.white.withOpacity(0.1),
+    gradient: RadialGradient(
+      colors: [
+        AppColors.softWhite.withOpacity(0.2),
+        AppColors.welcomeGradientMiddle.withOpacity(0.4),
+      ],
+    ),
     shape: BoxShape.circle,
     boxShadow: [
       BoxShadow(
-        color: Colors.black.withOpacity(0.1),
-        blurRadius: 10,
-        spreadRadius: 1,
+        color: AppColors.welcomeGradientStart.withOpacity(0.2),
+        blurRadius: 15,
+        spreadRadius: 2,
       ),
     ],
   );
 
   static ButtonStyle welcomeButtonStyle = ElevatedButton.styleFrom(
-    backgroundColor: AppColors.whiteColor,
+    backgroundColor: AppColors.softWhite,
     foregroundColor: AppColors.welcomeGradientStart,
-    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+    padding: EdgeInsets.symmetric(horizontal: 40, vertical: 16),
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(30),
     ),
     elevation: 8,
-    shadowColor: Colors.black.withOpacity(0.3),
+    shadowColor: AppColors.welcomeGradientStart.withOpacity(0.4),
   );
+
 }

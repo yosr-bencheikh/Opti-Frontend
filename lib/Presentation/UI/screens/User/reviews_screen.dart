@@ -167,8 +167,9 @@ class ReviewsScreen extends StatelessWidget {
     final AuthController authController = Get.find<AuthController>();
 
     // Make sure we're getting a String, not an RxString
+    // ignore: unnecessary_type_check
     final String userId = authController.currentUserId is RxString
-        ? (authController.currentUserId as RxString).value
+        ? (authController.currentUserId).value
         : authController.currentUserId.toString();
 
     showDialog(

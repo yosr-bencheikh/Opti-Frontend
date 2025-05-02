@@ -307,19 +307,15 @@ class _OpticianScreenState extends State<OpticianScreen> {
 
   Widget _buildDataTable() {
     return Obx(() {
-      // Gestion des états de chargement et d'erreur
-      if (_controller.isLoading.value) {
-        return _buildLoadingState();
-      }
-      if (_controller.error.isNotEmpty) {
-        return _buildErrorState();
-      }
+    // Gestion des états de chargement et d'erreur
+    if (_controller.isLoading.value) {
+      return _buildLoadingState();
+    }
+    if (_controller.error.isNotEmpty) {
+      return _buildErrorState();
+    }
 
-      // Filtrer les opticiens selon la recherche
-      _filterOpticians();
-      if (_filteredOpticians.isEmpty) {
-        return _buildEmptyState();
-      }
+  
 
       // Pagination: déterminer quels opticiens afficher sur la page actuelle
       final displayedOpticians = _getDisplayedOpticians();
@@ -1356,39 +1352,29 @@ class _OpticianScreenState extends State<OpticianScreen> {
     }
   }
 
-  void _showOpticianDialog({Optician? optician}) {
-    final _formKey = GlobalKey<FormState>();
-    final TextEditingController _nameController =
-        TextEditingController(text: optician?.nom);
-    final TextEditingController _prenomController =
-        TextEditingController(text: optician?.prenom);
-    final TextEditingController _dateController =
-        TextEditingController(text: optician?.date);
-    final TextEditingController _genreController =
-        TextEditingController(text: optician?.genre);
-    final TextEditingController _passwordController =
-        TextEditingController(text: optician?.password);
-    final TextEditingController _addressController =
-        TextEditingController(text: optician?.address);
-    final TextEditingController _emailController =
-        TextEditingController(text: optician?.email);
-    final TextEditingController _phoneController =
-        TextEditingController(text: optician?.phone);
-    final TextEditingController _regionController =
-        TextEditingController(text: optician?.region);
-    final TextEditingController _imageUrlController =
-        TextEditingController(text: optician?.imageUrl);
-    PlatformFile? _tempSelectedImage;
-    final List<String> genres = ['Homme', 'Femme'];
-    String selectedGenre = optician?.genre ?? genres.first;
-    DateTime _selectedDate =
-        DateTime.tryParse(optician?.date ?? '') ?? DateTime.now();
-    String _selectedRegion = optician?.region ?? Regions.list.first;
+void _showOpticianDialog({Optician? optician}) {
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController _nameController = TextEditingController(text: optician?.nom);
+  final TextEditingController _prenomController = TextEditingController(text: optician?.prenom);
+  final TextEditingController _dateController = TextEditingController(text: optician?.date);
+  final TextEditingController _genreController = TextEditingController(text: optician?.genre);
+  final TextEditingController _passwordController = TextEditingController(text: optician?.password);
+  final TextEditingController _addressController = TextEditingController(text: optician?.address);
+  final TextEditingController _emailController = TextEditingController(text: optician?.email);
+  final TextEditingController _phoneController = TextEditingController(text: optician?.phone);
+  final TextEditingController _regionController = TextEditingController(text: optician?.region);
+  final TextEditingController _imageUrlController = TextEditingController(text: optician?.imageUrl);
+  PlatformFile? _tempSelectedImage;
+  final List<String> genres = ['Homme', 'Femme'];
+  String selectedGenre = optician?.genre ?? genres.first;
+  DateTime _selectedDate = DateTime.tryParse(optician?.date ?? '') ?? DateTime.now();
+  String _selectedRegion = optician?.region ?? Regions.list.first;
 
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return StatefulBuilder(builder: (context, setState) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return StatefulBuilder(
+        builder: (context, setState) {
           return AlertDialog(
             title: Text(
               optician == null ? 'Ajouter un opticien' : 'Modifier un opticien',
@@ -1464,8 +1450,7 @@ class _OpticianScreenState extends State<OpticianScreen> {
                               labelText: 'Date de naissance',
                               border: OutlineInputBorder(),
                               suffixIcon: Icon(Icons.calendar_today),
-                              contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 16),
+                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
                             ),
                             readOnly: true,
                             onTap: () async {
@@ -1478,9 +1463,7 @@ class _OpticianScreenState extends State<OpticianScreen> {
                               if (picked != null && picked != _selectedDate) {
                                 setState(() {
                                   _selectedDate = picked;
-                                  _dateController.text =
-                                      DateFormat('yyyy-MM-dd')
-                                          .format(_selectedDate);
+                                  _dateController.text = DateFormat('yyyy-MM-dd').format(_selectedDate);
                                 });
                               }
                             },
@@ -1493,12 +1476,9 @@ class _OpticianScreenState extends State<OpticianScreen> {
                               final selectedDate = DateTime.tryParse(value);
                               if (selectedDate != null) {
                                 final today = DateTime.now();
-                                final age = today.year -
-                                    selectedDate.year -
+                                final age = today.year - selectedDate.year -
                                     (today.month < selectedDate.month ||
-                                            (today.month ==
-                                                    selectedDate.month &&
-                                                today.day < selectedDate.day)
+                                            (today.month == selectedDate.month && today.day < selectedDate.day)
                                         ? 1
                                         : 0);
 
@@ -1547,10 +1527,8 @@ class _OpticianScreenState extends State<OpticianScreen> {
                       decoration: const InputDecoration(
                         labelText: 'Mot de passe',
                         border: OutlineInputBorder(),
-                        hintText:
-                            'Minimum 8 caractères avec majuscule, chiffre et caractère spécial',
-                        contentPadding:
-                            EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                        hintText: 'Minimum 8 caractères avec majuscule, chiffre et caractère spécial',
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
                       ),
                       obscureText: true,
                       validator: (value) {
@@ -1566,8 +1544,7 @@ class _OpticianScreenState extends State<OpticianScreen> {
                         if (!RegExp(r'[0-9]').hasMatch(value)) {
                           return 'Le mot de passe doit contenir au moins un chiffre';
                         }
-                        if (!RegExp(r'[!@/+_#$%^&*(),.?":{}|<>]')
-                            .hasMatch(value)) {
+                        if (!RegExp(r'[!@/+_#$%^&*(),.?":{}|<>]').hasMatch(value)) {
                           return 'Le mot de passe doit contenir au moins un caractère spécial';
                         }
                         return null;
@@ -1595,8 +1572,7 @@ class _OpticianScreenState extends State<OpticianScreen> {
                         labelText: 'Email',
                         border: OutlineInputBorder(),
                         hintText: 'exemple@gmail.com',
-                        contentPadding:
-                            EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
                       ),
                       keyboardType: TextInputType.emailAddress,
                       validator: (value) {
@@ -1616,16 +1592,14 @@ class _OpticianScreenState extends State<OpticianScreen> {
                         labelText: 'Téléphone',
                         border: OutlineInputBorder(),
                         hintText: '8 chiffres',
-                        contentPadding:
-                            EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
                       ),
                       keyboardType: TextInputType.phone,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Veuillez entrer un numéro de téléphone';
                         }
-                        if (value.length != 8 ||
-                            !RegExp(r'^[0-9]{8}$').hasMatch(value)) {
+                        if (value.length != 8 || !RegExp(r'^[0-9]{8}$').hasMatch(value)) {
                           return 'Le téléphone doit contenir exactement 8 chiffres';
                         }
                         return null;
@@ -1640,8 +1614,7 @@ class _OpticianScreenState extends State<OpticianScreen> {
                             decoration: const InputDecoration(
                               labelText: 'Région',
                               border: OutlineInputBorder(),
-                              contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 16),
+                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
                             ),
                             value: _selectedRegion,
                             items: Regions.list.map((region) {
@@ -1673,58 +1646,61 @@ class _OpticianScreenState extends State<OpticianScreen> {
                 child: Text('Annuler', style: TextStyle(color: Colors.grey)),
               ),
               ElevatedButton(
-                onPressed: () async {
-                  if (_formKey.currentState!.validate()) {
-                    try {
-                      final newOptician = Optician(
-                        id: optician?.id,
-                        nom: _nameController.text,
-                        prenom: _prenomController.text,
-                        date: _dateController.text,
-                        genre: selectedGenre,
-                        password: _passwordController.text,
-                        address: _addressController.text,
-                        email: _emailController.text,
-                        phone: _phoneController.text,
-                        region: _selectedRegion,
-                        imageUrl: _imageUrlController.text,
-                      );
-                      Navigator.pop(context);
+              onPressed: () async {
+  if (_formKey.currentState!.validate()) {
+    try {
+      final newOptician = Optician(
+        id: optician?.id,
+        nom: _nameController.text,
+        prenom: _prenomController.text,
+        date: _dateController.text,
+        genre: selectedGenre,
+        password: _passwordController.text,
+        address: _addressController.text,
+        email: _emailController.text,
+        phone: _phoneController.text,
+        region: _selectedRegion,
+        imageUrl: _imageUrlController.text,
+      );
+      Navigator.pop(context);
 
-                      if (optician == null) {
-                        await _controller.addOptician(newOptician);
-                      }
+      if (optician == null) {
+        await _controller.addOptician(newOptician);
+      } else {
+        await _controller.updateOptician(newOptician);
+      }
 
-                      if (_tempSelectedImage != null) {
-                        final imageUrl = await _uploadImageAndGetUrl(
-                          _tempSelectedImage,
-                          _emailController.text,
-                        );
-                      }
+      if (_tempSelectedImage != null) {
+        final imageUrl = await _uploadImageAndGetUrl(
+          _tempSelectedImage,
+          _emailController.text,
+        );
+        newOptician.imageUrl = imageUrl;
+        await _controller.updateOptician(newOptician);
+      }
 
-                      if (optician == null) {
-                        final completeUser = await _authController
-                            .getUserByEmail(newOptician.email);
-                        newOptician.id =
-                            completeUser['_id'] ?? completeUser['id'] ?? '';
-                      }
+  try {
+  final completeUser = await _authController.getUserByEmail(newOptician.email);
+  if (completeUser == null) {
+    throw Exception('User not found after creation');
+  }
+  newOptician.id = completeUser['_id'] ?? completeUser['id'] ?? '';
+} catch (e) {
+  print('Error getting user by email:');
+  // Gérer l'erreur ou créer l'utilisateur d'une autre manière
+}
 
-                      Get.snackbar(
-                          'Succès',
-                          optician == null
-                              ? 'Opticien ajouté avec succès'
-                              : 'Opticien modifié avec succès');
+      Get.snackbar(
+        'Succès', 
+        optician == null ? 'Opticien ajouté avec succès' : 'Opticien modifié avec succès'
+      );
 
-                      // Fermer la boîte de dialogue
-                      Navigator.pop(context);
-                    } catch (e) {
-                      Get.snackbar('Erreur',
-                          'Une erreur s\'est produite: ${e.toString()}');
-                      print(
-                          'Erreur détaillée: $e'); // Ajoutez ceci pour déboguer
-                    }
-                  }
-                },
+      // Fermer la boîte de dialogue
+      Navigator.pop(context);
+    } catch (e) {
+    }
+  }
+},
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
                   foregroundColor: Colors.white,
@@ -1733,11 +1709,11 @@ class _OpticianScreenState extends State<OpticianScreen> {
               ),
             ],
           );
-        });
-      },
-    );
-  }
-
+        }
+      );
+    },
+  );
+}
   Future<void> _showEditOpticianDialog(Optician optician) async {
     final _formKey = GlobalKey<FormState>();
     bool _isLoading = false;

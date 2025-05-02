@@ -1333,28 +1333,26 @@ class _UsersScreenState extends State<UsersScreen> {
       builder: (BuildContext dialogContext) => StatefulBuilder(
         builder: (context, setState) {
           return Dialog(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: 600,
-                maxHeight: MediaQuery.of(context).size.height * 0.8,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Dialog title
-                    Text(
-                      user == null
-                          ? 'Ajouter un utilisateur'
-                          : 'Modifier l\'utilisateur',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
+  child: ConstrainedBox(
+    constraints: BoxConstraints(
+      maxWidth: 600,
+      maxHeight: MediaQuery.of(context).size.height * 0.9, // Increased height
+    ),
+    child: Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        mainAxisSize: MainAxisSize.min, // Important for dialogs
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Dialog title
+          Text(
+            user == null ? 'Ajouter un utilisateur' : 'Modifier l\'utilisateur',
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
 
                     // Form content in a scrollable container
                     Flexible(
@@ -1371,7 +1369,7 @@ class _UsersScreenState extends State<UsersScreen> {
                                   children: [
                                     SizedBox(
                                       height:
-                                          120, // Give explicit size to the file picker
+                                          100, // Give explicit size to the file picker
                                       child: Center(
                                         child: Column(
                                           children: [

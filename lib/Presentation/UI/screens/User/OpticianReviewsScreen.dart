@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:opti_app/Presentation/controllers/auth_controller.dart';
 import 'package:opti_app/Presentation/controllers/storeReview_controller.dart';
 import 'package:opti_app/data/models/user_model.dart';
-import 'package:opti_app/data/repositories/storeReview_repository_impl.dart';
+
 import 'package:opti_app/domain/entities/StoreReview.dart';
 
 // -----------------------------------------------------------------------
@@ -169,7 +169,7 @@ class OpticianReviewsScreen extends StatelessWidget {
   }
 
   Widget _buildReviewCard(StoreReview review) {
-    final storeReviewController = Get.find<StoreReviewController>();
+   
     final authController = Get.find<AuthController>();
 
     // Extract userId similar to _buildReviewItem

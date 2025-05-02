@@ -26,7 +26,7 @@ abstract class OpticianDataSource {
 class OpticianDataSourceImpl implements OpticianDataSource {
   final String baseUrl =
 
-      'http://192.168.1.8:3000/api'; // Replace with your API base URL
+      'http://localhost:3000/api'; // Replace with your API base URL
 
 
   final dio_pkg.Dio _dio = dio_pkg.Dio(); // For web image upload
@@ -272,25 +272,23 @@ Future<bool> resetPassword(String email, String code, String newPassword) async 
 
   // Helper method to fetch optician by email
   @override
-  Future<Optician> getOpticianByEmail(String email) async {
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/opticians?email=$email'),
-        headers: {'Content-Type': 'application/json'},
-      );
+Future<Optician> getOpticianByEmail(String email) async {
+  try {
+    final response = await http.get(
+      Uri.parse('$baseUrl/opticians/findByEmail?email=$email'),
+      headers: {'Content-Type': 'application/json'},
+    );
 
-      if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
-        if (data.isNotEmpty) {
-          return Optician.fromJson(data[0]);
-        } else {
-          throw Exception('Optician not found');
-        }
-      } else {
-        throw Exception('Failed to get optician: ${response.statusCode}');
-      }
-    } catch (e) {
-      throw Exception('Failed to get optician: $e');
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return Optician.fromJson(data);
+    } else if (response.statusCode == 404) {
+      throw Exception('Optician with email $email not found');
+    } else {
+      throw Exception('Failed to get optician: ${response.statusCode}');
     }
+  } catch (e) {
+    throw Exception('Failed to get optician by email: $e');
   }
+}
 }

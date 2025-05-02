@@ -16,7 +16,7 @@ class GlassesManagerService {
     if (kIsWeb) {
       return 'http://localhost:3000'; // URL pour le web
     } else if (Platform.isAndroid) {
-      return 'http://192.168.1.19:3000'; // Remplacer par l'adresse IP réelle de votre serveur sur le réseau
+      return 'http://192.168.1.8:3000'; // Remplacer par l'adresse IP réelle de votre serveur sur le réseau
     } else {
       return 'http://localhost:3000'; // Fallback pour les autres plateformes
     }
@@ -85,7 +85,7 @@ class GlassesManagerService {
           Platform.isAndroid &&
           (url.contains('localhost') || url.contains('127.0.0.1'))) {
         return url.replaceFirst(RegExp(r'http://(localhost|127\.0\.0\.1):3000'),
-            'http://192.168.1.19:3000');
+            'http://192.168.1.8:3000');
       }
       return url;
     }

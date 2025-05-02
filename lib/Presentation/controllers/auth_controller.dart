@@ -126,7 +126,7 @@ class AuthController extends GetxController {
       final userData = await authRepository.getUserByEmail(email);
       return userData;
     } catch (e) {
-      print('Error getting user by email: $e');
+      print('Error getting user by email');
       throw e;
     }
   }

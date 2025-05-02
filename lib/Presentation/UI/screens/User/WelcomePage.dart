@@ -24,7 +24,7 @@ class _WelcomePageState extends State<WelcomePage>
 
   final List<String> _welcomeImages = [
     'assets/images/Virtualreality.gif',
-    'assets/images/AR1.avif',
+    'assets/images/AR.png',
     'assets/images/image.jpg',
   ];
 
@@ -193,9 +193,11 @@ class _WelcomePageState extends State<WelcomePage>
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.circular(20),
                                     child: Image.asset(
-                                      _welcomeImages[index],
-                                      fit: BoxFit.cover,
-                                    ),
+  _welcomeImages[index],
+  fit: BoxFit.cover,
+  color: Colors.white.withOpacity(0.7), // Transparence
+  colorBlendMode: BlendMode.modulate,
+)
                                   ),
                                 ),
 
@@ -222,12 +224,7 @@ class _WelcomePageState extends State<WelcomePage>
                                                 .withOpacity(0.4),
                                         borderRadius: BorderRadius.circular(4),
                                         boxShadow: [
-                                          BoxShadow(
-                                            color: AppColors.black
-                                                .withOpacity(0.1),
-                                            blurRadius: 4,
-                                            spreadRadius: 1,
-                                          ),
+                                        
                                         ],
                                       ),
                                     ),
@@ -326,16 +323,33 @@ class ImprovedPatternPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = AppColors.whiteColor.withOpacity(0.05)
+      ..color = AppColors.softWhite.withOpacity(0.1)
       ..strokeWidth = 1
       ..style = PaintingStyle.stroke;
 
-    for (var i = 0; i < size.width; i += 30) {
-      for (var j = 0; j < size.height; j += 30) {
-        if ((i + j) % 60 == 0) {
-          canvas.drawCircle(Offset(i.toDouble(), j.toDouble()), 2, paint);
+    final dotPaint = Paint()
+      ..color = AppColors.softWhite.withOpacity(0.15)
+      ..style = PaintingStyle.fill;
+
+    // Dessine un motif géométrique plus complexe
+    for (var i = 0; i < size.width; i += 40) {
+      for (var j = 0; j < size.height; j += 40) {
+        // Cercles aux intersections
+        canvas.drawCircle(Offset(i.toDouble(), j.toDouble()), 2, dotPaint);
+        
+        // Lignes diagonales alternées
+        if ((i ~/ 40 + j ~/ 40) % 2 == 0) {
+          canvas.drawLine(
+            Offset(i.toDouble(), j.toDouble()),
+            Offset(i.toDouble() + 20, j.toDouble() + 20),
+            paint,
+          );
         } else {
-          canvas.drawCircle(Offset(i.toDouble(), j.toDouble()), 1, paint);
+          canvas.drawLine(
+            Offset(i.toDouble() + 20, j.toDouble()),
+            Offset(i.toDouble(), j.toDouble() + 20),
+            paint,
+          );
         }
       }
     }

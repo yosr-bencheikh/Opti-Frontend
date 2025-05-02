@@ -1,8 +1,19 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_3d_controller/flutter_3d_controller.dart';
 import 'package:get/get.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
+import 'package:opti_app/Presentation/UI/screens/Admin/3D.dart';
+import 'package:opti_app/Presentation/UI/screens/User/product_details_screen.dart';
+import 'package:opti_app/Presentation/controllers/auth_controller.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
+import 'package:opti_app/Presentation/controllers/wishlist_controller.dart';
+import 'package:opti_app/Presentation/widgets/productCard.dart';
 import 'package:opti_app/domain/entities/product_entity.dart';
+import 'package:opti_app/domain/entities/wishlist_item.dart';
 
 class ProGlassesQuestionnaireScreen extends StatefulWidget {
   @override
@@ -41,8 +52,8 @@ class _ProGlassesQuestionnaireScreenState
       'question': "Quel style vous correspond le mieux ?",
       'type': 'single', // This remains single selection
       'options': [
-        {'label': 'Féminin', 'image': 'assets/images/femme.avif'},
-        {'label': 'Masculin', 'image': 'assets/images/homme.avif'}
+        {'label': 'Féminin', 'image': 'assets/images/femme.jpg'},
+        {'label': 'Masculin', 'image': 'assets/images/homme.jpg'}
       ],
       'icon': Icons.female,
     },
@@ -487,6 +498,8 @@ class _ProGlassesQuestionnaireScreenState
 
 class RecommendationsScreen extends StatelessWidget {
   final ProductController _productController = Get.find<ProductController>();
+  final WishlistController wishlistController = Get.find();
+  final AuthController authController = Get.find();
 
   @override
   Widget build(BuildContext context) {
@@ -629,62 +642,625 @@ class RecommendationsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildProductListSection(List<Product> products) {
-    return Column(
-      children: products.map((product) {
-        return ProductCard(
-          product: product,
-          onTap: () => Get.toNamed('/product-details', arguments: product.id),
-        );
-      }).toList(),
+  Widget _buildProductCard(BuildContext context, Product product) {
+    // Normaliser l'URL du modèle 3D
+    String normalizedModelUrl =
+        product.model3D.isNotEmpty ? _normalizeModelUrl(product.model3D) : '';
+
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          Get.to(() => ProductDetailsScreen(product: product));
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Image ou viewer 3D
+            ClipRRect(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+              child: Stack(
+                children: [
+                  AspectRatio(
+                    aspectRatio: 1,
+                    child: product.model3D.isNotEmpty
+                        ? FutureBuilder<bool>(
+                            future: _checkModelAvailability(normalizedModelUrl),
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState ==
+                                  ConnectionState.waiting) {
+                                return Center(
+                                    child: CircularProgressIndicator());
+                              }
+
+                              if (snapshot.hasData && snapshot.data == true) {
+                                // Utiliser le widget Rotating3DModel avec autoRotate contrôlé par le passage de la souris
+                                return Flutter3DViewer(src: product.model3D);
+                              } else {
+                                // Fallback à l'image si le modèle n'est pas disponible
+                                return product.image.isNotEmpty
+                                    ? Image.network(product.image,
+                                        fit: BoxFit.cover)
+                                    : Center(
+                                        child: Icon(Icons.broken_image,
+                                            size: 50, color: Colors.grey));
+                              }
+                            },
+                          )
+                        : product.image.isNotEmpty
+                            ? Image.network(product.image, fit: BoxFit.cover)
+                            : Center(
+                                child: Icon(Icons.image,
+                                    size: 50, color: Colors.grey)),
+                  ),
+                  // Bouton Wishlist
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: IconButton(
+                      icon: Obx(() {
+                        final isInWishlist =
+                            wishlistController.isProductInWishlist(product.id!);
+                        return Icon(
+                          isInWishlist ? Icons.favorite : Icons.favorite_border,
+                          color: isInWishlist ? Colors.red : Colors.grey,
+                        );
+                      }),
+                      onPressed: () => _toggleWishlist(product),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Info produit
+            Padding(
+              padding: EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    product.name,
+                    style: GoogleFonts.montserrat(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    product.marque,
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: 12,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    '${product.prix.toStringAsFixed(2)} TND',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue.shade700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  Color _getColorFromString(String colorName) {
-    // Map common color names to actual colors
-    final colorMap = {
-      'noir': Colors.black,
-      'black': Colors.black,
-      'blanc': Colors.white,
-      'white': Colors.white,
-      'rouge': Colors.red,
-      'red': Colors.red,
-      'bleu': Colors.blue,
-      'blue': Colors.blue,
-      'vert': Colors.green,
-      'green': Colors.green,
-      'jaune': Colors.yellow,
-      'yellow': Colors.yellow,
-      'marron': Colors.brown,
-      'brown': Colors.brown,
-      'gris': Colors.grey,
-      'grey': Colors.grey,
-      'gray': Colors.grey,
-      'argent': Colors.grey[300]!,
-      'silver': Colors.grey[300]!,
-      'or': Colors.amber,
-      'gold': Colors.amber,
-      'rose': Colors.pink,
-      'pink': Colors.pink,
-      'violet': Colors.purple,
-      'purple': Colors.purple,
-      'orange': Colors.orange,
-      'écaille': Colors.brown[400]!,
-      'ecaille': Colors.brown[400]!,
-      'havana': Colors.brown[400]!,
-      'tortoise': Colors.brown[400]!,
-    };
-
-    // Look for matching color in the color name
-    for (var entry in colorMap.entries) {
-      if (colorName.toLowerCase().contains(entry.key)) {
-        return entry.value;
-      }
+  void _toggleWishlist(Product product) async {
+    final userEmail = authController.currentUser?.email;
+    if (userEmail == null) {
+      Get.snackbar('Erreur', 'Veuillez vous connecter d\'abord');
+      return;
     }
 
-    // Default color if no match is found
-    return Colors.grey[500]!;
+    try {
+      final isInWishlist = wishlistController.isProductInWishlist(product.id!);
+
+      if (isInWishlist) {
+        await wishlistController.removeFromWishlist(product.id!);
+      } else {
+        final wishlistItem = WishlistItem(
+          userId: userEmail,
+          productId: product.id!,
+        );
+        await wishlistController.addToWishlist(wishlistItem);
+      }
+    } catch (e) {
+      Get.snackbar(
+          'Erreur', 'Impossible de mettre à jour la liste de souhaits');
+    }
   }
+
+  Future<bool> _checkModelAvailability(String url) async {
+    if (url.isEmpty) return false;
+
+    try {
+      final response = await http.head(Uri.parse(url));
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Erreur de vérification du modèle 3D: $e');
+      return false;
+    }
+  }
+
+  String _normalizeModelUrl(String url) {
+    // Implémentez votre logique de normalisation d'URL ici
+    return GlassesManagerService.ensureAbsoluteUrl(url);
+  }
+
+  Widget _buildProductListSection(List<Product> products) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 16),
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: NeverScrollableScrollPhysics(),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          childAspectRatio: 0.65,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 20,
+        ),
+        itemCount: products.length,
+        itemBuilder: (context, index) {
+          return _buildEnhancedProductCard(context, products[index]);
+        },
+      ),
+    );
+  }
+
+  Widget _buildEnhancedProductCard(BuildContext context, Product product) {
+    String normalizedModelUrl =
+        product.model3D.isNotEmpty ? _normalizeModelUrl(product.model3D) : '';
+
+    return Obx(() {
+      final isInWishlist = wishlistController.isProductInWishlist(product.id!);
+      final Color cardBackgroundColor =
+          isInWishlist ? Colors.pink[100]!.withOpacity(0.3) : Color(0xFFF5F3FA);
+
+      return Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              offset: Offset(0, 8),
+              blurRadius: 15,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Stack(
+            children: [
+              // Card Background
+              Container(
+                color: cardBackgroundColor,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Image Section (60% of card height)
+                    Expanded(
+                      flex: 6,
+                      child: Stack(
+                        children: [
+                          Container(
+                            color: Colors.grey[50],
+                            child: product.model3D.isNotEmpty
+                                ? FutureBuilder<bool>(
+                                    future: _checkModelAvailability(
+                                        normalizedModelUrl),
+                                    builder: (context, snapshot) {
+                                      if (snapshot.connectionState ==
+                                          ConnectionState.waiting) {
+                                        return Center(
+                                          child: CircularProgressIndicator(
+                                            color: Colors.deepPurple[300],
+                                            strokeWidth: 2,
+                                          ),
+                                        );
+                                      }
+                                      if (snapshot.hasData &&
+                                          snapshot.data == true) {
+                                        return Flutter3DViewer(
+                                            src: product.model3D);
+                                      } else {
+                                        return product.image.isNotEmpty
+                                            ? Hero(
+                                                tag: 'product-${product.id}',
+                                                child: Image.network(
+                                                  product.image,
+                                                  fit: BoxFit.cover,
+                                                  width: double.infinity,
+                                                  height: double.infinity,
+                                                  loadingBuilder: (context,
+                                                      child, loadingProgress) {
+                                                    if (loadingProgress == null)
+                                                      return child;
+                                                    return Center(
+                                                      child:
+                                                          CircularProgressIndicator(
+                                                        value: loadingProgress
+                                                                    .expectedTotalBytes !=
+                                                                null
+                                                            ? loadingProgress
+                                                                    .cumulativeBytesLoaded /
+                                                                loadingProgress
+                                                                    .expectedTotalBytes!
+                                                            : null,
+                                                        color: Colors
+                                                            .deepPurple[300],
+                                                      ),
+                                                    );
+                                                  },
+                                                  errorBuilder: (context, error,
+                                                          stackTrace) =>
+                                                      Center(
+                                                    child: Icon(
+                                                      Icons.broken_image,
+                                                      size: 40,
+                                                      color: Colors.grey[400],
+                                                    ),
+                                                  ),
+                                                ),
+                                              )
+                                            : Center(
+                                                child: Icon(
+                                                  Icons.image,
+                                                  size: 40,
+                                                  color: Colors.grey[400],
+                                                ),
+                                              );
+                                      }
+                                    },
+                                  )
+                                : product.image.isNotEmpty
+                                    ? Hero(
+                                        tag: 'product-${product.id}',
+                                        child: Image.network(
+                                          product.image,
+                                          fit: BoxFit.cover,
+                                          width: double.infinity,
+                                          height: double.infinity,
+                                          loadingBuilder: (context, child,
+                                              loadingProgress) {
+                                            if (loadingProgress == null)
+                                              return child;
+                                            return Center(
+                                              child: CircularProgressIndicator(
+                                                value: loadingProgress
+                                                            .expectedTotalBytes !=
+                                                        null
+                                                    ? loadingProgress
+                                                            .cumulativeBytesLoaded /
+                                                        loadingProgress
+                                                            .expectedTotalBytes!
+                                                    : null,
+                                                color: Colors.deepPurple[300],
+                                              ),
+                                            );
+                                          },
+                                          errorBuilder:
+                                              (context, error, stackTrace) =>
+                                                  Center(
+                                            child: Icon(
+                                              Icons.broken_image,
+                                              size: 40,
+                                              color: Colors.grey[400],
+                                            ),
+                                          ),
+                                        ),
+                                      )
+                                    : Center(
+                                        child: Icon(
+                                          Icons.image,
+                                          size: 40,
+                                          color: Colors.grey[400],
+                                        ),
+                                      ),
+                          ),
+                          Positioned(
+                            bottom: 0,
+                            left: 0,
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: Colors.deepPurple[700],
+                                borderRadius: BorderRadius.only(
+                                  topRight: Radius.circular(12),
+                                ),
+                              ),
+                              child: Text(
+                                '${product.prix.toStringAsFixed(2)} TND',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Info Section (40% of card height)
+                    Expanded(
+                      flex: 4,
+                      child: Container(
+                        padding: EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              cardBackgroundColor,
+                              cardBackgroundColor.withOpacity(0.7),
+                            ],
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: Colors.deepPurple.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                product.marque,
+                                style: TextStyle(
+                                  color: Colors.deepPurple[800],
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            SizedBox(height: 6),
+                            Text(
+                              product.name,
+                              style: GoogleFonts.montserrat(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                color: Colors.deepPurple[900],
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            SizedBox(height: 4),
+                            Row(
+                              children: [
+                                if (product.style.isNotEmpty)
+                                  Expanded(
+                                    child: Text(
+                                      product.style,
+                                      style: TextStyle(
+                                        color: Colors.deepPurple[300],
+                                        fontSize: 11,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            Spacer(),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Row(
+                                    children: [
+                                      for (int i = 0;
+                                          i < min(product.couleur.length, 3);
+                                          i++)
+                                        Container(
+                                          margin: EdgeInsets.only(right: 4),
+                                          width: 12,
+                                          height: 12,
+                                          decoration: BoxDecoration(
+                                            color: _getColorFromString(
+                                                product.couleur[i]),
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                                color: cardBackgroundColor,
+                                                width: 1),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black
+                                                    .withOpacity(0.1),
+                                                blurRadius: 1,
+                                                spreadRadius: 0,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      if (product.couleur.length > 3)
+                                        Container(
+                                          margin: EdgeInsets.only(left: 2),
+                                          child: Text(
+                                            '+${product.couleur.length - 3}',
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              color: Colors.deepPurple[300],
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                                Container(
+                                  width: 28,
+                                  height: 28,
+                                  decoration: BoxDecoration(
+                                    color: Colors.deepPurple[100]!
+                                        .withOpacity(0.5),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: IconButton(
+                                    padding: EdgeInsets.zero,
+                                    icon: Icon(
+                                      Icons.arrow_forward,
+                                      size: 16,
+                                      color: Colors.deepPurple[800],
+                                    ),
+                                    onPressed: () => Get.to(() =>
+                                        ProductDetailsScreen(product: product)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Category tag
+              if (product.category.isNotEmpty)
+                Positioned(
+                  top: 12,
+                  left: 12,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: product.category.toLowerCase().contains('soleil')
+                          ? Colors.amber[700]
+                          : Colors.blue[700],
+                      borderRadius: BorderRadius.circular(4),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 4,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      product.category.toLowerCase().contains('soleil')
+                          ? 'Soleil'
+                          : 'Vue',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+
+              // Tap overlay
+              Positioned.fill(
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () =>
+                        Get.to(() => ProductDetailsScreen(product: product)),
+                    splashColor: Colors.deepPurple.withOpacity(0.1),
+                    highlightColor: Colors.transparent,
+                  ),
+                ),
+              ),
+
+              // Wishlist button
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: cardBackgroundColor.withOpacity(0.9),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 4,
+                        spreadRadius: 0,
+                      ),
+                    ],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(20),
+                      onTap: () => _toggleWishlist(product),
+                      child: Padding(
+                        padding: EdgeInsets.all(8),
+                        child: Icon(
+                          isInWishlist ? Icons.favorite : Icons.favorite_border,
+                          color: isInWishlist
+                              ? Colors.red[400]
+                              : Colors.deepPurple[300],
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    });
+  }
+
+// Helper function to convert color strings to Color objects
+  Color _getColorFromString(String colorName) {
+    switch (colorName.toLowerCase()) {
+      case 'red':
+        return Colors.red;
+      case 'blue':
+        return Colors.blue;
+      case 'green':
+        return Colors.green;
+      case 'black':
+        return Colors.black;
+      case 'white':
+        return Colors.white;
+      case 'yellow':
+        return Colors.yellow;
+      case 'purple':
+        return Colors.purple;
+      case 'orange':
+        return Colors.orange;
+      case 'pink':
+        return Colors.pink;
+      default:
+        return Colors.grey;
+    }
+  }
+
+// Keep this helper function which you already had
+  Color getColorFromHex(String hexString) {
+    final hexCode = hexString.replaceAll('#', '');
+    if (hexCode.length == 6) {
+      return Color(int.parse('0xFF$hexCode'));
+    } else {
+      return Colors.black;
+    }
+  }
+
+// Don't forget to add this import at the top of your file
+
+// Don't forget to add this import at the top of your file
 
   List<Product> _filterProducts(
       List<Product> allProducts, Map<int, dynamic> answers) {
@@ -730,9 +1306,9 @@ class RecommendationsScreen extends StatelessWidget {
           .toList();
 
       filteredProducts = filteredProducts.where((product) {
-        if (product.style == null || product.style!.isEmpty) return false;
+        if (product.style.isEmpty) return false;
 
-        String productStyle = product.style!.toLowerCase();
+        String productStyle = product.style.toLowerCase();
 
         // Vérifier les correspondances exactes ou partielles
         for (var shape in selectedShapes) {
@@ -801,7 +1377,7 @@ class RecommendationsScreen extends StatelessWidget {
           .toList();
 
       filteredProducts = filteredProducts.where((product) {
-        if (product.materiel == null || product.materiel!.isEmpty) return false;
+        if (product.materiel == null || product.materiel.isEmpty) return false;
 
         String material = product.materiel!.toLowerCase();
 
@@ -949,19 +1525,6 @@ class RecommendationsScreen extends StatelessWidget {
   }
 
   // Helper function to convert hex string to Color
-  Color getColorFromHex(String hexString) {
-    // Remove # if present
-    final hexCode = hexString.replaceAll('#', '');
-
-    // Ensure we have a 6-digit hex code
-    if (hexCode.length == 6) {
-      // Parse the hex code to an integer and add the full opacity value (0xFF)
-      return Color(int.parse('0xFF$hexCode'));
-    } else {
-      // Default to black if invalid hex
-      return Colors.black;
-    }
-  }
 }
 
 class ColorUtils {
@@ -1021,114 +1584,6 @@ class ColorUtils {
     } catch (_) {
       return false;
     }
-  }
-}
-
-class ProductCard extends StatelessWidget {
-  final Product product;
-  final VoidCallback onTap;
-
-  const ProductCard({required this.product, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: EdgeInsets.all(8),
-      elevation: 4,
-      child: InkWell(
-        onTap: onTap,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Image avec placeholder si vide
-            AspectRatio(
-              aspectRatio: 1,
-              child: product.image.isNotEmpty
-                  ? Image.network(
-                      product.image,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _buildPlaceholder(),
-                    )
-                  : _buildPlaceholder(),
-            ),
-            Padding(
-              padding: EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    product.name,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    product.marque,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '${product.prix} DT',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.deepPurple,
-                        ),
-                      ),
-                      if (product.model3D.isNotEmpty)
-                        Chip(
-                          label: Text('3D'),
-                          backgroundColor: Colors.deepPurple.withOpacity(0.1),
-                        ),
-                    ],
-                  ),
-                  SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 4,
-                    children: [
-                      if (product.style.isNotEmpty)
-                        Chip(
-                          label: Text(product.style),
-                          backgroundColor: Colors.deepPurple.withOpacity(0.1),
-                        ),
-                      if (product.materiel.isNotEmpty)
-                        Chip(
-                          label: Text(product.materiel),
-                          backgroundColor: Colors.deepPurple.withOpacity(0.1),
-                        ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPlaceholder() {
-    return Container(
-      color: Colors.grey[200],
-      child: Center(
-        child: Icon(
-          Icons.photo,
-          size: 50,
-          color: Colors.grey[400],
-        ),
-      ),
-    );
   }
 }
 
@@ -1346,7 +1801,9 @@ class SummaryScreen extends StatelessWidget {
           SizedBox(width: 16),
           Expanded(
             child: ElevatedButton(
-              onPressed: () => onConfirm(),
+              onPressed: () {
+                Get.toNamed('/recommandationScreen');
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.deepPurple,
                 foregroundColor: Colors.white,

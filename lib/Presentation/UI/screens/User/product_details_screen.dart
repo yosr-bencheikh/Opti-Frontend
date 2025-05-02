@@ -1,18 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_3d_controller/flutter_3d_controller.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:opti_app/Presentation/UI/screens/Admin/3D.dart';
-import 'package:opti_app/Presentation/UI/screens/Admin/Product3DViewer.dart';
-import 'package:opti_app/Presentation/UI/screens/User/Augmented_faces.dart';
+
 import 'package:opti_app/Presentation/UI/screens/User/Face_detection.dart';
-import 'package:opti_app/Presentation/UI/screens/User/Rotating3DModel.dart';
+
 import 'package:opti_app/Presentation/UI/screens/User/home_screen.dart';
 import 'package:opti_app/Presentation/UI/screens/User/reviews_screen.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
+import 'package:opti_app/core/styles/colors.dart';
 import 'package:opti_app/domain/entities/product_entity.dart';
 import 'package:opti_app/domain/entities/wishlist_item.dart';
 import 'package:opti_app/Presentation/controllers/auth_controller.dart';
 import 'package:opti_app/Presentation/controllers/wishlist_controller.dart';
+
+// Import your color palette class
+
 
 class ProductDetailsScreen extends GetView<ProductController> {
   final Product product;
@@ -37,13 +41,14 @@ class ProductDetailsScreen extends GetView<ProductController> {
     _initializeData();
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.white, // Keep the background white as requested
       body: CustomScrollView(
         slivers: [
           // Sticky Image Section avec bouton AR superposé
           SliverAppBar(
             expandedHeight: 300, // Height of the image when expanded
             pinned: true, // Make the image stick to the top
+            backgroundColor: const Color.fromARGB(255, 202, 221, 242).withOpacity(0.4),// Changed to your secondary color
             flexibleSpace: Stack(
               children: [
                 FlexibleSpaceBar(
@@ -57,19 +62,18 @@ class ProductDetailsScreen extends GetView<ProductController> {
                                 if (snapshot.connectionState ==
                                     ConnectionState.waiting) {
                                   return Center(
-                                      child: CircularProgressIndicator());
+                                      child: CircularProgressIndicator(
+                                        color: AppColors.accentColor, // Changed to accent color
+                                      ));
                                 }
 
                                 if (snapshot.hasData && snapshot.data == true) {
-                                  return Rotating3DModel(
-                                    modelUrl: normalizedModelUrl,
-                                    // Ajustez selon vos préférences
-                                  );
+                                  return Flutter3DViewer(src: product.model3D);
                                 } else {
                                   // Fallback à l'image si le modèle n'est pas disponible
                                   return Container(
                                     decoration: BoxDecoration(
-                                      color: Colors.grey[200],
+                                      color: AppColors.softWhite, // Changed to soft white
                                     ),
                                     child: product.image.isNotEmpty
                                         ? Image.network(
@@ -80,7 +84,7 @@ class ProductDetailsScreen extends GetView<ProductController> {
                                           )
                                         : Center(
                                             child: Icon(Icons.image,
-                                                size: 100, color: Colors.grey),
+                                                size: 100, color: AppColors.greyTextColor), // Changed to grey text color
                                           ),
                                   );
                                 }
@@ -88,7 +92,7 @@ class ProductDetailsScreen extends GetView<ProductController> {
                             )
                           : Container(
                               decoration: BoxDecoration(
-                                color: Colors.grey[200],
+                                color: AppColors.softWhite, // Changed to soft white
                               ),
                               child: product.image.isNotEmpty
                                   ? Image.network(
@@ -99,7 +103,7 @@ class ProductDetailsScreen extends GetView<ProductController> {
                                     )
                                   : Center(
                                       child: Icon(Icons.image,
-                                          size: 100, color: Colors.grey),
+                                          size: 100, color: AppColors.greyTextColor), // Changed to grey text color
                                     ),
                             ),
                       if (product.model3D.isNotEmpty)
@@ -110,7 +114,7 @@ class ProductDetailsScreen extends GetView<ProductController> {
                             padding: EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.6),
+                              color: AppColors.primaryColor.withOpacity(0.6), // Changed to primary color
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
@@ -175,82 +179,12 @@ class ProductDetailsScreen extends GetView<ProductController> {
     return GlassesManagerService.ensureAbsoluteUrl(url);
   }
 
-  // Ajoutez la méthode pour afficher le modèle 3D en plein écran
-  void _showFullScreen3DModel(BuildContext context, Product product) {
-    if (product.model3D.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Aucun modèle 3D disponible pour ce produit')),
-      );
-      return;
-    }
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => Scaffold(
-          appBar: AppBar(
-            title: Text('Vue 3D - ${product.name}'),
-          ),
-          body: Rotating3DModel(modelUrl: product.model3D),
-        ),
-      ),
-    );
-  }
-
   Widget _buildARButtons(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        // Bouton 3D (seulement si le produit a un modèle 3D)
-        if (product.model3D.isNotEmpty) ...[
-          _build3DViewButton(context),
-          SizedBox(height: 12),
-        ],
-        // Bouton AR
         _buildARButton(context),
       ],
-    );
-  }
-
-  // Bouton pour ouvrir le modèle 3D en dialog
-  Widget _build3DViewButton(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(50),
-        onTap: () {
-          _showFullScreen3DModel(context, product);
-        },
-        child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: Colors.purple[600],
-            borderRadius: BorderRadius.circular(50),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                blurRadius: 6,
-                spreadRadius: 1,
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.fullscreen, color: Colors.white, size: 20),
-              SizedBox(width: 8),
-              Text(
-                "Plein écran 3D",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 
@@ -324,7 +258,7 @@ class ProductDetailsScreen extends GetView<ProductController> {
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.blue[600],
+            color: AppColors.accentColor, // Changed to accent color
             borderRadius: BorderRadius.circular(50),
             boxShadow: [
               BoxShadow(
@@ -384,6 +318,9 @@ class ProductDetailsScreen extends GetView<ProductController> {
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: Text("OK"),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primaryColor, // Changed to primary color
+              ),
             ),
           ],
         ),
@@ -399,10 +336,10 @@ class ProductDetailsScreen extends GetView<ProductController> {
         children: [
           Text(
             product.name,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: AppColors.textColor, // Changed to text color
             ),
           ),
           const SizedBox(height: 8),
@@ -418,23 +355,23 @@ class ProductDetailsScreen extends GetView<ProductController> {
             children: [
               Text(
                 '€${product.prix.toStringAsFixed(2)}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Colors.blue,
+                  color: AppColors.primaryColor, // Changed to primary color
                 ),
               ),
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.green[50],
+                  color: Color(0xFFECFDF5), // Light green background
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   'En stock',
                   style: TextStyle(
-                    color: Colors.green[700],
+                    color: Color(0xFF047857), // Dark green text
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -452,12 +389,12 @@ class ProductDetailsScreen extends GetView<ProductController> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Description',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: AppColors.textColor, // Changed to text color
             ),
           ),
           const SizedBox(height: 8),
@@ -465,7 +402,7 @@ class ProductDetailsScreen extends GetView<ProductController> {
             product.description,
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[700],
+              color: AppColors.greyTextColor, // Changed to grey text color
               height: 1.5,
             ),
           ),
@@ -481,22 +418,22 @@ class ProductDetailsScreen extends GetView<ProductController> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Spécifications',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: AppColors.textColor, // Changed to text color
             ),
           ),
           const SizedBox(height: 12),
           Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.withOpacity(0.2)),
-            ),
+  padding: const EdgeInsets.all(16),
+  decoration: BoxDecoration(
+    color: Colors.white, // Blanc pur comme dans OpticianProductsScreen
+    borderRadius: BorderRadius.circular(12),
+    border: Border.all(color: AppColors.paleBlue.withOpacity(0.3)),
+  ),
             child: Column(
               children: [
                 _buildSpecRow('Marque', product.marque),
@@ -528,7 +465,7 @@ class ProductDetailsScreen extends GetView<ProductController> {
               label,
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey[600],
+                color: AppColors.greyTextColor, // Changed to grey text color
               ),
             ),
             Row(
@@ -538,12 +475,12 @@ class ProductDetailsScreen extends GetView<ProductController> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: special ? Colors.purple : Colors.black87,
+                    color: special ? AppColors.accentViolet : AppColors.textColor, // Changed to accent violet for special, text color for normal
                   ),
                 ),
                 if (onTap != null) ...[
                   SizedBox(width: 8),
-                  Icon(Icons.arrow_forward_ios, size: 14, color: Colors.purple),
+                  Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.accentViolet), // Changed to accent violet
                 ],
               ],
             ),
@@ -553,7 +490,6 @@ class ProductDetailsScreen extends GetView<ProductController> {
     );
   }
 
-  // Rating Section
   // Rating Section: Updated to fetch real-time values from ProductController
   Widget _buildRatingSection() {
     // Get the product controller
@@ -570,26 +506,26 @@ class ProductDetailsScreen extends GetView<ProductController> {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: Colors.amber.withOpacity(0.1),
+            color: Color(0xFFFEF3C7), // Light amber color
             borderRadius: BorderRadius.circular(8),
           ),
           child: Row(
             children: [
-              const Icon(Icons.star, color: Colors.amber, size: 20),
+              const Icon(Icons.star, color: Color(0xFFD97706), size: 20), // Amber color
               const SizedBox(width: 4),
               Text(
                 ' ${updatedProduct.averageRating.toStringAsFixed(1)}',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: Colors.amber[800],
+                  color: Color(0xFFB45309), // Dark amber
                 ),
               ),
               const SizedBox(width: 4),
               Text(
                 ' (${updatedProduct.totalReviews} avis)',
-                style: const TextStyle(color: Colors.grey),
+                style: TextStyle(color: AppColors.greyTextColor), // Changed to grey text color
               ),
-              const Icon(Icons.chevron_right, color: Colors.grey, size: 20),
+              Icon(Icons.chevron_right, color: AppColors.greyTextColor, size: 20), // Changed to grey text color
             ],
           ),
         );
@@ -605,17 +541,18 @@ class ProductDetailsScreen extends GetView<ProductController> {
     return Builder(builder: (BuildContext context) {
       // Add this Builder widget to get context
       return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              spreadRadius: 1,
-              blurRadius: 10,
-            ),
-          ],
-        ),
+  padding: const EdgeInsets.all(16),
+  decoration: BoxDecoration(
+    color: Colors.white,
+    boxShadow: [
+      BoxShadow(
+        color: Colors.black.withOpacity(0.05),
+        spreadRadius: 1,
+        blurRadius: 5,
+        offset: Offset(0, -2),
+      ),
+    ],
+  ),
         child: Row(
           children: [
             Obx(() {
@@ -623,7 +560,7 @@ class ProductDetailsScreen extends GetView<ProductController> {
               return IconButton(
                 icon: Icon(
                   isInWishlist.value ? Icons.favorite : Icons.favorite_border,
-                  color: isInWishlist.value ? Colors.red : Colors.grey,
+                  color: isInWishlist.value ? Colors.red : AppColors.greyTextColor, // Changed to grey text color when not favorite
                   size: 28,
                 ),
                 onPressed: () async {
@@ -682,8 +619,8 @@ class ProductDetailsScreen extends GetView<ProductController> {
                       },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: product.quantiteStock == 0
-                      ? Colors.grey // Change the button color when disabled
-                      : Colors.pink[80],
+                      ? Colors.grey[300] // Change the button color when disabled
+                      : AppColors.primaryColor, // Changed to primary color
                   padding: EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -699,7 +636,7 @@ class ProductDetailsScreen extends GetView<ProductController> {
                     fontWeight: FontWeight.bold,
                     color: product.quantiteStock == 0
                         ? Colors.red
-                        : Colors.black, // Set color to red when out of stock
+                        : Colors.white, // Changed to white for better contrast
                   ),
                 ),
               ),

@@ -57,7 +57,6 @@ class ProfileScreen extends GetView<AuthController> {
                 _buildInventoriesSection(),
                 const SizedBox(height: 24),
                 // Section « Preferences » : toggles (Notifications push, Face ID, Code PIN)
-                _buildPreferencesSection(),
                 const SizedBox(height: 24),
                 // Bouton « Logout »
                 _buildLogoutButton(),
@@ -191,68 +190,62 @@ class ProfileScreen extends GetView<AuthController> {
   // Section « Inventories » : Mes magasins, Support
   //------------------------------------------------------------------------------
   Widget _buildInventoriesSection() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 4,
-            offset: Offset(0, 2),
-          ),
-        ],
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Shopping',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(
+              'Shopping',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.blue.shade700,
+              ),
             ),
           ),
-          const SizedBox(height: 8),
-          // Mes magasins
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.favorite, color: Colors.black),
-            title: const Text('Mes favoris'),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+          const Divider(height: 1, thickness: 1),
+          _buildListTile(
+            icon: Icons.favorite_border,
+            iconColor: Colors.red.shade400,
+            title: 'Mes favoris',
+            subtitle: 'Articles sauvegardés pour plus tard',
             onTap: () {
               final userEmail = controller.currentUser?.email;
               if (userEmail != null) {
                 Get.to(() => WishlistPage(userEmail: userEmail));
               } else {
-                Get.snackbar('Erreur', 'Veuillez vous connecter d\'abord');
+                Get.snackbar(
+                  'Erreur',
+                  'Veuillez vous connecter d\'abord',
+                  snackPosition: SnackPosition.BOTTOM,
+                  backgroundColor: Colors.red.shade400,
+                  colorText: Colors.white,
+                );
               }
-              // Action pour « Mes magasins »
             },
           ),
-          Divider(color: Colors.grey[300]),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading:
-                const Icon(Icons.shopping_cart_outlined, color: Colors.black),
-            title: const Text('Mon panier'),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: () {
-              Get.to(() => CartScreen());
-              // Action pour « Mes magasins »
-            },
+          const Divider(height: 1, thickness: 1),
+          _buildListTile(
+            icon: Icons.shopping_cart_outlined,
+            iconColor: Colors.blue.shade400,
+            title: 'Mon panier',
+            subtitle: 'Voir et modifier vos articles',
+            onTap: () => Get.to(() => CartScreen()),
           ),
-          Divider(color: Colors.grey[300]),
-          // Support
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.store, color: Colors.black),
-            title: const Text('Mes commandes'),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+          const Divider(height: 1, thickness: 1),
+          _buildListTile(
+            icon: Icons.receipt_long_outlined,
+            iconColor: Colors.green.shade600,
+            title: 'Mes commandes',
+            subtitle: 'Suivre vos achats récents',
             onTap: () {
               navigationController.setSelectedIndex(2);
-
               Get.to(() => OrdersListPage());
             },
           ),
@@ -261,100 +254,86 @@ class ProfileScreen extends GetView<AuthController> {
     );
   }
 
-  //------------------------------------------------------------------------------
-  // Section « Preferences » : toggles (Notifications push, Face ID, Code PIN)
-  //------------------------------------------------------------------------------
-  Widget _buildPreferencesSection() {
-    return Container(
-      padding: const EdgeInsets.all(5),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 4,
-            offset: Offset(0, 2),
-          ),
-        ],
+  Widget _buildListTile({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: iconColor.withOpacity(0.1),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, color: iconColor, size: 24),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Préférences',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 2),
-          // Notifications push
-          Obx(
-            () => SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Recevoir des notifications'),
-              value: pushNotifications.value,
-              onChanged: (val) => pushNotifications.value = val,
-            ),
-          ),
-
-          // Face ID
-        ],
+      title: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+        ),
       ),
+      subtitle: Text(
+        subtitle,
+        style: TextStyle(
+          fontSize: 13,
+          color: Colors.grey.shade600,
+        ),
+      ),
+      trailing: Icon(
+        Icons.chevron_right,
+        color: Colors.grey.shade400,
+      ),
+      onTap: onTap,
     );
   }
 
   //------------------------------------------------------------------------------
   // Bouton « Logout »
   //------------------------------------------------------------------------------
-  Widget _buildLogoutButton() {
-    return GestureDetector(
-      onTap: () {
-        Get.defaultDialog(
-          title: "Confirm Logout",
-          middleText: "Are you sure you want to log out?",
-          textCancel: "No",
-          textConfirm: "Yes",
-          confirmTextColor: Colors.white,
-          onConfirm: () {
-            controller.logout();
-            Get.back(); // Close the dialog
-          },
-          onCancel: () {},
-          barrierDismissible: false, // Prevent dismissing by tapping outside
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: const [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 4,
-              offset: Offset(0, 2),
-            ),
-          ],
+ Widget _buildLogoutButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: () {
+          Get.defaultDialog(
+            title: "Confirmation",
+            titleStyle: TextStyle(color: Colors.blue.shade700),
+            middleText: "Êtes-vous sûr de vouloir vous déconnecter ?",
+            textCancel: "Non",
+            textConfirm: "Oui",
+            confirmTextColor: Colors.white,
+            buttonColor: Colors.blue.shade700,
+            onConfirm: () {
+              controller.logout();
+              Get.back();
+            },
+            cancelTextColor: Colors.blue.shade700,
+          );
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.red.shade50,
+          foregroundColor: Colors.red.shade700,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: Colors.red.shade200, width: 1),
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 14),
         ),
-        child: Row(
-          children: const [
-            Icon(Icons.logout, color: Colors.red),
-            SizedBox(width: 12),
-            Text(
-              'Se Déconnecter',
-              style: TextStyle(
-                color: Colors.red,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
+        child: const Text(
+          'Se Déconnecter',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );
   }
-
   //------------------------------------------------------------------------------
   // Bottom Navigation
   //------------------------------------------------------------------------------

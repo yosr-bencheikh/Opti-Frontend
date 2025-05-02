@@ -23,6 +23,7 @@ import 'package:opti_app/Presentation/controllers/product_controller.dart';
 import 'package:opti_app/Presentation/controllers/wishlist_controller.dart';
 import 'package:opti_app/Presentation/widgets/productCard.dart';
 import 'package:opti_app/Presentation/widgets/opticalstoreCard.dart';
+import 'package:opti_app/core/styles/colors.dart';
 import 'package:opti_app/domain/entities/Boutique.dart';
 import 'package:opti_app/domain/entities/product_entity.dart';
 import 'package:opti_app/domain/entities/user.dart';
@@ -61,6 +62,9 @@ class HomeScreen extends GetView<AuthController> {
     return Scaffold(
       body: Stack(
         children: [
+           Container(
+      color: AppColors.lightBlueBackground, // Arrière-plan blanc
+    ),
           Obx(() {
             if (controller.isLoading.value) {
               return const Center(child: CircularProgressIndicator());
@@ -110,10 +114,11 @@ class HomeScreen extends GetView<AuthController> {
       expandedHeight: 120,
       floating: false,
       pinned: true,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.whiteColor,
       elevation: 0,
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
+          color: AppColors.softWhite,
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: SafeArea(
             child: Row(
@@ -181,11 +186,11 @@ class HomeScreen extends GetView<AuthController> {
     return Container(
       margin: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
+        color: AppColors.softWhite,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+          color: AppColors.greyTextColor.withOpacity(0.1),
             spreadRadius: 1,
             blurRadius: 4,
             offset: const Offset(0, 1),
@@ -225,7 +230,7 @@ class HomeScreen extends GetView<AuthController> {
       final filteredProducts = productController.products
           .where((product) =>
               product.name.toLowerCase().contains(query) ||
-              (product.marque?.toLowerCase() ?? '').contains(query))
+              (product.marque.toLowerCase()).contains(query))
           .toList();
 
       final filteredOpticians = opticienController.opticiensList
@@ -330,10 +335,9 @@ class HomeScreen extends GetView<AuthController> {
                                     ),
                                   ],
                                 ),
-                                if (product.marque != null &&
-                                    product.marque!.isNotEmpty)
+                                if (product.marque.isNotEmpty)
                                   Text(
-                                    product.marque!,
+                                    product.marque,
                                     style: const TextStyle(
                                       fontSize: 12,
                                       color: Colors.grey,
@@ -434,8 +438,8 @@ class HomeScreen extends GetView<AuthController> {
                     borderRadius: BorderRadius.circular(16),
                     gradient: LinearGradient(
                       colors: index == 0
-                          ? [Colors.purpleAccent, Colors.deepPurpleAccent]
-                          : [Colors.blueAccent, Colors.lightBlueAccent],
+                          ? [AppColors.primaryColor, AppColors.secondaryColor]
+                          : [AppColors.accentColor, AppColors.softBlue],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -489,8 +493,8 @@ class HomeScreen extends GetView<AuthController> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: _currentPage.value == index
-                        ? Colors.purpleAccent
-                        : Colors.grey[400],
+                  ? AppColors.secondaryColor // Bleu royal
+            : AppColors.paleBlue,
                   ),
                 ),
               ),
@@ -722,8 +726,9 @@ class HomeScreen extends GetView<AuthController> {
     return Obx(() => BottomNavigationBar(
           type: BottomNavigationBarType.fixed,
           currentIndex: navigationController.selectedIndex.value,
-          selectedItemColor: Colors.blue,
-          unselectedItemColor: Colors.grey,
+          selectedItemColor: AppColors.secondaryColor,
+          unselectedItemColor: AppColors.greyTextColor, // Gris bleuté
+          backgroundColor: AppColors.whiteColor, 
           items: const [
             BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Accueil'),
             BottomNavigationBarItem(icon: Icon(Icons.store), label: 'Magasins'),
