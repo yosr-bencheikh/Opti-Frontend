@@ -7,6 +7,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:opti_app/Presentation/UI/screens/Admin/3D.dart';
+import 'package:opti_app/Presentation/UI/screens/User/enhanced_product_card.dart';
 import 'package:opti_app/Presentation/UI/screens/User/product_details_screen.dart';
 import 'package:opti_app/Presentation/controllers/auth_controller.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
@@ -131,15 +132,15 @@ class _ProGlassesQuestionnaireScreenState
       'type': 'single', // This remains single selection
       'options': [
         {
-          'label': 'Économique (100-250€)',
+          'label': 'Économique (100-250 TND)',
           'image': 'assets/images/low.jpg',
         },
         {
-          'label': 'Moyen (250-500€)',
+          'label': 'Moyen (250-500 TND)',
           'image': 'assets/images/pocket.jpg',
         },
         {
-          'label': 'Haut de gamme (800€+)',
+          'label': 'Haut de gamme (800TND+)',
           'image': 'assets/images/high.jpg',
         },
       ],
@@ -497,9 +498,7 @@ class _ProGlassesQuestionnaireScreenState
 }
 
 class RecommendationsScreen extends StatelessWidget {
-  final ProductController _productController = Get.find<ProductController>();
-  final WishlistController wishlistController = Get.find();
-  final AuthController authController = Get.find();
+  final ProductController _productController = Get.find();
 
   @override
   Widget build(BuildContext context) {
@@ -525,93 +524,107 @@ class RecommendationsScreen extends StatelessWidget {
       ),
       body: Obx(() {
         if (_productController.isLoading) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                CircularProgressIndicator(color: Colors.deepPurple),
-                SizedBox(height: 16),
-                Text(
-                  'Recherche des lunettes idéales pour vous...',
-                  style: TextStyle(
-                    color: Colors.deepPurple[800],
-                    fontSize: 16,
-                  ),
-                ),
-              ],
-            ),
-          );
+          return _buildLoadingIndicator();
         }
 
         if (_productController.error != null) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.error_outline, size: 60, color: Colors.red[400]),
-                SizedBox(height: 16),
-                Text(
-                  'Erreur: ${_productController.error}',
-                  style: TextStyle(fontSize: 18, color: Colors.red[700]),
-                ),
-                SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: () => _productController.loadProducts(),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
-                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  ),
-                  child: Text('Réessayer'),
-                ),
-              ],
-            ),
-          );
+          return _buildErrorState();
         }
 
         final recommendedProducts =
             _filterProducts(_productController.products, answers);
 
-        if (recommendedProducts.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.search_off, size: 80, color: Colors.grey[400]),
-                SizedBox(height: 24),
-                Text(
-                  'Aucun produit correspondant à vos critères.',
-                  style: TextStyle(fontSize: 18, color: Colors.deepPurple[800]),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: 12),
-                Text(
-                  'Essayez de modifier vos préférences pour obtenir plus de résultats.',
-                  style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: () => Get.back(),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
-                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  ),
-                  child: Text('Modifier les préférences'),
-                ),
-              ],
-            ),
-          );
-        }
-
-        return ListView(
-          physics: BouncingScrollPhysics(),
-          padding: EdgeInsets.zero,
-          children: [
-            _buildHeaderSection(recommendedProducts.length),
-            _buildProductListSection(recommendedProducts),
-          ],
-        );
+        return recommendedProducts.isEmpty
+            ? _buildEmptyState()
+            : _buildProductList(recommendedProducts);
       }),
+    );
+  }
+
+  Widget _buildLoadingIndicator() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(color: Colors.deepPurple),
+          SizedBox(height: 16),
+          Text(
+            'Recherche des lunettes idéales pour vous...',
+            style: TextStyle(
+              color: Colors.deepPurple[800],
+              fontSize: 16,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline, size: 60, color: Colors.red[400]),
+          SizedBox(height: 16),
+          Text(
+            'Erreur: ${_productController.error}',
+            style: TextStyle(fontSize: 18, color: Colors.red[700]),
+          ),
+          SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: () => _productController.loadProducts(),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.deepPurple,
+              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+            child: Text('Réessayer'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.search_off, size: 80, color: Colors.grey[400]),
+          SizedBox(height: 24),
+          Text(
+            'Aucun produit correspondant à vos critères.',
+            style: TextStyle(fontSize: 18, color: Colors.deepPurple[800]),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: 12),
+          Text(
+            'Essayez de modifier vos préférences pour obtenir plus de résultats.',
+            style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: () => Get.back(),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.deepPurple,
+              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+            child: Text('Modifier les préférences'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProductList(List<Product> products) {
+    return ListView(
+      physics: BouncingScrollPhysics(),
+      padding: EdgeInsets.zero,
+      children: [
+        _buildHeaderSection(products.length),
+        _buildProductGrid(products),
+      ],
     );
   }
 
@@ -642,163 +655,7 @@ class RecommendationsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildProductCard(BuildContext context, Product product) {
-    // Normaliser l'URL du modèle 3D
-    String normalizedModelUrl =
-        product.model3D.isNotEmpty ? _normalizeModelUrl(product.model3D) : '';
-
-    return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          Get.to(() => ProductDetailsScreen(product: product));
-        },
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Image ou viewer 3D
-            ClipRRect(
-              borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-              child: Stack(
-                children: [
-                  AspectRatio(
-                    aspectRatio: 1,
-                    child: product.model3D.isNotEmpty
-                        ? FutureBuilder<bool>(
-                            future: _checkModelAvailability(normalizedModelUrl),
-                            builder: (context, snapshot) {
-                              if (snapshot.connectionState ==
-                                  ConnectionState.waiting) {
-                                return Center(
-                                    child: CircularProgressIndicator());
-                              }
-
-                              if (snapshot.hasData && snapshot.data == true) {
-                                // Utiliser le widget Rotating3DModel avec autoRotate contrôlé par le passage de la souris
-                                return Flutter3DViewer(src: product.model3D);
-                              } else {
-                                // Fallback à l'image si le modèle n'est pas disponible
-                                return product.image.isNotEmpty
-                                    ? Image.network(product.image,
-                                        fit: BoxFit.cover)
-                                    : Center(
-                                        child: Icon(Icons.broken_image,
-                                            size: 50, color: Colors.grey));
-                              }
-                            },
-                          )
-                        : product.image.isNotEmpty
-                            ? Image.network(product.image, fit: BoxFit.cover)
-                            : Center(
-                                child: Icon(Icons.image,
-                                    size: 50, color: Colors.grey)),
-                  ),
-                  // Bouton Wishlist
-                  Positioned(
-                    top: 8,
-                    left: 8,
-                    child: IconButton(
-                      icon: Obx(() {
-                        final isInWishlist =
-                            wishlistController.isProductInWishlist(product.id!);
-                        return Icon(
-                          isInWishlist ? Icons.favorite : Icons.favorite_border,
-                          color: isInWishlist ? Colors.red : Colors.grey,
-                        );
-                      }),
-                      onPressed: () => _toggleWishlist(product),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Info produit
-            Padding(
-              padding: EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    product.name,
-                    style: GoogleFonts.montserrat(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    product.marque,
-                    style: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontSize: 12,
-                    ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    '${product.prix.toStringAsFixed(2)} TND',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue.shade700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _toggleWishlist(Product product) async {
-    final userEmail = authController.currentUser?.email;
-    if (userEmail == null) {
-      Get.snackbar('Erreur', 'Veuillez vous connecter d\'abord');
-      return;
-    }
-
-    try {
-      final isInWishlist = wishlistController.isProductInWishlist(product.id!);
-
-      if (isInWishlist) {
-        await wishlistController.removeFromWishlist(product.id!);
-      } else {
-        final wishlistItem = WishlistItem(
-          userId: userEmail,
-          productId: product.id!,
-        );
-        await wishlistController.addToWishlist(wishlistItem);
-      }
-    } catch (e) {
-      Get.snackbar(
-          'Erreur', 'Impossible de mettre à jour la liste de souhaits');
-    }
-  }
-
-  Future<bool> _checkModelAvailability(String url) async {
-    if (url.isEmpty) return false;
-
-    try {
-      final response = await http.head(Uri.parse(url));
-      return response.statusCode == 200;
-    } catch (e) {
-      print('Erreur de vérification du modèle 3D: $e');
-      return false;
-    }
-  }
-
-  String _normalizeModelUrl(String url) {
-    // Implémentez votre logique de normalisation d'URL ici
-    return GlassesManagerService.ensureAbsoluteUrl(url);
-  }
-
-  Widget _buildProductListSection(List<Product> products) {
+  Widget _buildProductGrid(List<Product> products) {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 16),
       child: GridView.builder(
@@ -811,719 +668,584 @@ class RecommendationsScreen extends StatelessWidget {
           mainAxisSpacing: 20,
         ),
         itemCount: products.length,
-        itemBuilder: (context, index) {
-          return _buildEnhancedProductCard(context, products[index]);
-        },
+        itemBuilder: (context, index) =>
+            EnhancedProductCard(product: products[index]),
       ),
     );
   }
 
-  Widget _buildEnhancedProductCard(BuildContext context, Product product) {
-    String normalizedModelUrl =
-        product.model3D.isNotEmpty ? _normalizeModelUrl(product.model3D) : '';
-
-    return Obx(() {
-      final isInWishlist = wishlistController.isProductInWishlist(product.id!);
-      final Color cardBackgroundColor =
-          isInWishlist ? Colors.pink[100]!.withOpacity(0.3) : Color(0xFFF5F3FA);
-
-      return Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              offset: Offset(0, 8),
-              blurRadius: 15,
-              spreadRadius: 1,
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: Stack(
-            children: [
-              // Card Background
-              Container(
-                color: cardBackgroundColor,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Image Section (60% of card height)
-                    Expanded(
-                      flex: 6,
-                      child: Stack(
-                        children: [
-                          Container(
-                            color: Colors.grey[50],
-                            child: product.model3D.isNotEmpty
-                                ? FutureBuilder<bool>(
-                                    future: _checkModelAvailability(
-                                        normalizedModelUrl),
-                                    builder: (context, snapshot) {
-                                      if (snapshot.connectionState ==
-                                          ConnectionState.waiting) {
-                                        return Center(
-                                          child: CircularProgressIndicator(
-                                            color: Colors.deepPurple[300],
-                                            strokeWidth: 2,
-                                          ),
-                                        );
-                                      }
-                                      if (snapshot.hasData &&
-                                          snapshot.data == true) {
-                                        return Flutter3DViewer(
-                                            src: product.model3D);
-                                      } else {
-                                        return product.image.isNotEmpty
-                                            ? Hero(
-                                                tag: 'product-${product.id}',
-                                                child: Image.network(
-                                                  product.image,
-                                                  fit: BoxFit.cover,
-                                                  width: double.infinity,
-                                                  height: double.infinity,
-                                                  loadingBuilder: (context,
-                                                      child, loadingProgress) {
-                                                    if (loadingProgress == null)
-                                                      return child;
-                                                    return Center(
-                                                      child:
-                                                          CircularProgressIndicator(
-                                                        value: loadingProgress
-                                                                    .expectedTotalBytes !=
-                                                                null
-                                                            ? loadingProgress
-                                                                    .cumulativeBytesLoaded /
-                                                                loadingProgress
-                                                                    .expectedTotalBytes!
-                                                            : null,
-                                                        color: Colors
-                                                            .deepPurple[300],
-                                                      ),
-                                                    );
-                                                  },
-                                                  errorBuilder: (context, error,
-                                                          stackTrace) =>
-                                                      Center(
-                                                    child: Icon(
-                                                      Icons.broken_image,
-                                                      size: 40,
-                                                      color: Colors.grey[400],
-                                                    ),
-                                                  ),
-                                                ),
-                                              )
-                                            : Center(
-                                                child: Icon(
-                                                  Icons.image,
-                                                  size: 40,
-                                                  color: Colors.grey[400],
-                                                ),
-                                              );
-                                      }
-                                    },
-                                  )
-                                : product.image.isNotEmpty
-                                    ? Hero(
-                                        tag: 'product-${product.id}',
-                                        child: Image.network(
-                                          product.image,
-                                          fit: BoxFit.cover,
-                                          width: double.infinity,
-                                          height: double.infinity,
-                                          loadingBuilder: (context, child,
-                                              loadingProgress) {
-                                            if (loadingProgress == null)
-                                              return child;
-                                            return Center(
-                                              child: CircularProgressIndicator(
-                                                value: loadingProgress
-                                                            .expectedTotalBytes !=
-                                                        null
-                                                    ? loadingProgress
-                                                            .cumulativeBytesLoaded /
-                                                        loadingProgress
-                                                            .expectedTotalBytes!
-                                                    : null,
-                                                color: Colors.deepPurple[300],
-                                              ),
-                                            );
-                                          },
-                                          errorBuilder:
-                                              (context, error, stackTrace) =>
-                                                  Center(
-                                            child: Icon(
-                                              Icons.broken_image,
-                                              size: 40,
-                                              color: Colors.grey[400],
-                                            ),
-                                          ),
-                                        ),
-                                      )
-                                    : Center(
-                                        child: Icon(
-                                          Icons.image,
-                                          size: 40,
-                                          color: Colors.grey[400],
-                                        ),
-                                      ),
-                          ),
-                          Positioned(
-                            bottom: 0,
-                            left: 0,
-                            child: Container(
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: Colors.deepPurple[700],
-                                borderRadius: BorderRadius.only(
-                                  topRight: Radius.circular(12),
-                                ),
-                              ),
-                              child: Text(
-                                '${product.prix.toStringAsFixed(2)} TND',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // Info Section (40% of card height)
-                    Expanded(
-                      flex: 4,
-                      child: Container(
-                        padding: EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              cardBackgroundColor,
-                              cardBackgroundColor.withOpacity(0.7),
-                            ],
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: Colors.deepPurple.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                product.marque,
-                                style: TextStyle(
-                                  color: Colors.deepPurple[800],
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            SizedBox(height: 6),
-                            Text(
-                              product.name,
-                              style: GoogleFonts.montserrat(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                                color: Colors.deepPurple[900],
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            SizedBox(height: 4),
-                            Row(
-                              children: [
-                                if (product.style.isNotEmpty)
-                                  Expanded(
-                                    child: Text(
-                                      product.style,
-                                      style: TextStyle(
-                                        color: Colors.deepPurple[300],
-                                        fontSize: 11,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            Spacer(),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Row(
-                                    children: [
-                                      for (int i = 0;
-                                          i < min(product.couleur.length, 3);
-                                          i++)
-                                        Container(
-                                          margin: EdgeInsets.only(right: 4),
-                                          width: 12,
-                                          height: 12,
-                                          decoration: BoxDecoration(
-                                            color: _getColorFromString(
-                                                product.couleur[i]),
-                                            shape: BoxShape.circle,
-                                            border: Border.all(
-                                                color: cardBackgroundColor,
-                                                width: 1),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: Colors.black
-                                                    .withOpacity(0.1),
-                                                blurRadius: 1,
-                                                spreadRadius: 0,
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      if (product.couleur.length > 3)
-                                        Container(
-                                          margin: EdgeInsets.only(left: 2),
-                                          child: Text(
-                                            '+${product.couleur.length - 3}',
-                                            style: TextStyle(
-                                              fontSize: 10,
-                                              color: Colors.deepPurple[300],
-                                            ),
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                                Container(
-                                  width: 28,
-                                  height: 28,
-                                  decoration: BoxDecoration(
-                                    color: Colors.deepPurple[100]!
-                                        .withOpacity(0.5),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: IconButton(
-                                    padding: EdgeInsets.zero,
-                                    icon: Icon(
-                                      Icons.arrow_forward,
-                                      size: 16,
-                                      color: Colors.deepPurple[800],
-                                    ),
-                                    onPressed: () => Get.to(() =>
-                                        ProductDetailsScreen(product: product)),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Category tag
-              if (product.category.isNotEmpty)
-                Positioned(
-                  top: 12,
-                  left: 12,
-                  child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: product.category.toLowerCase().contains('soleil')
-                          ? Colors.amber[700]
-                          : Colors.blue[700],
-                      borderRadius: BorderRadius.circular(4),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 4,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Text(
-                      product.category.toLowerCase().contains('soleil')
-                          ? 'Soleil'
-                          : 'Vue',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-
-              // Tap overlay
-              Positioned.fill(
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(16),
-                    onTap: () =>
-                        Get.to(() => ProductDetailsScreen(product: product)),
-                    splashColor: Colors.deepPurple.withOpacity(0.1),
-                    highlightColor: Colors.transparent,
-                  ),
-                ),
-              ),
-
-              // Wishlist button
-              Positioned(
-                top: 8,
-                right: 8,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: cardBackgroundColor.withOpacity(0.9),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 4,
-                        spreadRadius: 0,
-                      ),
-                    ],
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(20),
-                      onTap: () => _toggleWishlist(product),
-                      child: Padding(
-                        padding: EdgeInsets.all(8),
-                        child: Icon(
-                          isInWishlist ? Icons.favorite : Icons.favorite_border,
-                          color: isInWishlist
-                              ? Colors.red[400]
-                              : Colors.deepPurple[300],
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    });
-  }
-
-// Helper function to convert color strings to Color objects
-  Color _getColorFromString(String colorName) {
-    switch (colorName.toLowerCase()) {
-      case 'red':
-        return Colors.red;
-      case 'blue':
-        return Colors.blue;
-      case 'green':
-        return Colors.green;
-      case 'black':
-        return Colors.black;
-      case 'white':
-        return Colors.white;
-      case 'yellow':
-        return Colors.yellow;
-      case 'purple':
-        return Colors.purple;
-      case 'orange':
-        return Colors.orange;
-      case 'pink':
-        return Colors.pink;
-      default:
-        return Colors.grey;
-    }
-  }
-
-// Keep this helper function which you already had
-  Color getColorFromHex(String hexString) {
-    final hexCode = hexString.replaceAll('#', '');
-    if (hexCode.length == 6) {
-      return Color(int.parse('0xFF$hexCode'));
-    } else {
-      return Colors.black;
-    }
-  }
-
-// Don't forget to add this import at the top of your file
-
-// Don't forget to add this import at the top of your file
-
   List<Product> _filterProducts(
       List<Product> allProducts, Map<int, dynamic> answers) {
+    print('[DEBUG] Starting filter process...');
+    print('[DEBUG] Initial product count: ${allProducts.length}');
+    print('[DEBUG] Filter criteria: $answers');
+
     List<Product> filteredProducts = [...allProducts];
 
-    // Si aucune réponse n'a été donnée (toutes les questions ont "Pas de préférence")
+    // If no answers were given (all questions have "No preference")
     if (answers.isEmpty) {
+      print('[DEBUG] No filter criteria provided, returning all products');
       return filteredProducts;
     }
 
-    // Filtrer par type (question 0)
+    // Filter by type (question 0) - This is the most important filter
     if (answers.containsKey(0)) {
       String selectedType = answers[0]['label'];
+      print('[DEBUG] Filtering by type: $selectedType');
+
+      int beforeCount = filteredProducts.length;
       filteredProducts = filteredProducts.where((product) {
+        // Normalize category names for comparison
+        String normalizedCategory = product.category.toLowerCase().trim();
+        bool matches = false;
+
         if (selectedType == 'Lunettes de Soleil') {
-          return product.category.toLowerCase().contains('soleil');
+          matches = normalizedCategory.contains('solaire') ||
+              normalizedCategory.contains('soleil');
         } else if (selectedType == 'Lunettes de Vue') {
-          return product.category.toLowerCase().contains('vue');
+          matches = normalizedCategory.contains('vue') ||
+              normalizedCategory.contains('vision') ||
+              normalizedCategory.contains('corrective');
+        } else {
+          matches = true;
         }
-        return true;
+
+        print(
+            '[DEBUG] Product ${product.name} category: $normalizedCategory, matches type $selectedType: $matches');
+        return matches;
       }).toList();
+
+      print(
+          '[DEBUG] Type filter: ${beforeCount} → ${filteredProducts.length} products (removed ${beforeCount - filteredProducts.length})');
     }
 
-    // Filtrer par style (question 1)
+    // Filter by style (question 1)
     if (answers.containsKey(1)) {
       String selectedStyle = answers[1]['label'];
+      print('[DEBUG] Filtering by style: $selectedStyle');
+
+      int beforeCount = filteredProducts.length;
       filteredProducts = filteredProducts.where((product) {
-        if (selectedStyle == 'Féminin') {
-          return product.sexe.toLowerCase() == 'feminin' ||
-              product.sexe.toLowerCase() == 'unisexe';
-        } else if (selectedStyle == 'Masculin') {
-          return product.sexe.toLowerCase() == 'masculin' ||
-              product.sexe.toLowerCase() == 'unisexe';
+        if (product.sexe.isEmpty) {
+          print(
+              '[DEBUG] Product ${product.name} has no gender info, excluding');
+          return false;
         }
-        return true;
+
+        String normalizedSexe = product.sexe.toLowerCase().trim();
+        bool matches = false;
+
+        if (selectedStyle == 'Féminin') {
+          matches = normalizedSexe == 'feminin' ||
+              normalizedSexe == 'femme' ||
+              normalizedSexe == 'unisexe';
+        } else if (selectedStyle == 'Masculin') {
+          matches = normalizedSexe == 'masculin' ||
+              normalizedSexe == 'homme' ||
+              normalizedSexe == 'unisexe';
+        } else {
+          matches = true;
+        }
+
+        print(
+            '[DEBUG] Product ${product.name} gender: $normalizedSexe, matches style $selectedStyle: $matches');
+        return matches;
       }).toList();
+
+      print(
+          '[DEBUG] Style filter: ${beforeCount} → ${filteredProducts.length} products (removed ${beforeCount - filteredProducts.length})');
     }
 
-    // Filtrer par forme (question 2)
+    // Filter by shape (question 2)
     if (answers.containsKey(2)) {
       List<String> selectedShapes = (answers[2] as List)
-          .map((e) => e['label'].toString().toLowerCase())
+          .map((e) => e['label'].toString().toLowerCase().trim())
           .toList();
+      print('[DEBUG] Filtering by shapes: $selectedShapes');
 
+      int beforeCount = filteredProducts.length;
       filteredProducts = filteredProducts.where((product) {
-        if (product.style.isEmpty) return false;
-
-        String productStyle = product.style.toLowerCase();
-
-        // Vérifier les correspondances exactes ou partielles
-        for (var shape in selectedShapes) {
-          if (shape.contains('cat') && productStyle.contains('cat'))
-            return true;
-          if (shape.contains('avi') && productStyle.contains('avi'))
-            return true;
-          if (shape.contains('rond') && productStyle.contains('rond'))
-            return true;
-          if (shape.contains('carré') && productStyle.contains('carré'))
-            return true;
-          if (shape.contains('rect') && productStyle.contains('rect'))
-            return true;
-          if (productStyle.contains(shape)) return true;
+        if (product.style.isEmpty) {
+          print('[DEBUG] Product ${product.name} has no style info, excluding');
+          return false;
         }
-        return false;
-      }).toList();
-    }
 
-    // Filtrer par couleur (question 3)
-    if (answers.containsKey(3)) {
-      List<String> selectedColors = (answers[3] as List)
-          .map((e) => e['label'].toString().toLowerCase())
-          .toList();
+        String productStyle = product.style.toLowerCase().trim();
+        bool matches = false;
 
-      filteredProducts = filteredProducts.where((product) {
-        if (product.couleur.isEmpty) return false;
-
-        // Pour chaque couleur choisie par l'utilisateur
-        for (var selectedColor in selectedColors) {
-          // Pour chaque couleur du produit
-          for (var productColor in product.couleur) {
-            String colorLower = productColor.toLowerCase();
-
-            // Si l'utilisateur a choisi "noir"
-            if (selectedColor == 'noir') {
-              if (_isBlackColor(colorLower)) return true;
-            }
-            // Si l'utilisateur a choisi "neutres" (et exclure les noirs)
-            else if (selectedColor == 'neutres') {
-              if (!_isBlackColor(colorLower) && _isNeutralColor(colorLower))
-                return true;
-            }
-            // Si l'utilisateur a choisi "argent"
-            else if (selectedColor == 'argent') {
-              if (_isSilverColor(colorLower)) return true;
-            }
-            // Si l'utilisateur a choisi "colorées"
-            else if (selectedColor == 'colorées') {
-              if (_isColorfulColor(colorLower)) return true;
-            }
-            // Pour les autres couleurs spécifiques
-            else if (colorLower.contains(selectedColor)) {
-              return true;
-            }
+        // Check for exact or partial matches
+        for (var shape in selectedShapes) {
+          if (shape.contains('cat') && productStyle.contains('cat eye')) {
+            matches = true;
+            print(
+                '[DEBUG] Product ${product.name} style: $productStyle, matches shape $shape');
+            break;
+          }
+          if (shape.contains('avi') && productStyle.contains('avi')) {
+            matches = true;
+            print(
+                '[DEBUG] Product ${product.name} style: $productStyle, matches shape $shape');
+            break;
+          }
+          if (shape.contains('rond') && productStyle.contains('rond')) {
+            matches = true;
+            print(
+                '[DEBUG] Product ${product.name} style: $productStyle, matches shape $shape');
+            break;
+          }
+          if (shape.contains('carré') && productStyle.contains('carré')) {
+            matches = true;
+            print(
+                '[DEBUG] Product ${product.name} style: $productStyle, matches shape $shape');
+            break;
+          }
+          if (shape.contains('rect') && productStyle.contains('rect')) {
+            matches = true;
+            print(
+                '[DEBUG] Product ${product.name} style: $productStyle, matches shape $shape');
+            break;
+          }
+          if (productStyle.contains(shape)) {
+            matches = true;
+            print(
+                '[DEBUG] Product ${product.name} style: $productStyle, matches shape $shape');
+            break;
           }
         }
-        return false;
+
+        if (!matches) {
+          print(
+              '[DEBUG] Product ${product.name} style: $productStyle, does NOT match any selected shapes');
+        }
+        return matches;
       }).toList();
+
+      print(
+          '[DEBUG] Shape filter: ${beforeCount} → ${filteredProducts.length} products (removed ${beforeCount - filteredProducts.length})');
     }
 
-    // Filtrer par matériau (question 4)
+    // Filter by color (question 3)
+    if (answers.containsKey(3)) {
+      List<String> selectedColors = (answers[3] as List)
+          .map((e) => e['label'].toString().toLowerCase().trim())
+          .toList();
+      print('[DEBUG] Filtering by colors: $selectedColors');
+
+      int beforeCount = filteredProducts.length;
+      filteredProducts = filteredProducts.where((product) {
+        if (product.couleur.isEmpty) {
+          print('[DEBUG] Product ${product.name} has no color info, excluding');
+          return false;
+        }
+
+        // For each color chosen by the user
+        bool matches = false;
+
+        for (var selectedColor in selectedColors) {
+          // For each color of the product
+          for (var productColor in product.couleur) {
+            String colorLower = productColor.toLowerCase().trim();
+
+            // Check if the color is a hex code and match it to named colors
+            if (_isHexColor(colorLower)) {
+              // If user chose "noir" and the hex code is for black
+              if (selectedColor == 'noir' && _isHexBlack(colorLower)) {
+                matches = true;
+                print(
+                    '[DEBUG] Product ${product.name} hex color: $colorLower matches "noir"');
+                break;
+              }
+              // If user chose "neutres" and the hex code is for a neutral color
+              else if (selectedColor == 'neutres' &&
+                  !_isHexBlack(colorLower) &&
+                  _isHexNeutral(colorLower)) {
+                matches = true;
+                print(
+                    '[DEBUG] Product ${product.name} hex color: $colorLower matches "neutres"');
+                break;
+              }
+              // If user chose "argent" and the hex code is for silver
+              else if (selectedColor == 'argent' && _isHexSilver(colorLower)) {
+                matches = true;
+                print(
+                    '[DEBUG] Product ${product.name} hex color: $colorLower matches "argent"');
+                break;
+              }
+              // If user chose "colorées" and the hex code is for a colorful color
+              else if (selectedColor == 'colorées' &&
+                  _isHexColorful(colorLower)) {
+                matches = true;
+                print(
+                    '[DEBUG] Product ${product.name} hex color: $colorLower matches "colorées"');
+                break;
+              }
+            }
+            // Also keep the original text-based matching
+            else {
+              // If user chose "noir"
+              if (selectedColor == 'noir' && _isBlackColor(colorLower)) {
+                matches = true;
+                print(
+                    '[DEBUG] Product ${product.name} text color: $colorLower matches "noir"');
+                break;
+              }
+              // If user chose "neutres"
+              else if (selectedColor == 'neutres' &&
+                  !_isBlackColor(colorLower) &&
+                  _isNeutralColor(colorLower)) {
+                matches = true;
+                print(
+                    '[DEBUG] Product ${product.name} text color: $colorLower matches "neutres"');
+                break;
+              }
+              // If user chose "argent"
+              else if (selectedColor == 'argent' &&
+                  _isSilverColor(colorLower)) {
+                matches = true;
+                print(
+                    '[DEBUG] Product ${product.name} text color: $colorLower matches "argent"');
+                break;
+              }
+              // If user chose "colorées"
+              else if (selectedColor == 'colorées' &&
+                  _isColorfulColor(colorLower)) {
+                matches = true;
+                print(
+                    '[DEBUG] Product ${product.name} text color: $colorLower matches "colorées"');
+                break;
+              }
+              // For other specific colors
+              else if (colorLower.contains(selectedColor)) {
+                matches = true;
+                print(
+                    '[DEBUG] Product ${product.name} color: $colorLower matches "$selectedColor"');
+                break;
+              }
+            }
+          }
+          if (matches) break;
+        }
+
+        if (!matches) {
+          print(
+              '[DEBUG] Product ${product.name} colors: ${product.couleur}, does NOT match any selected colors');
+        }
+        return matches;
+      }).toList();
+
+      print(
+          '[DEBUG] Color filter: ${beforeCount} → ${filteredProducts.length} products (removed ${beforeCount - filteredProducts.length})');
+    }
+
+    // Filter by material (question 4)
     if (answers.containsKey(4)) {
       List<String> selectedMaterials = (answers[4] as List)
-          .map((e) => e['label'].toString().toLowerCase())
+          .map((e) => e['label'].toString().toLowerCase().trim())
           .toList();
+      print('[DEBUG] Filtering by materials: $selectedMaterials');
 
+      int beforeCount = filteredProducts.length;
       filteredProducts = filteredProducts.where((product) {
-        if (product.materiel == null || product.materiel.isEmpty) return false;
+        if (product.materiel == null || product.materiel!.isEmpty) {
+          print(
+              '[DEBUG] Product ${product.name} has no material info, excluding');
+          return false;
+        }
 
-        String material = product.materiel!.toLowerCase();
+        String material = product.materiel!.toLowerCase().trim();
+        bool matches = false;
 
         for (var selectedMaterial in selectedMaterials) {
           if (selectedMaterial == 'plastique' &&
-              (material.contains('plast') || material.contains('acétate')))
-            return true;
-          if (selectedMaterial == 'métal' && material.contains('métal'))
-            return true;
-          if (selectedMaterial == 'mixte' && material.contains('mixte'))
-            return true;
-          if (material.contains(selectedMaterial)) return true;
+              (material.contains('plast') || material.contains('acétate'))) {
+            matches = true;
+            print(
+                '[DEBUG] Product ${product.name} material: $material, matches "plastique"');
+            break;
+          }
+          if (selectedMaterial == 'métal' && material.contains('métal')) {
+            matches = true;
+            print(
+                '[DEBUG] Product ${product.name} material: $material, matches "métal"');
+            break;
+          }
+          if (selectedMaterial == 'mixte' && material.contains('mixte')) {
+            matches = true;
+            print(
+                '[DEBUG] Product ${product.name} material: $material, matches "mixte"');
+            break;
+          }
+          if (material.contains(selectedMaterial)) {
+            matches = true;
+            print(
+                '[DEBUG] Product ${product.name} material: $material, matches "$selectedMaterial"');
+            break;
+          }
         }
-        return false;
+
+        if (!matches) {
+          print(
+              '[DEBUG] Product ${product.name} material: $material, does NOT match any selected materials');
+        }
+        return matches;
       }).toList();
+
+      print(
+          '[DEBUG] Material filter: ${beforeCount} → ${filteredProducts.length} products (removed ${beforeCount - filteredProducts.length})');
     }
 
-    // Filtrer par budget (question 5)
+    // Filter by budget (question 5)
     if (answers.containsKey(5)) {
       String selectedBudget = answers[5]['label'];
+      print('[DEBUG] Filtering by budget: $selectedBudget');
 
+      int beforeCount = filteredProducts.length;
       filteredProducts = filteredProducts.where((product) {
+        bool matches = false;
+
         if (selectedBudget.contains('Économique')) {
-          return product.prix <= 250;
+          matches = product.prix <= 250;
         } else if (selectedBudget.contains('Moyen')) {
-          return product.prix > 250 && product.prix <= 500;
+          matches = product.prix > 250 && product.prix <= 500;
         } else if (selectedBudget.contains('Haut')) {
-          return product.prix > 800;
+          matches = product.prix > 500;
+        } else {
+          matches = true;
         }
-        return true;
+
+        print(
+            '[DEBUG] Product ${product.name} price: ${product.prix}, matches budget $selectedBudget: $matches');
+        return matches;
       }).toList();
+
+      print(
+          '[DEBUG] Budget filter: ${beforeCount} → ${filteredProducts.length} products (removed ${beforeCount - filteredProducts.length})');
+    }
+
+    print('[DEBUG] Final filtered product count: ${filteredProducts.length}');
+    if (filteredProducts.isEmpty) {
+      print('[WARNING] No products matched the filtering criteria!');
+    } else {
+      print('[DEBUG] Top 5 matching products:');
+      for (int i = 0; i < min(5, filteredProducts.length); i++) {
+        print(
+            '  - ${filteredProducts[i].name} (${filteredProducts[i].category})');
+      }
     }
 
     return filteredProducts;
   }
 
-  // Helper methods for color detection
-  bool _isBlackColor(String color) {
-    // Vérification des noms de couleur noir
-    if (color.contains('noir') || color.contains('black')) {
-      return true;
+  bool _isHexColor(String color) {
+    // Check if it's a hex color (with or without #)
+    return RegExp(r'^#?([0-9A-Fa-f]{6}|[0-9A-Fa-f]{3})$').hasMatch(color);
+  }
+
+// Helper function to determine if a hex color is black
+  bool _isHexBlack(String hexColor) {
+    // Remove # if present
+    hexColor = hexColor.replaceAll('#', '');
+
+    // Check if it's black (000000) or very dark
+    if (hexColor == '000000') return true;
+
+    // Handle 3-digit hex codes
+    if (hexColor.length == 3) {
+      hexColor = hexColor.split('').map((e) => e + e).join();
     }
 
-    // Vérification des codes hex noir
-    if (color.startsWith('#')) {
+    // If it's a 6-digit hex, check if it's a very dark color
+    if (hexColor.length == 6) {
       try {
-        final rgb = ColorUtils.hexToRgb(color);
-        // Vérifie si tous les composants sont très foncés (< 60)
-        return rgb['r']! < 60 && rgb['g']! < 60 && rgb['b']! < 60;
-      } catch (_) {
+        int r = int.parse(hexColor.substring(0, 2), radix: 16);
+        int g = int.parse(hexColor.substring(2, 4), radix: 16);
+        int b = int.parse(hexColor.substring(4, 6), radix: 16);
+
+        // Very dark colors (close to black)
+        return r < 30 && g < 30 && b < 30;
+      } catch (e) {
         return false;
       }
-    }
-
-    // Vérification des codes hex sans #
-    if (color == '000000' || color == '000') {
-      return true;
     }
 
     return false;
   }
 
+  bool _isHexNeutral(String hexColor) {
+    // Remove # if present
+    hexColor = hexColor.replaceAll('#', '');
+
+    // Handle 3-digit hex codes
+    if (hexColor.length == 3) {
+      hexColor = hexColor.split('').map((e) => e + e).join();
+    }
+
+    if (hexColor.length == 6) {
+      try {
+        int r = int.parse(hexColor.substring(0, 2), radix: 16);
+        int g = int.parse(hexColor.substring(2, 4), radix: 16);
+        int b = int.parse(hexColor.substring(4, 6), radix: 16);
+
+        // Calculate saturation (0-1)
+        int max = [r, g, b].reduce((curr, next) => curr > next ? curr : next);
+        int min = [r, g, b].reduce((curr, next) => curr < next ? curr : next);
+        double saturation = max == 0 ? 0 : (max - min) / max;
+
+        // White or very light colors
+        if (r > 220 && g > 220 && b > 220) return true;
+
+        // Pure grays (equal RGB values)
+        if ((r - g).abs() < 10 && (r - b).abs() < 10 && (g - b).abs() < 10) {
+          return true;
+        }
+
+        // Beige and brown colors (combinations of red and green with low saturation)
+        if (r > g && g > b && saturation < 0.5) return true;
+
+        // Earthy tones (low saturation)
+        if (saturation < 0.25) return true;
+
+        // Desaturated colors are considered neutral
+        return saturation < 0.3;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    return false;
+  }
+
+// Helper function to determine if a hex color is silver
+  bool _isHexSilver(String hexColor) {
+    // Remove # if present
+    hexColor = hexColor.replaceAll('#', '');
+
+    // Handle 3-digit hex codes
+    if (hexColor.length == 3) {
+      hexColor = hexColor.split('').map((e) => e + e).join();
+    }
+
+    if (hexColor.length == 6) {
+      try {
+        int r = int.parse(hexColor.substring(0, 2), radix: 16);
+        int g = int.parse(hexColor.substring(2, 4), radix: 16);
+        int b = int.parse(hexColor.substring(4, 6), radix: 16);
+
+        // Silver/metallic colors (light grays where r, g, b are close)
+        return r > 160 &&
+            g > 160 &&
+            b > 160 &&
+            (r - g).abs() < 20 &&
+            (r - b).abs() < 20 &&
+            (g - b).abs() < 20;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    return false;
+  }
+
+  bool _isHexColorful(String hexColor) {
+    // Remove # if present
+    hexColor = hexColor.replaceAll('#', '');
+
+    // Handle 3-digit hex codes
+    if (hexColor.length == 3) {
+      hexColor = hexColor.split('').map((e) => e + e).join();
+    }
+
+    if (hexColor.length == 6) {
+      try {
+        int r = int.parse(hexColor.substring(0, 2), radix: 16);
+        int g = int.parse(hexColor.substring(2, 4), radix: 16);
+        int b = int.parse(hexColor.substring(4, 6), radix: 16);
+
+        // Calculate saturation
+        int max = [r, g, b].reduce((curr, next) => curr > next ? curr : next);
+        int min = [r, g, b].reduce((curr, next) => curr < next ? curr : next);
+        double saturation = max == 0 ? 0 : (max - min) / max.toDouble();
+
+        // Colors with significant saturation
+        if (saturation > 0.4) return true;
+
+        // Red/pink dominant
+        if (r > g + 60 && r > b + 60) return true;
+
+        // Green dominant
+        if (g > r + 60 && g > b + 60) return true;
+
+        // Blue/purple dominant
+        if (b > r + 60 && b > g + 60) return true;
+
+        // Yellow (high red and green)
+        if (r > 180 && g > 180 && b < r - 100 && b < g - 100) return true;
+
+        // Specific vibrant color detection
+        if (max > 180 && (max - min) > 100) return true;
+
+        return false;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    return false;
+  }
+
+// Helper function to determine if a string represents a "black" color
+  bool _isBlackColor(String color) {
+    return color.contains('noir') || color.contains('black');
+  }
+
+// Helper function to determine if a string represents a "neutral" color
   bool _isNeutralColor(String color) {
-    // Exclure explicitement les couleurs noires
-    if (_isBlackColor(color)) {
-      return false;
-    }
-
-    // Convertir en minuscules et supprimer les #
-    String normalizedColor = color.toLowerCase().replaceAll('#', '');
-
-    // Si c'est un code hex, utiliser ColorUtils
-    if (color.toLowerCase().startsWith('#') ||
-        (normalizedColor.length == 6 &&
-            RegExp(r'^[0-9a-f]{6}$').hasMatch(normalizedColor))) {
-      return ColorUtils.isNeutral(color);
-    }
-
-    // Noms de couleurs neutres (exclure noir)
-    return normalizedColor.contains('beige') ||
-        normalizedColor.contains('taupe') ||
-        normalizedColor.contains('marron') ||
-        normalizedColor.contains('brown') ||
-        normalizedColor.contains('tan') ||
-        normalizedColor.contains('écaille') ||
-        normalizedColor.contains('ecaille') ||
-        normalizedColor.contains('havana') ||
-        normalizedColor.contains('tortoise');
+    return color.contains('beige') ||
+        color.contains('écaille') ||
+        color.contains('tortoise') ||
+        color.contains('marron') ||
+        color.contains('brun') ||
+        color.contains('havane') ||
+        color.contains('transparent') ||
+        color.contains('gris') ||
+        color.contains('grey') ||
+        color.contains('taupe') ||
+        color.contains('blanc') ||
+        color.contains('white');
   }
 
+// Helper function to determine if a string represents a "silver" color
   bool _isSilverColor(String color) {
-    // Convertir en minuscules et supprimer les #
-    String normalizedColor = color.toLowerCase().replaceAll('#', '');
-
-    // Si c'est un code hex, utiliser ColorUtils
-    if (color.toLowerCase().startsWith('#') ||
-        (normalizedColor.length == 6 &&
-            RegExp(r'^[0-9a-f]{6}$').hasMatch(normalizedColor))) {
-      return ColorUtils.isSilver(color);
-    }
-
-    // Noms de couleurs argentées
-    return normalizedColor.contains('argent') ||
-        normalizedColor.contains('silver') ||
-        normalizedColor.contains('gris') ||
-        normalizedColor.contains('gray') ||
-        normalizedColor.contains('grey');
+    return color.contains('argent') ||
+        color.contains('silver') ||
+        color.contains('chrome') ||
+        color.contains('métal');
   }
 
+// Helper function to determine if a string represents a "colorful" color
   bool _isColorfulColor(String color) {
-    // Exclure les couleurs noires
-    if (_isBlackColor(color)) {
-      return false;
-    }
-
-    // Convertir en minuscules et supprimer les #
-    String normalizedColor = color.toLowerCase().replaceAll('#', '');
-
-    // Si c'est un code hex, utiliser ColorUtils
-    if (color.toLowerCase().startsWith('#') ||
-        (normalizedColor.length == 6 &&
-            RegExp(r'^[0-9a-f]{6}$').hasMatch(normalizedColor))) {
-      return ColorUtils.isColorful(color);
-    }
-
-    // Noms de couleurs vives
-    return normalizedColor.contains('rouge') ||
-        normalizedColor.contains('red') ||
-        normalizedColor.contains('bleu') ||
-        normalizedColor.contains('blue') ||
-        normalizedColor.contains('vert') ||
-        normalizedColor.contains('green') ||
-        normalizedColor.contains('jaune') ||
-        normalizedColor.contains('yellow') ||
-        normalizedColor.contains('rose') ||
-        normalizedColor.contains('pink') ||
-        normalizedColor.contains('violet') ||
-        normalizedColor.contains('purple') ||
-        normalizedColor.contains('orange') ||
-        normalizedColor.contains('turquoise') ||
-        normalizedColor.contains('cyan') ||
-        normalizedColor.contains('magenta') ||
-        normalizedColor.contains('fuchsia') ||
-        normalizedColor.contains('coral');
+    return color.contains('rouge') ||
+        color.contains('red') ||
+        color.contains('bleu') ||
+        color.contains('blue') ||
+        color.contains('vert') ||
+        color.contains('green') ||
+        color.contains('jaune') ||
+        color.contains('yellow') ||
+        color.contains('orange') ||
+        color.contains('violet') ||
+        color.contains('purple') ||
+        color.contains('rose') ||
+        color.contains('pink') ||
+        color.contains('gold') ||
+        color.contains('or') ||
+        color.contains('doré');
   }
 
+// Helper function to get min value (for limiting top product list)
+  int min(int a, int b) {
+    return a < b ? a : b;
+  }
   // Helper function to convert hex string to Color
 }
 
@@ -1802,7 +1524,7 @@ class SummaryScreen extends StatelessWidget {
           Expanded(
             child: ElevatedButton(
               onPressed: () {
-                Get.toNamed('/recommandationScreen');
+                Get.toNamed('/recommandationScreen', arguments: answers);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.deepPurple,

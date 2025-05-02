@@ -33,6 +33,7 @@ class OrderController extends GetxController {
   final RxBool isCreating = false.obs;
   final Rx<Order?> currentOrder = Rx<Order?>(null);
   bool get isloading => isLoading.value;
+final RxMap<String, List<User>> usersByOpticianCache = <String, List<User>>{}.obs;
 
   // Pour les champs de la commande
   final RxString selectedAddress = ''.obs;
@@ -80,7 +81,10 @@ class OrderController extends GetxController {
 
 // Dans OrderController, modifiez getUsersByOptician
   Future<List<User>> getUsersByOptician(String connectedOpticianId) async {
-    try {
+   if (usersByOpticianCache.containsKey(connectedOpticianId)) {
+    return usersByOpticianCache[connectedOpticianId]!;
+  }
+  try {
       // 1. Récupérer les boutiques associées à l'opticien
       final boutiqueController = Get.find<BoutiqueController>();
       await boutiqueController.getboutiqueByOpticianId(connectedOpticianId);
@@ -131,6 +135,7 @@ class OrderController extends GetxController {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         error.value = null;
       });
+    usersByOpticianCache[connectedOpticianId] = users;
 
       return users;
     } catch (e) {

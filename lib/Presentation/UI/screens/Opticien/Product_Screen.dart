@@ -10,11 +10,13 @@ import 'package:opti_app/Presentation/UI/screens/Admin/3D.dart';
 import 'package:opti_app/Presentation/UI/screens/Admin/Model3DPickerWidget.dart';
 import 'package:opti_app/Presentation/UI/screens/Admin/Product3DViewer.dart';
 import 'package:opti_app/Presentation/UI/screens/Opticien/OpticienDashboardApp.dart';
+import 'package:opti_app/Presentation/UI/screens/User/Rotating3DModel.dart';
 import 'package:opti_app/Presentation/controllers/OpticianController.dart';
 import 'package:opti_app/Presentation/controllers/boutique_controller.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
 import 'package:opti_app/core/constants/champsProduits.dart';
 import 'package:opti_app/domain/entities/product_entity.dart';
+import 'package:http/http.dart' as http;
 
 class ProductsScreen extends StatefulWidget {
   const ProductsScreen({Key? key}) : super(key: key);
@@ -661,7 +663,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
         if (product.model3D.isNotEmpty)
           IconButton(
             icon: Icon(Icons.view_in_ar, size: 18, color: _primaryColor),
-            onPressed: () => _show3DModelDialog(context, product.model3D),
+            onPressed: () => _showFullScreen3DModel(context, product),
             tooltip: 'Voir en 3D',
           ),
 
@@ -853,15 +855,63 @@ class _ProductsScreenState extends State<ProductsScreen> {
     );
   }
 
-  void _show3DModelDialog(BuildContext context, String modelUrl) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        insetPadding: EdgeInsets.all(10),
-        child:
-            Fixed3DViewer(modelUrl: modelUrl), // Utilisez l'URL du produit ici
+  void _showFullScreen3DModel(BuildContext context, Product product) {
+    if (product.model3D.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Aucun modèle 3D disponible pour ce produit')),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          appBar: AppBar(
+            title: Text('Vue 3D - ${product.name}'),
+          ),
+          body: Rotating3DModel(modelUrl: product.model3D),
+        ),
       ),
     );
+
+    Future<bool> _checkModelAvailability(String url) async {
+      if (url.isEmpty) return false;
+
+      try {
+        final response = await http.head(Uri.parse(url));
+        return response.statusCode == 200;
+      } catch (e) {
+        print('Erreur de vérification du modèle 3D: $e');
+        return false;
+      }
+    }
+
+    String _normalizeModelUrl(String url) {
+      // Implémentez votre logique de normalisation d'URL ici
+      return GlassesManagerService.ensureAbsoluteUrl(url);
+    }
+
+    void _showFullScreen3DModel(BuildContext context, Product product) {
+      if (product.model3D.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Aucun modèle 3D disponible pour ce produit')),
+        );
+        return;
+      }
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => Scaffold(
+            appBar: AppBar(
+              title: Text('Vue 3D - ${product.name}'),
+            ),
+            body: Fixed3DViewer(modelUrl: product.model3D),
+          ),
+        ),
+      );
+    }
   }
 
   Widget _buildTableCell(

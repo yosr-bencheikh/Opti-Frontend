@@ -648,9 +648,9 @@ class AdminPanelApp extends StatelessWidget {
         selectedColor: Color(0xFF2D4263),
         color: Color(0xFF94A4A6),
         constraints: BoxConstraints(minHeight: 36, minWidth: 60),
-        isSelected: [chartType.value == "bar", chartType.value == "pie"],
+        isSelected: [chartType.value == "bar"],
         onPressed: (index) {
-          chartType.value = index == 0 ? "bar" : "pie";
+          chartType.value = "bar";
         },
         children: [
           Padding(
@@ -660,16 +660,6 @@ class AdminPanelApp extends StatelessWidget {
                 Icon(Icons.bar_chart, size: 18),
                 SizedBox(width: 4),
                 Text("Barres"),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Row(
-              children: [
-                Icon(Icons.pie_chart, size: 18),
-                SizedBox(width: 4),
-                Text("Secteurs"),
               ],
             ),
           ),

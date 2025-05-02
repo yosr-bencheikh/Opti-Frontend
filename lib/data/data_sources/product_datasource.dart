@@ -234,7 +234,7 @@ class ProductDatasource {
   Future<List<Boutique>> getOpticiens() async {
     try {
       final response =
-          await http.get(Uri.parse('http://localhost:3000/opticiens'));
+          await http.get(Uri.parse('http://192.168.1.19:3000/opticiens'));
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);

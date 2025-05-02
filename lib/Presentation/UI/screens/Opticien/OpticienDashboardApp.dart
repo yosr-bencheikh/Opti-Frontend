@@ -381,29 +381,44 @@ class _OpticianDashboardScreenState extends State<OpticianDashboardScreen> {
   }
 
 // Separate widget to handle the content of each stat card
-  Widget _buildStatContent(
-      int index,
-      String currentOpticianId,
-      UserController userController,
-      ProductController productController,
-      BoutiqueController boutiqueController,
-      OrderController orderController) {
-    switch (index) {
-      case 0: // Users
-        return FutureBuilder<List<User>>(
-          future: orderController.getUsersByOptician(currentOpticianId),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return _buildStatValue("...");
-            } else if (snapshot.hasError) {
-              return _buildStatValue("Erreur");
-            } else if (snapshot.hasData) {
-              return _buildStatValue(snapshot.data!.length.toString());
-            } else {
-              return _buildStatValue("0");
-            }
-          },
-        );
+Widget _buildStatContent(
+    int index,
+    String currentOpticianId,
+    UserController userController,
+    ProductController productController,
+    BoutiqueController boutiqueController,
+    OrderController orderController) {
+  switch (index) {
+    case 0: // Users
+      return Obx(() {
+        if (orderController.isloading) {
+          return _buildStatValue("...");
+        } else if (orderController.error.value != null) {
+          return _buildStatValue("Erreur");
+        } else {
+          // Use cached users if available
+          final cachedUsers = orderController.usersByOpticianCache[currentOpticianId];
+          if (cachedUsers != null) {
+            return _buildStatValue(cachedUsers.length.toString());
+          }
+          return FutureBuilder<List<User>>(
+            future: orderController.getUsersByOptician(currentOpticianId),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return _buildStatValue("...");
+              } else if (snapshot.hasError) {
+                return _buildStatValue("Erreur");
+              } else if (snapshot.hasData) {
+                // Cache the result
+                orderController.usersByOpticianCache[currentOpticianId] = snapshot.data!;
+                return _buildStatValue(snapshot.data!.length.toString());
+              } else {
+                return _buildStatValue("0");
+              }
+            },
+          );
+        }
+      });
 
       case 1: // Products
         // Use a more direct and simple approach with ObxValue

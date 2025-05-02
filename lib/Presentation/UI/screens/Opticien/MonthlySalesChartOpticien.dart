@@ -21,7 +21,7 @@ class _MonthlyOpticianSalesChartState extends State<MonthlyOpticianSalesChart> {
   @override
   void initState() {
     super.initState();
-    selectedMonth = DateTime(DateTime.now().year, DateTime.now().month, 1);
+    // Don't set a default value here - we'll set it after getting available months
   }
 
   @override
@@ -60,8 +60,17 @@ class _MonthlyOpticianSalesChartState extends State<MonthlyOpticianSalesChart> {
               }).toList();
 
               final availableMonths = _getAvailableMonths(opticianOrders);
+
+              // Initialize selectedMonth if it's null and there are available months
               if (selectedMonth == null && availableMonths.isNotEmpty) {
-                selectedMonth = availableMonths.first;
+                // Use Future.microtask to avoid setState during build
+                Future.microtask(() {
+                  if (mounted && selectedMonth == null) {
+                    setState(() {
+                      selectedMonth = availableMonths.first;
+                    });
+                  }
+                });
               }
 
               final dailySales = selectedMonth != null
@@ -90,12 +99,16 @@ class _MonthlyOpticianSalesChartState extends State<MonthlyOpticianSalesChart> {
                           ),
                         ],
                       ),
-                      _MonthSelectorDropdown(
-                        availableMonths: availableMonths,
-                        selectedMonth: selectedMonth,
-                        onChanged: (month) =>
-                            setState(() => selectedMonth = month),
-                      ),
+                      // Only show the dropdown if we have both available months and a selected month
+                      if (availableMonths.isNotEmpty && selectedMonth != null)
+                        _MonthSelectorDropdown(
+                          availableMonths: availableMonths,
+                          selectedMonth: selectedMonth,
+                          onChanged: (month) =>
+                              setState(() => selectedMonth = month),
+                        )
+                      else
+                        SizedBox(), // Empty SizedBox if we're still loading
                     ],
                   ),
                   const SizedBox(height: 15),
@@ -138,14 +151,23 @@ class _MonthlyOpticianSalesChartState extends State<MonthlyOpticianSalesChart> {
   }
 
   List<DateTime> _getAvailableMonths(List<Order> orders) {
-    final Set<DateTime> months = {};
+    final Set<String> monthKeys = {}; // Use string keys to ensure uniqueness
+    final List<DateTime> months = [];
+
     for (final order in orders) {
       final orderDate = order.createdAt;
-      final monthKey = DateTime(orderDate.year, orderDate.month, 1);
-      months.add(monthKey);
+      final monthKey =
+          "${orderDate.year}-${orderDate.month.toString().padLeft(2, '0')}";
+
+      if (!monthKeys.contains(monthKey)) {
+        monthKeys.add(monthKey);
+        months.add(DateTime(orderDate.year, orderDate.month, 1));
+      }
     }
-    final sortedMonths = months.toList()..sort((a, b) => a.compareTo(b));
-    return sortedMonths;
+
+    // Sort months chronologically
+    months.sort((a, b) => a.compareTo(b));
+    return months;
   }
 
   Map<DateTime, double> _processDailySalesData(
@@ -378,6 +400,25 @@ class _MonthSelectorDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Guard check to prevent issues when selectedMonth is null
+    if (selectedMonth == null || availableMonths.isEmpty) {
+      return SizedBox(); // Return empty widget if we don't have data yet
+    }
+
+    // Check if the selected month is in the available months list
+    bool selectedMonthExists = availableMonths.any(
+      (month) =>
+          month.year == selectedMonth!.year &&
+          month.month == selectedMonth!.month,
+    );
+
+    // If the selected month doesn't exist in the list, use the first available month
+    DateTime effectiveSelectedMonth = selectedMonthExists
+        ? selectedMonth!
+        : availableMonths.isNotEmpty
+            ? availableMonths.first
+            : selectedMonth!;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
@@ -392,7 +433,7 @@ class _MonthSelectorDropdown extends StatelessWidget {
         ],
       ),
       child: DropdownButton<DateTime>(
-        value: selectedMonth,
+        value: effectiveSelectedMonth,
         onChanged: onChanged,
         items: availableMonths.map((month) {
           return DropdownMenuItem<DateTime>(
