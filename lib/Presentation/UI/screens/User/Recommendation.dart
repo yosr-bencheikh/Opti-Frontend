@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
+import 'package:opti_app/Presentation/UI/screens/User/enhanced_product_card.dart';
 import 'package:opti_app/Presentation/controllers/auth_controller.dart';
 import 'package:opti_app/Presentation/controllers/product_controller.dart';
 import 'package:opti_app/Presentation/controllers/wishlist_controller.dart';
@@ -210,11 +211,8 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
               final product = Product.fromJson(productMap);
 
               // Use the ProductCard widget
-              return ProductCard(
+              return EnhancedProductCard(
                 product: product,
-                isHorizontalList: true, // Set to false for grid layout
-                wishlistController: wishlistController,
-                authController: authController,
               );
             },
           );

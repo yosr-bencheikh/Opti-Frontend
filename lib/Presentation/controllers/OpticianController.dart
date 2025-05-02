@@ -1,4 +1,3 @@
-// Presentation/controllers/OpticianController.dart
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -366,3 +365,4 @@ class OpticianController extends GetxController {
     }
   }
 }
+
